@@ -10,19 +10,17 @@ import java.net.URISyntaxException;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.SwingUtilities;
 import org.schabi.newpipe.extractor.InfoItem;
-import org.schabi.newpipe.extractor.InfoItem.InfoType;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.search.SearchExtractor;
-import org.schabi.newpipe.extractor.services.youtube.ItagItem.ItagType;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
 public class SearchResultPage extends JPanel {
 
     public SearchResultPage(App app) {
-        super(new java.awt.GridBagLayout());
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         this.app = app;
     }
 
@@ -36,22 +34,20 @@ public class SearchResultPage extends JPanel {
                     query
                 );
                 se.fetchPage();
+
                 InfoItemsPage<InfoItem> itp = se.getInitialPage();
                 List<InfoItem> items = itp.getItems();
-                SwingUtilities.invokeLater(() -> {});
-                GridBagConstraints c = new GridBagConstraints();
-                c.fill = GridBagConstraints.HORIZONTAL;
-                c.weightx = 0;
-                c.weighty = 1;
-                c.gridy = 0;
+                Color transparent = new Color(0, 0, 0, 0);
                 for (int i = 0; i < items.size(); ++i) {
                     InfoItem item = items.get(i);
                     JPanel searchResultItem = new JPanel(
                         new FlowLayout(FlowLayout.LEFT)
                     );
 
-                    c.gridy = i;
-                    this.add(searchResultItem, c);
+                    searchResultItem.setCursor(
+                        Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                    );
+                    this.add(searchResultItem);
                     BufferedImage image = ImageIO.read(
                         new URI(item.getThumbnails().get(0).getUrl()).toURL()
                     );
@@ -59,23 +55,34 @@ public class SearchResultPage extends JPanel {
                         ImageIcon icon = new ImageIcon(image);
                         // Create a JLabel to hold the icon
                         JLabel thumbnaillabel = new JLabel(icon);
-                        thumbnaillabel.setSize(new Dimension(10, 10));
+                        thumbnaillabel.setMaximumSize(new Dimension(5, 5));
                         SwingUtilities.invokeLater(() ->
                             searchResultItem.add(thumbnaillabel)
                         );
                     }
                     JPanel infoPanel = new JPanel(new GridLayout(2, 1));
                     JLabel itemTitle = new JLabel();
+                    infoPanel.setBackground(transparent);
+                    infoPanel.setOpaque(false);
                     itemTitle.setText(item.getName());
-                    searchResultItem.addMouseListener(
-                        new PanelClickListener(item)
-                    );
                     infoPanel.add(itemTitle);
+                    if (item instanceof StreamInfoItem streamInfoItem) {
+                        JLabel uploaderLabel = new JLabel(
+                            streamInfoItem.getUploaderName()
+                        );
+                        uploaderLabel.setForeground(Color.LIGHT_GRAY);
+                        infoPanel.add(uploaderLabel);
+                    }
+                    searchResultItem.addMouseListener(
+                        new PanelClickListener(item, searchResultItem)
+                    );
+
                     SwingUtilities.invokeLater(() ->
                         searchResultItem.add(infoPanel)
                     );
                 }
-                app.pack();
+
+                SwingUtilities.invokeLater(this::updateUI);
             } catch (
                 IOException
                 | ExtractionException
@@ -92,18 +99,22 @@ public class SearchResultPage extends JPanel {
     private class PanelClickListener implements MouseListener {
 
         private final InfoItem infoItem;
+        private final JPanel jPanel;
 
-        public PanelClickListener(InfoItem infoItem) {
+        public PanelClickListener(InfoItem infoItem, JPanel jPanel) {
             this.infoItem = infoItem;
+            this.jPanel = jPanel;
         }
 
         @Override
         public void mouseClicked(MouseEvent e) {
             // Your "onclick" logic goes here
-            InfoType.STREAM;
             switch (infoItem.getInfoType()) {
                 case STREAM:
                     app.nevigate(App.Page.VIDEO, infoItem.getUrl());
+                    break;
+                case CHANNEL:
+                    app.nevigate(App.Page.CHANNEL, infoItem.getUrl());
                     break;
             }
         }
@@ -116,9 +127,13 @@ public class SearchResultPage extends JPanel {
         public void mouseReleased(MouseEvent e) {}
 
         @Override
-        public void mouseEntered(MouseEvent e) {}
+        public void mouseEntered(MouseEvent e) {
+            jPanel.setBackground(Color.DARK_GRAY);
+        }
 
         @Override
-        public void mouseExited(MouseEvent e) {}
+        public void mouseExited(MouseEvent e) {
+            jPanel.setBackground(Color.BLACK);
+        }
     }
 }

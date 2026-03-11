@@ -4,28 +4,26 @@ import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.List;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.VideoStream;
-import org.schabi.newpipe.extractor.timeago.patterns.sl;
 import uk.co.caprica.vlcj.media.MediaRef;
 import uk.co.caprica.vlcj.media.MediaSlavePriority;
 import uk.co.caprica.vlcj.media.MediaSlaveType;
-import uk.co.caprica.vlcj.media.SlaveApi;
 import uk.co.caprica.vlcj.media.TrackType;
 import uk.co.caprica.vlcj.player.base.MediaApi;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventListener;
-import uk.co.caprica.vlcj.player.base.callback.AudioCallbackAdapter;
-import uk.co.caprica.vlcj.player.base.events.MediaPlayerEvent;
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent;
 
 public class VideoPage extends JPanel {
@@ -43,10 +41,14 @@ public class VideoPage extends JPanel {
     private boolean isEnableComboxEvent;
     private JSlider playbackSlider;
     private boolean isPositionChanged = false;
+    private JLabel videoTimestamp;
+    private JLabel videoLenght;
+    private JLabel videoTitle;
+    private JLabel uplodoaderName;
 
     public VideoPage(App app) {
         this.app = app;
-        super(new java.awt.GridBagLayout());
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         this.addComponentListener(
             new ComponentListener() {
                 @Override
@@ -65,42 +67,16 @@ public class VideoPage extends JPanel {
                 public void componentResized(ComponentEvent e) {}
             }
         );
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 0;
-        c.weighty = 1;
-        c.gridy = 0;
-        c.gridx = 0;
         mediaPlayerComponent = new CallbackMediaPlayerComponent();
         mediaPlayerComponent.setMaximumSize(new Dimension(1000, 500));
         mediaPlayerComponent
             .mediaPlayer()
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
-        this.add(mediaPlayerComponent, c);
-        c.gridy = 1;
+        this.add(mediaPlayerComponent);
+        // c.gridy = 1;
 
         playbackSlider = new JSlider(SwingConstants.HORIZONTAL, 0, 100, 0);
-        playbackSlider.addMouseListener(
-            new MouseListener() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    //mediaPlayerComponent.mediaPlayer().controls().setPosition(playbackSlider.getValue()/100);
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {}
-
-                @Override
-                public void mouseReleased(MouseEvent e) {}
-
-                @Override
-                public void mouseEntered(MouseEvent e) {}
-
-                @Override
-                public void mouseExited(MouseEvent e) {}
-            }
-        );
 
         playbackSlider.addChangeListener(e -> {
             if (playbackSlider.getValueIsAdjusting() || isPositionChanged) {
@@ -111,12 +87,11 @@ public class VideoPage extends JPanel {
                 .controls()
                 .setPosition(playbackSlider.getValue() / 100.0f);
         });
-        this.add(playbackSlider, c);
-        c.gridy = 2;
+        this.add(playbackSlider);
+        //c.gridy = 2;
         videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        this.add(videoContol, c);
+        this.add(videoContol);
         JButton playButton = new JButton("pause");
-        videoContol.add(playButton);
         playButton.addActionListener(e -> {
             if (isStop) {
                 mediaPlayerComponent.mediaPlayer().controls().play();
@@ -127,6 +102,11 @@ public class VideoPage extends JPanel {
             }
             isStop = !isStop;
         });
+        videoContol.add(playButton);
+        videoTimestamp = new JLabel("--:--:--");
+        videoContol.add(videoTimestamp);
+        videoLenght = new JLabel("/--:--:--");
+        videoContol.add(videoLenght);
         videoQM = new DefaultComboBoxModel<>();
         videoQ = new JComboBox<VideoStream>(videoQM);
         videoQ.setRenderer(new VideoComboBoxRenderer());
@@ -191,6 +171,14 @@ public class VideoPage extends JPanel {
             }
         });
         videoContol.add(audioQ);
+        JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        videoTitle = new JLabel("", SwingConstants.LEFT);
+        videoTitlePanel.add(videoTitle);
+        this.add(videoTitlePanel);
+        JPanel uploaderInfo = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        uplodoaderName = new JLabel("", SwingConstants.LEFT);
+        uploaderInfo.add(uplodoaderName);
+        this.add(uploaderInfo);
     }
 
     public void showVideo(String videoUrl) {
@@ -199,6 +187,26 @@ public class VideoPage extends JPanel {
                 StreamExtractor streamExtractor =
                     ServiceList.YouTube.getStreamExtractor(videoUrl);
                 streamExtractor.fetchPage();
+                videoTitle.setText(streamExtractor.getName());
+                System.out.println("streamExtractor.getSubChannelName())");
+                System.out.println(streamExtractor.getUploaderName());
+                uplodoaderName.setText(streamExtractor.getUploaderName());
+                List<org.schabi.newpipe.extractor.Image> avatars =
+                    streamExtractor.getUploaderAvatars();
+                if (!avatars.isEmpty()) {
+                    try {
+                        BufferedImage image = ImageIO.read(
+                            new URI(avatars.get(0).getUrl()).toURL()
+                        );
+                        if (image != null) {
+                            ImageIcon icon = new ImageIcon(image);
+                            // Create a JLabel to hold the icon
+                            uplodoaderName.setIcon(icon);
+                        }
+                    } catch (URISyntaxException e) {
+                        e.printStackTrace();
+                    }
+                }
                 List<VideoStream> videoStreams =
                     streamExtractor.getVideoOnlyStreams();
                 currentVideoStream = videoStreams.get(0);
@@ -207,7 +215,7 @@ public class VideoPage extends JPanel {
                 currentAudioStream = audioStreams.get(0);
                 videoQM.addAll(videoStreams);
                 audioQM.addAll(audioStreams);
-                System.out.println("audi size " + audioStreams.size());
+                //System.out.println("audi size " + audioStreams.size());
 
                 SwingUtilities.invokeLater(() -> {
                     isEnableComboxEvent = false;
@@ -327,7 +335,9 @@ public class VideoPage extends JPanel {
         public void finished(MediaPlayer mediaPlayer) {}
 
         @Override
-        public void timeChanged(MediaPlayer mediaPlayer, long newTime) {}
+        public void timeChanged(MediaPlayer mediaPlayer, long newTime) {
+            videoTimestamp.setText(getTimeString(newTime));
+        }
 
         @Override
         public void positionChanged(
@@ -411,6 +421,24 @@ public class VideoPage extends JPanel {
         public void error(MediaPlayer mediaPlayer) {}
 
         @Override
-        public void mediaPlayerReady(MediaPlayer mediaPlayer) {}
+        public void mediaPlayerReady(MediaPlayer mediaPlayer) {
+            videoLenght.setText(
+                "/" + getTimeString(mediaPlayer.status().length())
+            );
+        }
+
+        private String getTimeString(long time) {
+            Duration duration = Duration.ofMillis(time);
+            long hours = duration.toHours();
+            long minutes = duration.toMinutesPart(); // toMinutesPart() in Java 9+, use arithmetic for Java 8
+            long seconds = duration.toSecondsPart(); // toSecondsPart() in Java 9+, use arithmetic for Java 8
+
+            // For Java 8 compatibility, use arithmetic:
+            // long seconds = duration.getSeconds() % 60;
+            // long minutes = (duration.getSeconds() / 60) % 60;
+            // long hours = duration.getSeconds() / 3600;
+
+            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        }
     }
 }

@@ -6,7 +6,6 @@ package org.zane.newpipe;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import javax.swing.*;
-import javax.swing.SwingUtilities;
 import org.schabi.newpipe.extractor.NewPipe;
 
 public class App extends JFrame {
@@ -14,6 +13,7 @@ public class App extends JFrame {
     public enum Page {
         SEARCH,
         VIDEO,
+        CHANNEL,
     }
 
     private JButton searchButton;
@@ -22,9 +22,13 @@ public class App extends JFrame {
     private JTextField searchField;
     private JScrollPane mainContent;
     private Page currentPage;
+    private ChannelPage channelPage;
 
     public App() {
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        this.setTitle("NewPipe");
+        this.setMinimumSize(new Dimension(750, 500));
+
         this.addWindowListener(
             new java.awt.event.WindowAdapter() {
                 @Override
@@ -47,36 +51,34 @@ public class App extends JFrame {
                 }
             }
         );
-        this.setLayout(new java.awt.GridBagLayout());
+        this.setLayout(new BorderLayout());
         JPanel searchbar = new JPanel();
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 0;
-        c.weighty = 1;
-        c.gridx = 0;
-        c.gridy = 0;
-        this.add(searchbar, c);
+        searchbar.setBackground(new Color(255, 0, 0));
+        this.add(searchbar, BorderLayout.NORTH);
         searchField = new JTextField(10);
 
         searchbar.add(searchField);
         searchButton = new JButton();
         searchButton.setText("search");
         searchbar.add(searchButton);
-
-        c.gridy = 1;
+        JPanel defultPage = new JPanel(new BorderLayout());
+        defultPage.add(
+            new JLabel("Try searching to get started", SwingConstants.CENTER),
+            BorderLayout.CENTER
+        );
         mainContent = new JScrollPane(
+            defultPage,
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
             JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         );
 
-        mainContent.setMinimumSize(new Dimension(1000, 500));
-
-        this.add(mainContent, c);
+        //mainContent.setMinimumSize(new Dimension(1000, 500));
+        this.add(mainContent, BorderLayout.CENTER);
 
         searchResultPage = new SearchResultPage(this);
         videoPage = new VideoPage(this);
+        channelPage = new ChannelPage(this);
         this.setVisible(true);
-        this.pack();
         searchButton.addActionListener(e ->
             nevigate(Page.SEARCH, searchField.getText())
         );
@@ -104,9 +106,13 @@ public class App extends JFrame {
             case VIDEO:
                 mainContent.setViewportView(videoPage);
                 videoPage.showVideo(query);
-                this.pack();
+                //this.pack();
                 break;
+            case CHANNEL:
+                mainContent.setViewportView(channelPage);
+                channelPage.ShowChannel(query);
         }
+        mainContent.doLayout();
         currentPage = page;
     }
 
