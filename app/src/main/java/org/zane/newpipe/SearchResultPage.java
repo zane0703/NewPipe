@@ -39,46 +39,11 @@ public class SearchResultPage extends JPanel {
                 Color transparent = new Color(0, 0, 0, 0);
                 for (int i = 0; i < items.size(); ++i) {
                     InfoItem item = items.get(i);
-                    JPanel searchResultItem = new JPanel(
-                        new FlowLayout(FlowLayout.LEFT)
+                    SearchItemPanel searchItemPanel = new SearchItemPanel(
+                        app,
+                        item
                     );
-
-                    searchResultItem.setCursor(
-                        Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-                    );
-                    this.add(searchResultItem);
-                    BufferedImage image = ImageIO.read(
-                        new URI(item.getThumbnails().get(0).getUrl()).toURL()
-                    );
-                    //JPanel t = new JPanel(new SpringLayout());
-                    JImage thumbnaillabel = new JImage(image);
-                    thumbnaillabel.setMaximumSize(new Dimension(500, 500));
-                    thumbnaillabel.repaint();
-                    //t.add(thumbnaillabel);
-                    SwingUtilities.invokeLater(() ->
-                        searchResultItem.add(thumbnaillabel)
-                    );
-                    JPanel infoPanel = new JPanel(new GridLayout(2, 1));
-                    JLabel itemTitle = new JLabel();
-                    infoPanel.setBackground(transparent);
-                    infoPanel.setOpaque(false);
-                    itemTitle.setText(item.getName());
-                    infoPanel.add(itemTitle);
-                    if (item instanceof StreamInfoItem streamInfoItem) {
-                        JLabel uploaderLabel = new JLabel(
-                            streamInfoItem.getUploaderName()
-                        );
-
-                        uploaderLabel.setForeground(Color.LIGHT_GRAY);
-                        infoPanel.add(uploaderLabel);
-                    }
-                    searchResultItem.addMouseListener(
-                        new PanelClickListener(item)
-                    );
-
-                    SwingUtilities.invokeLater(() ->
-                        searchResultItem.add(infoPanel)
-                    );
+                    SwingUtilities.invokeLater(() -> this.add(searchItemPanel));
                 }
 
                 SwingUtilities.invokeLater(this::updateUI);
@@ -93,44 +58,5 @@ public class SearchResultPage extends JPanel {
             }
         })
             .start();
-    }
-
-    private class PanelClickListener implements MouseListener {
-
-        private final InfoItem infoItem;
-
-        public PanelClickListener(InfoItem infoItem) {
-            this.infoItem = infoItem;
-        }
-
-        @Override
-        public void mouseClicked(MouseEvent e) {
-            // Your "onclick" logic goes here
-            switch (infoItem.getInfoType()) {
-                case STREAM:
-                    app.nevigate(App.Page.VIDEO, infoItem.getUrl());
-                    break;
-                case CHANNEL:
-                    app.nevigate(App.Page.CHANNEL, infoItem.getUrl());
-                    break;
-            }
-        }
-
-        // Other MouseListener methods (must be implemented, even if empty)
-        @Override
-        public void mousePressed(MouseEvent e) {}
-
-        @Override
-        public void mouseReleased(MouseEvent e) {}
-
-        @Override
-        public void mouseEntered(MouseEvent e) {
-            e.getComponent().setBackground(Color.DARK_GRAY);
-        }
-
-        @Override
-        public void mouseExited(MouseEvent e) {
-            e.getComponent().setBackground(Color.BLACK);
-        }
     }
 }

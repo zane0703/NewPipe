@@ -5,7 +5,8 @@ package org.zane.newpipe;
 
 import com.formdev.flatlaf.IntelliJTheme;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.NewPipe;
 
@@ -28,8 +29,16 @@ public class App extends JFrame {
     public App() {
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setTitle("NewPipe");
+        try {
+            this.setIconImage(
+                ImageIO.read(
+                    this.getClass().getResourceAsStream("/ic_launcher.png")
+                )
+            );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         this.setMinimumSize(new Dimension(750, 500));
-
         this.addWindowListener(
             new java.awt.event.WindowAdapter() {
                 @Override

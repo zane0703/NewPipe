@@ -43,15 +43,18 @@ public class VideoPage extends JPanel {
     private boolean isEnableComboxEvent;
     private JSlider playbackSlider;
     private boolean isPositionChanged = false;
-    private JLabel videoTimestamp;
-    private JLabel videoLenght;
+    private JLabel currentTimestampLabel;
+    private JLabel videoLenghtLabel;
     private JLabel videoTitle;
+    private long currentTimestamp = 0;
     private JLabel uplodoaderName;
     private String channelURL;
     private double videoLengthDiff;
+    private JLabel uplodoaderSubCountLabel;
     private FlatSVGIcon playIcom;
     private FlatSVGIcon pauseIcom;
     private JButton playButton;
+    private JImage uploaderAvatar;
 
     public VideoPage(App app) {
         this.app = app;
@@ -76,7 +79,7 @@ public class VideoPage extends JPanel {
         );
         mediaPlayerComponent = new CallbackMediaPlayerComponent();
         final MediaPlayer mediaPlayer = mediaPlayerComponent.mediaPlayer();
-        mediaPlayerComponent.setMaximumSize(new Dimension(1000, 500));
+        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
         mediaPlayer
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
@@ -105,7 +108,7 @@ public class VideoPage extends JPanel {
         this.add(videoContol);
         try {
             playIcom = new FlatSVGIcon(
-                getClass().getResourceAsStream("/icon/ic_play_arrow.svg")
+                getClass().getResourceAsStream("/icon/ic_play_arrow.svgz")
             );
             pauseIcom = new FlatSVGIcon(
                 getClass().getResourceAsStream("/icon/ic_pause.svg")
@@ -123,10 +126,10 @@ public class VideoPage extends JPanel {
             }
         });
         videoContol.add(playButton);
-        videoTimestamp = new JLabel("--:--:--");
-        videoContol.add(videoTimestamp);
-        videoLenght = new JLabel("/--:--:--");
-        videoContol.add(videoLenght);
+        currentTimestampLabel = new JLabel("00:00");
+        videoContol.add(currentTimestampLabel);
+        videoLenghtLabel = new JLabel("/--:--:--");
+        videoContol.add(videoLenghtLabel);
         videoQM = new DefaultComboBoxModel<>();
         videoQ = new JComboBox<VideoStream>(videoQM);
         videoQ.setRenderer(new VideoComboBoxRenderer());
@@ -191,13 +194,30 @@ public class VideoPage extends JPanel {
         videoContol.add(audioQ);
         JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         videoTitle = new JLabel("", SwingConstants.LEFT);
+        Font currentFont = videoTitle.getFont();
+        videoTitle.setFont(
+            currentFont.deriveFont(Font.BOLD, currentFont.getSize())
+        );
         videoTitlePanel.add(videoTitle);
         this.add(videoTitlePanel);
+        JPanel videoInfo = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JPanel uploaderInfo = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel uploaderSubInfo = new JPanel(new GridLayout(2, 1));
+        uploaderAvatar = new JImage();
         uplodoaderName = new JLabel("", SwingConstants.LEFT);
+        uplodoaderName.setFont(
+            currentFont.deriveFont(Font.BOLD, currentFont.getSize())
+        );
+        uploaderAvatar.setMaximumSize(new Dimension(100, 100));
+        uplodoaderSubCountLabel = new JLabel("", SwingConstants.LEFT);
+        uplodoaderSubCountLabel.setForeground(Color.LIGHT_GRAY);
         uploaderInfo.addMouseListener(new PanelClickListener());
-        uploaderInfo.add(uplodoaderName);
-        this.add(uploaderInfo);
+        uploaderInfo.add(uploaderAvatar);
+        uploaderSubInfo.add(uplodoaderName);
+        uploaderSubInfo.add(uplodoaderSubCountLabel);
+        uploaderInfo.add(uploaderSubInfo);
+        videoInfo.add(uploaderInfo);
+        this.add(videoInfo);
     }
 
     public void showVideo(String videoUrl) {
@@ -208,8 +228,6 @@ public class VideoPage extends JPanel {
                 streamExtractor.fetchPage();
                 channelURL = streamExtractor.getUploaderUrl();
                 videoTitle.setText(streamExtractor.getName());
-                System.out.println("streamExtractor.getSubChannelName())");
-                System.out.println(streamExtractor.getUploaderName());
                 uplodoaderName.setText(streamExtractor.getUploaderName());
                 List<org.schabi.newpipe.extractor.Image> avatars =
                     streamExtractor.getUploaderAvatars();
@@ -218,15 +236,17 @@ public class VideoPage extends JPanel {
                         BufferedImage image = ImageIO.read(
                             new URI(avatars.get(0).getUrl()).toURL()
                         );
-                        if (image != null) {
-                            ImageIcon icon = new ImageIcon(image);
-                            // Create a JLabel to hold the icon
-                            uplodoaderName.setIcon(icon);
-                        }
+                        uploaderAvatar.setImage(image);
                     } catch (URISyntaxException e) {
                         e.printStackTrace();
                     }
                 }
+                uplodoaderSubCountLabel.setText(
+                    CommonUtil.numberToStringUnit(
+                            streamExtractor.getUploaderSubscriberCount()
+                        ) +
+                        " subscribers"
+                );
                 List<VideoStream> videoStreams =
                     streamExtractor.getVideoOnlyStreams();
                 currentVideoStream = videoStreams.get(0);
@@ -235,9 +255,12 @@ public class VideoPage extends JPanel {
                 currentAudioStream = audioStreams.get(0);
                 videoQM.addAll(videoStreams);
                 audioQM.addAll(audioStreams);
+                String timeString =
+                    "/" + CommonUtil.getTimeString(streamExtractor.getLength());
                 //System.out.println("audi size " + audioStreams.size());
 
                 SwingUtilities.invokeLater(() -> {
+                    videoLenghtLabel.setText(timeString);
                     isEnableComboxEvent = false;
                     videoQM.setSelectedItem(currentVideoStream);
                     audioQM.setSelectedItem(currentAudioStream);
@@ -284,8 +307,13 @@ public class VideoPage extends JPanel {
                 cellHasFocus
             );
             if (value instanceof VideoStream videoStream) {
+                String codec = videoStream.getCodec();
+                int dotIndex = codec.indexOf('.');
+                if (dotIndex > -1) {
+                    codec = codec.subSequence(0, dotIndex).toString();
+                }
                 setText(
-                    videoStream.getCodec() +
+                    codec +
                         " " +
                         videoStream.getResolution() +
                         " " +
@@ -315,8 +343,18 @@ public class VideoPage extends JPanel {
                 cellHasFocus
             );
             if (value instanceof AudioStream audioStream) {
+                String codec = audioStream.getCodec();
+                int dotIndex = codec.indexOf('.');
+                if (dotIndex > -1) {
+                    codec = codec.subSequence(0, dotIndex).toString();
+                }
                 setText(
-                    audioStream.getCodec() + " " + audioStream.getBitrate()
+                    codec +
+                        " " +
+                        CommonUtil.numberToStringUnit(
+                            audioStream.getBitrate()
+                        ) +
+                        "bps"
                 );
             }
             return this;
@@ -364,10 +402,16 @@ public class VideoPage extends JPanel {
 
         @Override
         public void timeChanged(MediaPlayer mediaPlayer, long newTime) {
-            String newTimeString = getTimeString(newTime);
+            long newTimeSec = newTime / 1000;
+            if (newTimeSec != currentTimestamp) {
+                String newTimeString = CommonUtil.getTimeString(newTime / 1000);
+                SwingUtilities.invokeLater(() -> {
+                    currentTimestampLabel.setText(newTimeString);
+                });
+            }
+
             int newTimeSlid = (int) (newTime / videoLengthDiff);
             SwingUtilities.invokeLater(() -> {
-                videoTimestamp.setText(newTimeString);
                 if (playbackSlider.getValueIsAdjusting()) {
                     return;
                 }
@@ -460,20 +504,9 @@ public class VideoPage extends JPanel {
 
         @Override
         public void mediaPlayerReady(MediaPlayer mediaPlayer) {
-            long lenght = mediaPlayer.status().length();
-            videoLenght.setText("/" + getTimeString(lenght));
-            videoLengthDiff = (double) lenght / (double) Integer.MAX_VALUE;
-        }
-
-        private String getTimeString(long time) {
-            Duration duration = Duration.ofMillis(time);
-            long hours = duration.toHours();
-            long minutes = duration.toMinutesPart(); // toMinutesPart() in Java 9+, use arithmetic for Java 8
-            long seconds = duration.toSecondsPart(); // toSecondsPart() in Java 9+, use arithmetic for Java 8
-            if (hours == 0) {
-                return String.format("%02d:%02d", minutes, seconds);
-            }
-            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+            videoLengthDiff =
+                ((double) mediaPlayer.status().length()) /
+                ((double) Integer.MAX_VALUE);
         }
     }
 

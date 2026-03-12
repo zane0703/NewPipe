@@ -8,6 +8,7 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+    id("com.gradleup.shadow")  version "8.3.10"
 }
 
 repositories {
@@ -45,6 +46,11 @@ dependencies {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+tasks.jar {
+    manifest {
+        attributes("Main-Class" to "org.zane.newpipe.App")
     }
 }
 

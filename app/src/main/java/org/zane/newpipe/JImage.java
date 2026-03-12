@@ -2,10 +2,12 @@ package org.zane.newpipe;
 
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 public class JImage extends JPanel {
 
@@ -22,7 +24,6 @@ public class JImage extends JPanel {
     public JImage(BufferedImage image) {
         //this.setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         this.image = image;
-        this();
         setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
     }
 
@@ -57,9 +58,13 @@ public class JImage extends JPanel {
         int maxW = maxSize.width; // Your hard maximum width
         int maxH = maxSize.height; // Your hard maximum height
         double aspectRatio = (double) image.getWidth() / image.getHeight();
+        Window topLevelWindow = SwingUtilities.getWindowAncestor(this);
 
         // Calculate width/height based on current parent size or max bounds
-        int targetW = Math.min(getParent().getWidth(), maxW);
+        int targetW = Math.min(
+            Math.min(getParent().getWidth(), maxW),
+            topLevelWindow.getWidth()
+        );
         int targetH = (int) (targetW / aspectRatio);
 
         if (targetH > Math.min(getParent().getHeight(), maxH)) {
