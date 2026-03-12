@@ -34,7 +34,6 @@ public class SearchResultPage extends JPanel {
                     query
                 );
                 se.fetchPage();
-
                 InfoItemsPage<InfoItem> itp = se.getInitialPage();
                 List<InfoItem> items = itp.getItems();
                 Color transparent = new Color(0, 0, 0, 0);
@@ -51,15 +50,14 @@ public class SearchResultPage extends JPanel {
                     BufferedImage image = ImageIO.read(
                         new URI(item.getThumbnails().get(0).getUrl()).toURL()
                     );
-                    if (image != null) {
-                        ImageIcon icon = new ImageIcon(image);
-                        // Create a JLabel to hold the icon
-                        JLabel thumbnaillabel = new JLabel(icon);
-                        thumbnaillabel.setMaximumSize(new Dimension(5, 5));
-                        SwingUtilities.invokeLater(() ->
-                            searchResultItem.add(thumbnaillabel)
-                        );
-                    }
+                    //JPanel t = new JPanel(new SpringLayout());
+                    JImage thumbnaillabel = new JImage(image);
+                    thumbnaillabel.setMaximumSize(new Dimension(500, 500));
+                    thumbnaillabel.repaint();
+                    //t.add(thumbnaillabel);
+                    SwingUtilities.invokeLater(() ->
+                        searchResultItem.add(thumbnaillabel)
+                    );
                     JPanel infoPanel = new JPanel(new GridLayout(2, 1));
                     JLabel itemTitle = new JLabel();
                     infoPanel.setBackground(transparent);
@@ -70,11 +68,12 @@ public class SearchResultPage extends JPanel {
                         JLabel uploaderLabel = new JLabel(
                             streamInfoItem.getUploaderName()
                         );
+
                         uploaderLabel.setForeground(Color.LIGHT_GRAY);
                         infoPanel.add(uploaderLabel);
                     }
                     searchResultItem.addMouseListener(
-                        new PanelClickListener(item, searchResultItem)
+                        new PanelClickListener(item)
                     );
 
                     SwingUtilities.invokeLater(() ->
@@ -99,11 +98,9 @@ public class SearchResultPage extends JPanel {
     private class PanelClickListener implements MouseListener {
 
         private final InfoItem infoItem;
-        private final JPanel jPanel;
 
-        public PanelClickListener(InfoItem infoItem, JPanel jPanel) {
+        public PanelClickListener(InfoItem infoItem) {
             this.infoItem = infoItem;
-            this.jPanel = jPanel;
         }
 
         @Override
@@ -128,12 +125,12 @@ public class SearchResultPage extends JPanel {
 
         @Override
         public void mouseEntered(MouseEvent e) {
-            jPanel.setBackground(Color.DARK_GRAY);
+            e.getComponent().setBackground(Color.DARK_GRAY);
         }
 
         @Override
         public void mouseExited(MouseEvent e) {
-            jPanel.setBackground(Color.BLACK);
+            e.getComponent().setBackground(Color.BLACK);
         }
     }
 }

@@ -26,6 +26,19 @@ dependencies {
     implementation(libs.guava)
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.0")
     implementation("uk.co.caprica:vlcj:4.12.1")
+    val flatlafVersion = "3.7.1"
+    implementation( "com.formdev:flatlaf:${flatlafVersion}" )
+    implementation( "com.formdev:flatlaf:${flatlafVersion}:linux-x86_64@so" )
+    implementation( "com.formdev:flatlaf:${flatlafVersion}:macos-arm64@dylib" )
+    implementation( "com.formdev:flatlaf:${flatlafVersion}:macos-x86_64@dylib" )
+    implementation( "com.formdev:flatlaf:${flatlafVersion}:windows-x86_64@dll" )
+
+        // 32-bit (not needed if you bundle a 64-bit JRE with your application)
+    implementation( "com.formdev:flatlaf:${flatlafVersion}:windows-x86@dll" )
+
+        // ARM 64-bit (not needed if your application does not support Windows on ARM)
+    implementation( "com.formdev:flatlaf:${flatlafVersion}:windows-arm64@dll" )
+    implementation( "com.formdev:flatlaf-extras:${flatlafVersion}" )
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

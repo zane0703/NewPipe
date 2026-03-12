@@ -3,6 +3,7 @@
  */
 package org.zane.newpipe;
 
+import com.formdev.flatlaf.IntelliJTheme;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import javax.swing.*;
@@ -118,52 +119,8 @@ public class App extends JFrame {
 
     public static void main(String[] args) {
         NewPipe.init(new Downloader());
-        String[][] styleKey = {
-            {
-                "OptionPane.background",
-                "InternalFrame.background",
-                "Panel.background",
-                "Frame.background",
-            },
-            {
-                "TextField.background",
-                "Label.background",
-                "PasswordField.background",
-            },
-        };
-        String[] whiteStyle = {
-            "RadioButton.foreground",
-            "TextArea.foreground",
-            "OptionPane.messageForeground",
-            "Label.foreground",
-            "TextField.foreground",
-            "Button.foreground",
-            "TextField.caretForeground",
-            "PasswordField.foreground",
-            "PasswordField.caretForeground",
-        };
-        for (int i = 0; i < 3; i++) {
-            UIManager.put(styleKey[0][i], new Color(10, 10, 10));
-            UIManager.put(styleKey[1][i], new Color(50, 50, 50));
-        }
-        for (String i : whiteStyle) {
-            UIManager.put(i, new Color(255, 255, 255));
-        }
-        UIManager.put("OptionPane.cancelButtonText", "Back");
-        UIManager.put("Button.background", new Color(60, 60, 60));
-        UIManager.put("RadioButton.background", new Color(10, 10, 10));
-        UIManager.put("Button.select", new Color(100, 100, 100));
-        UIManager.put(
-            "TextField.border",
-            BorderFactory.createLineBorder(new Color(50, 50, 50))
-        );
-        UIManager.put(
-            "Button.border",
-            BorderFactory.createLineBorder(new Color(10, 10, 10))
-        );
-        UIManager.put(
-            "PasswordField.border",
-            BorderFactory.createLineBorder(new Color(50, 50, 50))
+        IntelliJTheme.setup(
+            App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
         );
         SwingUtilities.invokeLater(() -> {
             App main = new App();

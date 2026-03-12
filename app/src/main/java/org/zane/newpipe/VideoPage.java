@@ -1,9 +1,12 @@
 package org.zane.newpipe;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
@@ -31,7 +34,6 @@ public class VideoPage extends JPanel {
     private final App app;
     private CallbackMediaPlayerComponent mediaPlayerComponent;
     private JPanel videoContol;
-    private boolean isStop = false;
     private JComboBox videoQ;
     private DefaultComboBoxModel<VideoStream> videoQM;
     private JComboBox audioQ;
@@ -45,6 +47,11 @@ public class VideoPage extends JPanel {
     private JLabel videoLenght;
     private JLabel videoTitle;
     private JLabel uplodoaderName;
+    private String channelURL;
+    private double videoLengthDiff;
+    private FlatSVGIcon playIcom;
+    private FlatSVGIcon pauseIcom;
+    private JButton playButton;
 
     public VideoPage(App app) {
         this.app = app;
@@ -68,39 +75,52 @@ public class VideoPage extends JPanel {
             }
         );
         mediaPlayerComponent = new CallbackMediaPlayerComponent();
+        final MediaPlayer mediaPlayer = mediaPlayerComponent.mediaPlayer();
         mediaPlayerComponent.setMaximumSize(new Dimension(1000, 500));
-        mediaPlayerComponent
-            .mediaPlayer()
+        mediaPlayer
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
         this.add(mediaPlayerComponent);
         // c.gridy = 1;
 
-        playbackSlider = new JSlider(SwingConstants.HORIZONTAL, 0, 100, 0);
+        playbackSlider = new JSlider(
+            SwingConstants.HORIZONTAL,
+            0,
+            Integer.MAX_VALUE,
+            0
+        );
 
         playbackSlider.addChangeListener(e -> {
             if (playbackSlider.getValueIsAdjusting() || isPositionChanged) {
                 return;
             }
-            mediaPlayerComponent
-                .mediaPlayer()
+            System.out.println("change timestamp");
+            mediaPlayer
                 .controls()
-                .setPosition(playbackSlider.getValue() / 100.0f);
+                .setTime((long) (playbackSlider.getValue() * videoLengthDiff));
         });
         this.add(playbackSlider);
         //c.gridy = 2;
         videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
         this.add(videoContol);
-        JButton playButton = new JButton("pause");
+        try {
+            playIcom = new FlatSVGIcon(
+                getClass().getResourceAsStream("/icon/ic_play_arrow.svg")
+            );
+            pauseIcom = new FlatSVGIcon(
+                getClass().getResourceAsStream("/icon/ic_pause.svg")
+            );
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        playButton = new JButton(playIcom);
         playButton.addActionListener(e -> {
-            if (isStop) {
-                mediaPlayerComponent.mediaPlayer().controls().play();
-                playButton.setText("pause");
+            if (mediaPlayer.status().isPlaying()) {
+                mediaPlayer.controls().pause();
             } else {
-                mediaPlayerComponent.mediaPlayer().controls().pause();
-                playButton.setText("play");
+                mediaPlayer.controls().play();
             }
-            isStop = !isStop;
         });
         videoContol.add(playButton);
         videoTimestamp = new JLabel("--:--:--");
@@ -115,9 +135,8 @@ public class VideoPage extends JPanel {
                 e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
             ) {
                 if (e.getItem() instanceof VideoStream videoStream) {
-                    MediaPlayer mediaPlayer =
-                        mediaPlayerComponent.mediaPlayer();
                     MediaApi media = mediaPlayer.media();
+                    boolean isPlaying = mediaPlayer.status().isPlaying();
                     final long currentTime = mediaPlayer.status().time();
                     media.prepare(
                         videoStream.getContent(),
@@ -131,7 +150,7 @@ public class VideoPage extends JPanel {
                             MediaSlavePriority.HIGH,
                             currentAudioStream.getContent()
                         );
-                    if (!isStop) {
+                    if (isPlaying) {
                         mediaPlayer.controls().play();
                     }
                     currentVideoStream = videoStream;
@@ -147,9 +166,8 @@ public class VideoPage extends JPanel {
                 e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
             ) {
                 if (e.getItem() instanceof AudioStream audioStream) {
-                    MediaPlayer mediaPlayer =
-                        mediaPlayerComponent.mediaPlayer();
                     MediaApi media = mediaPlayer.media();
+                    boolean isPlaying = mediaPlayer.status().isPlaying();
                     final long currentTime = mediaPlayer.status().time();
                     media.prepare(
                         currentVideoStream.getContent(),
@@ -163,7 +181,7 @@ public class VideoPage extends JPanel {
                             MediaSlavePriority.HIGH,
                             audioStream.getContent()
                         );
-                    if (!isStop) {
+                    if (isPlaying) {
                         mediaPlayer.controls().play();
                     }
                     currentAudioStream = audioStream;
@@ -177,6 +195,7 @@ public class VideoPage extends JPanel {
         this.add(videoTitlePanel);
         JPanel uploaderInfo = new JPanel(new FlowLayout(FlowLayout.LEFT));
         uplodoaderName = new JLabel("", SwingConstants.LEFT);
+        uploaderInfo.addMouseListener(new PanelClickListener());
         uploaderInfo.add(uplodoaderName);
         this.add(uploaderInfo);
     }
@@ -187,6 +206,7 @@ public class VideoPage extends JPanel {
                 StreamExtractor streamExtractor =
                     ServiceList.YouTube.getStreamExtractor(videoUrl);
                 streamExtractor.fetchPage();
+                channelURL = streamExtractor.getUploaderUrl();
                 videoTitle.setText(streamExtractor.getName());
                 System.out.println("streamExtractor.getSubChannelName())");
                 System.out.println(streamExtractor.getUploaderName());
@@ -317,13 +337,19 @@ public class VideoPage extends JPanel {
         public void buffering(MediaPlayer mediaPlayer, float newCache) {}
 
         @Override
-        public void playing(MediaPlayer mediaPlayer) {}
+        public void playing(MediaPlayer mediaPlayer) {
+            playButton.setIcon(pauseIcom);
+        }
 
         @Override
-        public void paused(MediaPlayer mediaPlayer) {}
+        public void paused(MediaPlayer mediaPlayer) {
+            playButton.setIcon(playIcom);
+        }
 
         @Override
-        public void stopped(MediaPlayer mediaPlayer) {}
+        public void stopped(MediaPlayer mediaPlayer) {
+            playButton.setIcon(playIcom);
+        }
 
         @Override
         public void forward(MediaPlayer mediaPlayer) {}
@@ -332,11 +358,23 @@ public class VideoPage extends JPanel {
         public void backward(MediaPlayer mediaPlayer) {}
 
         @Override
-        public void finished(MediaPlayer mediaPlayer) {}
+        public void finished(MediaPlayer mediaPlayer) {
+            playButton.setIcon(playIcom);
+        }
 
         @Override
         public void timeChanged(MediaPlayer mediaPlayer, long newTime) {
-            videoTimestamp.setText(getTimeString(newTime));
+            String newTimeString = getTimeString(newTime);
+            int newTimeSlid = (int) (newTime / videoLengthDiff);
+            SwingUtilities.invokeLater(() -> {
+                videoTimestamp.setText(newTimeString);
+                if (playbackSlider.getValueIsAdjusting()) {
+                    return;
+                }
+                isPositionChanged = true;
+                playbackSlider.setValue(newTimeSlid);
+                isPositionChanged = false;
+            });
         }
 
         @Override
@@ -344,14 +382,14 @@ public class VideoPage extends JPanel {
             MediaPlayer mediaPlayer,
             float newPosition
         ) {
-            if (playbackSlider.getValueIsAdjusting()) {
-                return;
-            }
-            isPositionChanged = true;
-            playbackSlider.setValue((int) (newPosition * 100));
-            SwingUtilities.invokeLater(() -> {
-                isPositionChanged = false;
-            });
+            // if (playbackSlider.getValueIsAdjusting()) {
+            //     return;
+            // }
+            // isPositionChanged = true;
+            // playbackSlider.setValue((int) (newPosition * 100));
+            // SwingUtilities.invokeLater(() -> {
+            //     isPositionChanged = false;
+            // });
         }
 
         @Override
@@ -422,9 +460,9 @@ public class VideoPage extends JPanel {
 
         @Override
         public void mediaPlayerReady(MediaPlayer mediaPlayer) {
-            videoLenght.setText(
-                "/" + getTimeString(mediaPlayer.status().length())
-            );
+            long lenght = mediaPlayer.status().length();
+            videoLenght.setText("/" + getTimeString(lenght));
+            videoLengthDiff = (double) lenght / (double) Integer.MAX_VALUE;
         }
 
         private String getTimeString(long time) {
@@ -432,13 +470,36 @@ public class VideoPage extends JPanel {
             long hours = duration.toHours();
             long minutes = duration.toMinutesPart(); // toMinutesPart() in Java 9+, use arithmetic for Java 8
             long seconds = duration.toSecondsPart(); // toSecondsPart() in Java 9+, use arithmetic for Java 8
-
-            // For Java 8 compatibility, use arithmetic:
-            // long seconds = duration.getSeconds() % 60;
-            // long minutes = (duration.getSeconds() / 60) % 60;
-            // long hours = duration.getSeconds() / 3600;
-
+            if (hours == 0) {
+                return String.format("%02d:%02d", minutes, seconds);
+            }
             return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        }
+    }
+
+    private class PanelClickListener implements MouseListener {
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            // Your "onclick" logic goes here
+            app.nevigate(App.Page.CHANNEL, channelURL);
+        }
+
+        // Other MouseListener methods (must be implemented, even if empty)
+        @Override
+        public void mousePressed(MouseEvent e) {}
+
+        @Override
+        public void mouseReleased(MouseEvent e) {}
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            e.getComponent().setBackground(Color.DARK_GRAY);
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+            e.getComponent().setBackground(Color.BLACK);
         }
     }
 }
