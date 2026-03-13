@@ -261,10 +261,9 @@ public class VideoPage extends JPanel {
                 1
             ) {
                 currentSpeed = s.getSpeed();
-                speedBtm.setText(
-                    df.format(new BigDecimal(currentSpeed).divide(div)) + "x"
-                );
-                mediaPlayer.controls().setRate(currentSpeed / 100.0f);
+                BigDecimal speedDec = new BigDecimal(currentSpeed).divide(div);
+                speedBtm.setText(df.format(speedDec) + "x");
+                mediaPlayer.controls().setRate(speedDec.floatValue());
             }
         });
         videoContol.add(speedBtm);
