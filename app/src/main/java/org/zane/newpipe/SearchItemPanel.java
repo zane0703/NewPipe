@@ -47,8 +47,12 @@ public class SearchItemPanel extends JPanel {
             infoPanel.add(uploaderLabel);
             JLabel viewLabel = new JLabel(
                 CommonUtil.numberToStringUnit(streamInfoItem.getViewCount()) +
-                    " views"
+                    " views · " +
+                    CommonUtil.formatRelativeTime(
+                        streamInfoItem.getUploadDate().getLocalDateTime()
+                    )
             );
+
             viewLabel.setForeground(Color.LIGHT_GRAY);
             infoPanel.add(viewLabel);
         }

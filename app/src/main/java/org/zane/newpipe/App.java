@@ -4,6 +4,7 @@
 package org.zane.newpipe;
 
 import com.formdev.flatlaf.IntelliJTheme;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import java.awt.*;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -62,15 +63,25 @@ public class App extends JFrame {
             }
         );
         this.setLayout(new BorderLayout());
-        JPanel searchbar = new JPanel();
+        JPanel searchbar = new JPanel(new BorderLayout());
         searchbar.setBackground(new Color(255, 0, 0));
         this.add(searchbar, BorderLayout.NORTH);
         searchField = new JTextField(10);
 
-        searchbar.add(searchField);
+        searchbar.add(searchField, BorderLayout.CENTER);
         searchButton = new JButton();
-        searchButton.setText("search");
-        searchbar.add(searchButton);
+        try {
+            searchButton.setIcon(
+                new FlatSVGIcon(
+                    getClass().getResourceAsStream("/icon/ic_search.svg")
+                )
+            );
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        searchbar.add(searchButton, BorderLayout.LINE_END);
         JPanel defultPage = new JPanel(new BorderLayout());
         defultPage.add(
             new JLabel("Try searching to get started", SwingConstants.CENTER),
@@ -90,6 +101,9 @@ public class App extends JFrame {
         channelPage = new ChannelPage(this);
         this.setVisible(true);
         searchButton.addActionListener(e ->
+            nevigate(Page.SEARCH, searchField.getText())
+        );
+        searchField.addActionListener(e ->
             nevigate(Page.SEARCH, searchField.getText())
         );
     }

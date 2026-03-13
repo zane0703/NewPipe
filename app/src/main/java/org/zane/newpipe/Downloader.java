@@ -21,6 +21,7 @@ public class Downloader
             .followRedirects(HttpClient.Redirect.NORMAL)
             .connectTimeout(Duration.ofSeconds(10))
             .build();
+            System.out.println(httpClient.getClass());
     }
 
     public Response execute(Request request) {

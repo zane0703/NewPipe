@@ -11,14 +11,16 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Duration;
+import java.text.NumberFormat;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
+import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
 import uk.co.caprica.vlcj.media.MediaRef;
 import uk.co.caprica.vlcj.media.MediaSlavePriority;
@@ -32,14 +34,16 @@ import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent;
 public class VideoPage extends JPanel {
 
     private final App app;
-    private CallbackMediaPlayerComponent mediaPlayerComponent;
     private JPanel videoContol;
-    private JComboBox videoQ;
-    private DefaultComboBoxModel<VideoStream> videoQM;
-    private JComboBox audioQ;
-    private DefaultComboBoxModel<AudioStream> audioQM;
+    private JComboBox videoComboBox;
+    private DefaultComboBoxModel<VideoStream> videoModel;
+    private JComboBox audioComboBox;
+    private DefaultComboBoxModel<AudioStream> audioModel;
+    private JComboBox subtitleComboBox;
+    private DefaultComboBoxModel<SubtitlesStream> subtitleModel;
     private AudioStream currentAudioStream;
     private VideoStream currentVideoStream;
+    private SubtitlesStream currentSubtitlesStream;
     private boolean isEnableComboxEvent;
     private JSlider playbackSlider;
     private boolean isPositionChanged = false;
@@ -55,18 +59,30 @@ public class VideoPage extends JPanel {
     private FlatSVGIcon pauseIcom;
     private JButton playButton;
     private JImage uploaderAvatar;
+    private MediaPlayer mediaPlayer;
+    private JPanel relatedStreamsPanel;
+    private JViewport viewport;
+    private JPanel videodescriptionPanel;
+    private JPanel videoCommentPanel;
+    private JLabel viewCountLabel;
+    private JLabel likeCountLabel;
+    private NumberFormat numberFormat;
 
     public VideoPage(App app) {
         this.app = app;
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        numberFormat = NumberFormat.getInstance();
+        CallbackMediaPlayerComponent mediaPlayerComponent =
+            new CallbackMediaPlayerComponent();
+        mediaPlayer = mediaPlayerComponent.mediaPlayer();
         this.addComponentListener(
             new ComponentListener() {
                 @Override
                 public void componentHidden(ComponentEvent e) {
                     // Code to execute when the JPanel is hidden
                     //
-                    mediaPlayerComponent.mediaPlayer().controls().stop();
-                    mediaPlayerComponent.mediaPlayer().release();
+                    mediaPlayer.controls().stop();
+                    mediaPlayer.release();
                 }
 
                 @Override
@@ -77,22 +93,22 @@ public class VideoPage extends JPanel {
                 public void componentResized(ComponentEvent e) {}
             }
         );
-        mediaPlayerComponent = new CallbackMediaPlayerComponent();
-        final MediaPlayer mediaPlayer = mediaPlayerComponent.mediaPlayer();
         mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
         mediaPlayer
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
         this.add(mediaPlayerComponent);
         // c.gridy = 1;
+        JPanel playbackSliderRow = new JPanel(new BorderLayout());
 
+        currentTimestampLabel = new JLabel("00:00");
+        playbackSliderRow.add(currentTimestampLabel, BorderLayout.LINE_START);
         playbackSlider = new JSlider(
             SwingConstants.HORIZONTAL,
             0,
             Integer.MAX_VALUE,
             0
         );
-
         playbackSlider.addChangeListener(e -> {
             if (playbackSlider.getValueIsAdjusting() || isPositionChanged) {
                 return;
@@ -102,13 +118,18 @@ public class VideoPage extends JPanel {
                 .controls()
                 .setTime((long) (playbackSlider.getValue() * videoLengthDiff));
         });
-        this.add(playbackSlider);
-        //c.gridy = 2;
+        playbackSliderRow.add(playbackSlider, BorderLayout.CENTER);
+
+        videoLenghtLabel = new JLabel("/--:--:--");
+        playbackSliderRow.add(videoLenghtLabel, BorderLayout.LINE_END);
+        this.add(playbackSliderRow);
+
+        // video Contol
         videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
         this.add(videoContol);
         try {
             playIcom = new FlatSVGIcon(
-                getClass().getResourceAsStream("/icon/ic_play_arrow.svgz")
+                getClass().getResourceAsStream("/icon/ic_play_arrow.svg")
             );
             pauseIcom = new FlatSVGIcon(
                 getClass().getResourceAsStream("/icon/ic_pause.svg")
@@ -126,14 +147,13 @@ public class VideoPage extends JPanel {
             }
         });
         videoContol.add(playButton);
-        currentTimestampLabel = new JLabel("00:00");
-        videoContol.add(currentTimestampLabel);
-        videoLenghtLabel = new JLabel("/--:--:--");
-        videoContol.add(videoLenghtLabel);
-        videoQM = new DefaultComboBoxModel<>();
-        videoQ = new JComboBox<VideoStream>(videoQM);
-        videoQ.setRenderer(new VideoComboBoxRenderer());
-        videoQ.addItemListener(e -> {
+
+        videoModel = new DefaultComboBoxModel<>();
+
+        //ComboBox
+        videoComboBox = new JComboBox<VideoStream>(videoModel);
+        videoComboBox.setRenderer(new VideoComboBoxRenderer());
+        videoComboBox.addItemListener(e -> {
             if (
                 e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
             ) {
@@ -141,18 +161,12 @@ public class VideoPage extends JPanel {
                     MediaApi media = mediaPlayer.media();
                     boolean isPlaying = mediaPlayer.status().isPlaying();
                     final long currentTime = mediaPlayer.status().time();
-                    media.prepare(
-                        videoStream.getContent(),
-                        String.format(":start-time=%.3f", currentTime / 1000.0)
+                    playVideo(
+                        videoStream,
+                        currentAudioStream,
+                        currentSubtitlesStream,
+                        currentTime
                     );
-
-                    media
-                        .slaves()
-                        .add(
-                            MediaSlaveType.AUDIO,
-                            MediaSlavePriority.HIGH,
-                            currentAudioStream.getContent()
-                        );
                     if (isPlaying) {
                         mediaPlayer.controls().play();
                     }
@@ -160,30 +174,24 @@ public class VideoPage extends JPanel {
                 }
             }
         });
-        videoContol.add(videoQ);
-        audioQM = new DefaultComboBoxModel<>();
-        audioQ = new JComboBox<AudioStream>(audioQM);
-        audioQ.setRenderer(new AudioComboBoxRenderer());
-        audioQ.addItemListener(e -> {
+        videoContol.add(new JLabel("Video:"));
+        videoContol.add(videoComboBox);
+        audioModel = new DefaultComboBoxModel<>();
+        audioComboBox = new JComboBox<AudioStream>(audioModel);
+        audioComboBox.setRenderer(new AudioComboBoxRenderer());
+        audioComboBox.addItemListener(e -> {
             if (
                 e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
             ) {
                 if (e.getItem() instanceof AudioStream audioStream) {
-                    MediaApi media = mediaPlayer.media();
                     boolean isPlaying = mediaPlayer.status().isPlaying();
                     final long currentTime = mediaPlayer.status().time();
-                    media.prepare(
-                        currentVideoStream.getContent(),
-                        String.format(":start-time=%.3f", currentTime / 1000.0)
+                    playVideo(
+                        currentVideoStream,
+                        audioStream,
+                        currentSubtitlesStream,
+                        currentTime
                     );
-
-                    media
-                        .slaves()
-                        .add(
-                            MediaSlaveType.AUDIO,
-                            MediaSlavePriority.HIGH,
-                            audioStream.getContent()
-                        );
                     if (isPlaying) {
                         mediaPlayer.controls().play();
                     }
@@ -191,7 +199,43 @@ public class VideoPage extends JPanel {
                 }
             }
         });
-        videoContol.add(audioQ);
+        videoContol.add(new JLabel("Audio:"));
+        videoContol.add(audioComboBox);
+        subtitleModel = new DefaultComboBoxModel<SubtitlesStream>();
+        subtitleComboBox = new JComboBox<SubtitlesStream>(subtitleModel);
+        subtitleComboBox.setRenderer(new SubTitleComboBoxRenderer());
+        subtitleComboBox.addItemListener(e -> {
+            if (
+                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
+            ) {
+                boolean isPlaying = mediaPlayer.status().isPlaying();
+                final long currentTime = mediaPlayer.status().time();
+                if (e.getItem() instanceof SubtitlesStream subtitlesStream) {
+                    playVideo(
+                        currentVideoStream,
+                        currentAudioStream,
+                        subtitlesStream,
+                        currentTime
+                    );
+
+                    currentSubtitlesStream = subtitlesStream;
+                } else {
+                    playVideo(
+                        currentVideoStream,
+                        currentAudioStream,
+                        null,
+                        currentTime
+                    );
+                    currentSubtitlesStream = null;
+                }
+                if (isPlaying) {
+                    mediaPlayer.controls().play();
+                }
+            }
+        });
+        videoContol.add(new JLabel("Subtitle:"));
+        videoContol.add(subtitleComboBox);
+
         JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         videoTitle = new JLabel("", SwingConstants.LEFT);
         Font currentFont = videoTitle.getFont();
@@ -200,9 +244,11 @@ public class VideoPage extends JPanel {
         );
         videoTitlePanel.add(videoTitle);
         this.add(videoTitlePanel);
-        JPanel videoInfo = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel videoInfo = new JPanel(new BorderLayout());
         JPanel uploaderInfo = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JPanel uploaderSubInfo = new JPanel(new GridLayout(2, 1));
+        uploaderInfo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        uploaderSubInfo.setOpaque(false);
         uploaderAvatar = new JImage();
         uplodoaderName = new JLabel("", SwingConstants.LEFT);
         uplodoaderName.setFont(
@@ -216,8 +262,35 @@ public class VideoPage extends JPanel {
         uploaderSubInfo.add(uplodoaderName);
         uploaderSubInfo.add(uplodoaderSubCountLabel);
         uploaderInfo.add(uploaderSubInfo);
-        videoInfo.add(uploaderInfo);
+        videoInfo.add(uploaderInfo, BorderLayout.LINE_START);
+
+        JPanel likeAndViewPanel = new JPanel();
+        likeAndViewPanel.setLayout(
+            new BoxLayout(likeAndViewPanel, BoxLayout.Y_AXIS)
+        );
+        viewCountLabel = new JLabel();
+        likeAndViewPanel.add(viewCountLabel);
+        likeCountLabel = new JLabel();
+        try {
+            likeCountLabel.setIcon(
+                new FlatSVGIcon(
+                    getClass().getResourceAsStream("/icon/ic_thumb_up.svg")
+                )
+            );
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        likeAndViewPanel.add(likeCountLabel);
+        videoInfo.add(likeAndViewPanel, BorderLayout.LINE_END);
         this.add(videoInfo);
+        JViewport viewport = new JViewport();
+        relatedStreamsPanel = new JPanel();
+        relatedStreamsPanel.setLayout(
+            new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
+        );
+        viewport.setView(relatedStreamsPanel);
+        this.add(viewport);
     }
 
     public void showVideo(String videoUrl) {
@@ -249,34 +322,58 @@ public class VideoPage extends JPanel {
                 );
                 List<VideoStream> videoStreams =
                     streamExtractor.getVideoOnlyStreams();
-                currentVideoStream = videoStreams.get(0);
                 List<AudioStream> audioStreams =
                     streamExtractor.getAudioStreams();
+                List<SubtitlesStream> subtitlesStreams =
+                    streamExtractor.getSubtitlesDefault();
+                subtitlesStreams.addFirst(null);
+                currentVideoStream = videoStreams.get(0);
                 currentAudioStream = audioStreams.get(0);
-                videoQM.addAll(videoStreams);
-                audioQM.addAll(audioStreams);
-                String timeString =
-                    "/" + CommonUtil.getTimeString(streamExtractor.getLength());
+                currentSubtitlesStream = null;
+                videoModel.removeAllElements();
+                audioModel.removeAllElements();
+                videoModel.addAll(videoStreams);
+                audioModel.addAll(audioStreams);
+                subtitleModel.addAll(subtitlesStreams);
+
+                String timeString = CommonUtil.getTimeString(
+                    streamExtractor.getLength()
+                );
+                String viewCountString =
+                    numberFormat.format(streamExtractor.getViewCount()) +
+                    " views";
+                String likeCountString = CommonUtil.numberToStringUnit(
+                    streamExtractor.getLikeCount()
+                );
                 //System.out.println("audi size " + audioStreams.size());
 
                 SwingUtilities.invokeLater(() -> {
                     videoLenghtLabel.setText(timeString);
                     isEnableComboxEvent = false;
-                    videoQM.setSelectedItem(currentVideoStream);
-                    audioQM.setSelectedItem(currentAudioStream);
+                    videoModel.setSelectedItem(currentVideoStream);
+                    audioModel.setSelectedItem(currentAudioStream);
+                    subtitleModel.setSelectedItem(null);
                     isEnableComboxEvent = true;
-                    MediaPlayer MediaPlayer =
-                        mediaPlayerComponent.mediaPlayer();
-                    MediaApi media = MediaPlayer.media();
-                    media.prepare(currentVideoStream.getContent());
-                    media
-                        .slaves()
-                        .add(
-                            MediaSlaveType.AUDIO,
-                            MediaSlavePriority.HIGH,
-                            currentAudioStream.getContent()
-                        );
-                    MediaPlayer.controls().play();
+                    viewCountLabel.setText(viewCountString);
+                    likeCountLabel.setText(likeCountString);
+                    playVideo(currentVideoStream, currentAudioStream, null, 0);
+                    mediaPlayer.controls().play();
+                    try {
+                        relatedStreamsPanel.removeAll();
+                        for (InfoItem item : streamExtractor
+                            .getRelatedItems()
+                            .getItems()) {
+                            relatedStreamsPanel.add(
+                                new SearchItemPanel(app, item)
+                            );
+                        }
+                    } catch (
+                        ExtractionException
+                        | IOException
+                        | URISyntaxException e
+                    ) {
+                        e.printStackTrace();
+                    }
                 });
             } catch (ExtractionException | IOException e) {
                 e.printStackTrace();
@@ -286,7 +383,34 @@ public class VideoPage extends JPanel {
     }
 
     public void stop() {
-        mediaPlayerComponent.mediaPlayer().controls().stop();
+        mediaPlayer.controls().stop();
+    }
+
+    public void playVideo(
+        VideoStream videoStream,
+        AudioStream audioStream,
+        SubtitlesStream subtitlesStream,
+        long currentTime
+    ) {
+        MediaApi mediaApi = mediaPlayer.media();
+        mediaApi.prepare(
+            videoStream.getContent(),
+            String.format(":start-time=%.3f", currentTime / 1000.0)
+        );
+
+        mediaApi
+            .slaves()
+            .add(
+                MediaSlaveType.AUDIO,
+                MediaSlavePriority.HIGH,
+                currentAudioStream.getContent()
+            );
+        if (subtitlesStream != null) {
+            //System.out.println(subtitlesStream.getContent());
+            mediaPlayer
+                .subpictures()
+                .setSubTitleUri(subtitlesStream.getContent());
+        }
     }
 
     public class VideoComboBoxRenderer extends DefaultListCellRenderer {
@@ -356,6 +480,32 @@ public class VideoPage extends JPanel {
                         ) +
                         "bps"
                 );
+            }
+            return this;
+        }
+    }
+
+    public class SubTitleComboBoxRenderer extends DefaultListCellRenderer {
+
+        @Override
+        public Component getListCellRendererComponent(
+            JList<?> list,
+            Object value,
+            int index,
+            boolean isSelected,
+            boolean cellHasFocus
+        ) {
+            super.getListCellRendererComponent(
+                list,
+                value,
+                index,
+                isSelected,
+                cellHasFocus
+            );
+            if (value instanceof SubtitlesStream subtitlesStream) {
+                setText(subtitlesStream.getDisplayLanguageName());
+            } else if (value == null) {
+                setText("None");
             }
             return this;
         }
