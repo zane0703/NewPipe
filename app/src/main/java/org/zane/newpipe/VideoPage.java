@@ -9,8 +9,11 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.classfile.Superclass;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.List;
 import javax.imageio.ImageIO;
@@ -67,6 +70,9 @@ public class VideoPage extends JPanel {
     private JLabel viewCountLabel;
     private JLabel likeCountLabel;
     private NumberFormat numberFormat;
+    private int currentSpeed = 100;
+    private DecimalFormat df = new DecimalFormat("0.##");
+    private BigDecimal div = new BigDecimal(100);
 
     public VideoPage(App app) {
         this.app = app;
@@ -120,7 +126,7 @@ public class VideoPage extends JPanel {
         });
         playbackSliderRow.add(playbackSlider, BorderLayout.CENTER);
 
-        videoLenghtLabel = new JLabel("/--:--:--");
+        videoLenghtLabel = new JLabel("-:--:--");
         playbackSliderRow.add(videoLenghtLabel, BorderLayout.LINE_END);
         this.add(playbackSliderRow);
 
@@ -235,6 +241,33 @@ public class VideoPage extends JPanel {
         });
         videoContol.add(new JLabel("Subtitle:"));
         videoContol.add(subtitleComboBox);
+        JButton speedBtm = new JButton("1x");
+        speedBtm.addActionListener(e -> {
+            SpeedSelectorPanel s = new SpeedSelectorPanel();
+            JButton resetBtn = new JButton("Reset");
+            resetBtn.addActionListener(e2 -> s.reset());
+            Object[] options = new Object[] { resetBtn, "Ok", "Cancel" };
+            if (
+                JOptionPane.showOptionDialog(
+                    this,
+                    s,
+                    "Playback speed option",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[2]
+                ) ==
+                1
+            ) {
+                currentSpeed = s.getSpeed();
+                speedBtm.setText(
+                    df.format(new BigDecimal(currentSpeed).divide(div)) + "x"
+                );
+                mediaPlayer.controls().setRate(currentSpeed / 100.0f);
+            }
+        });
+        videoContol.add(speedBtm);
 
         JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         videoTitle = new JLabel("", SwingConstants.LEFT);
@@ -413,7 +446,7 @@ public class VideoPage extends JPanel {
         }
     }
 
-    public class VideoComboBoxRenderer extends DefaultListCellRenderer {
+    private class VideoComboBoxRenderer extends DefaultListCellRenderer {
 
         @Override
         public Component getListCellRendererComponent(
@@ -449,7 +482,7 @@ public class VideoPage extends JPanel {
         }
     }
 
-    public class AudioComboBoxRenderer extends DefaultListCellRenderer {
+    private class AudioComboBoxRenderer extends DefaultListCellRenderer {
 
         @Override
         public Component getListCellRendererComponent(
@@ -485,7 +518,7 @@ public class VideoPage extends JPanel {
         }
     }
 
-    public class SubTitleComboBoxRenderer extends DefaultListCellRenderer {
+    private class SubTitleComboBoxRenderer extends DefaultListCellRenderer {
 
         @Override
         public Component getListCellRendererComponent(
@@ -511,7 +544,7 @@ public class VideoPage extends JPanel {
         }
     }
 
-    public class MyMediaPlayerEventListener
+    private class MyMediaPlayerEventListener
         implements MediaPlayerEventListener
     {
 
@@ -683,6 +716,55 @@ public class VideoPage extends JPanel {
         @Override
         public void mouseExited(MouseEvent e) {
             e.getComponent().setBackground(Color.BLACK);
+        }
+    }
+
+    private class SpeedSelectorPanel extends JPanel {
+
+        private int speed;
+        private JSlider slider;
+
+        public SpeedSelectorPanel() {
+            setLayout(new BorderLayout());
+            speed = currentSpeed;
+            JLabel speedLanel = new JLabel(
+                df.format(new BigDecimal(currentSpeed).divide(div)) + "x",
+                SwingConstants.CENTER
+            );
+            JPanel speedLabelPanel = new JPanel(new BorderLayout());
+            speedLabelPanel.add(new JLabel("0.1x"), BorderLayout.LINE_START);
+            speedLabelPanel.add(speedLanel, BorderLayout.CENTER);
+            speedLabelPanel.add(new JLabel("10x"), BorderLayout.LINE_END);
+            JPanel subPanel = new JPanel();
+            subPanel.setLayout(new BoxLayout(subPanel, BoxLayout.Y_AXIS));
+            JButton subBtn = new JButton("-25%");
+            slider = new JSlider(10, 1000, currentSpeed);
+            JButton addBtn = new JButton("+25%");
+            this.add(subBtn, BorderLayout.LINE_START);
+            subPanel.add(speedLabelPanel);
+            subPanel.add(slider);
+            this.add(addBtn, BorderLayout.LINE_END);
+            subBtn.addActionListener(e -> slider.setValue(speed - 25));
+            addBtn.addActionListener(e -> slider.setValue(speed + 25));
+            slider.addChangeListener(e -> {
+                speed = slider.getValue();
+                System.out.println("resrt2");
+                System.out.println(speed);
+                speedLanel.setText(
+                    df.format(new BigDecimal(speed).divide(div)) + "x"
+                );
+            });
+
+            this.add(subPanel);
+        }
+
+        public void reset() {
+            System.out.println("resrt");
+            slider.setValue(100);
+        }
+
+        public int getSpeed() {
+            return speed;
         }
     }
 }

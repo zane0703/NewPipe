@@ -47,7 +47,7 @@ public class App extends JFrame {
                     java.awt.event.WindowEvent windowEvent
                 ) {
                     if (
-                        javax.swing.JOptionPane.showConfirmDialog(
+                        JOptionPane.showConfirmDialog(
                             App.this,
                             "Are you sure you want to close this window?",
                             "Close NewPipe?",

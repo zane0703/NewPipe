@@ -1,11 +1,14 @@
 package org.zane.newpipe;
 
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 public class CommonUtil {
+
+    private static DecimalFormat df = new DecimalFormat("#.#");
 
     public static String getTimeString(long time) {
         Duration duration = Duration.ofSeconds(time);
@@ -23,7 +26,7 @@ public class CommonUtil {
         if (num >= 1_000_000_000) {
             double dec = num / 1_000_000_000.0;
             if (dec < 10) {
-                return String.format("%.1fB", dec);
+                return df.format(dec) + "B";
             } else {
                 return String.format("%.0fB", dec);
             }
@@ -31,7 +34,7 @@ public class CommonUtil {
         if (num >= 1_000_000) {
             double dec = num / 1_000_000.0;
             if (dec < 10) {
-                return String.format("%.1fM", dec);
+                return df.format(dec) + "M";
             } else {
                 return String.format("%.0fM", dec);
             }
@@ -39,7 +42,7 @@ public class CommonUtil {
         if (num >= 1_000) {
             double dec = num / 1_000.0;
             if (dec < 10) {
-                return String.format("%.1fK", dec);
+                return df.format(dec) + "M";
             } else {
                 return String.format("%.0fK", dec);
             }
