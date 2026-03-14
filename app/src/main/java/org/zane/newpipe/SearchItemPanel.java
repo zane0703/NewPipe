@@ -27,7 +27,7 @@ public class SearchItemPanel extends JPanel {
         );
         //JPanel t = new JPanel(new SpringLayout());
         JImage thumbnaillabel = new JImage(image);
-        thumbnaillabel.setMaximumSize(new Dimension(500, 500));
+        thumbnaillabel.setMaximumSize(new Dimension(200, 200));
         thumbnaillabel.repaint();
         //t.add(thumbnaillabel);
         SwingUtilities.invokeLater(() -> this.add(thumbnaillabel));

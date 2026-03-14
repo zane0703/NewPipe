@@ -5,6 +5,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import javax.swing.JTextArea;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
 
 public class CommonUtil {
 
@@ -80,5 +83,17 @@ public class CommonUtil {
         } else {
             return "just now";
         }
+    }
+
+    public static JTextArea createUneditableTextArea() {
+        JTextArea textArea = new JTextArea();
+        textArea.setEditable(false);
+        textArea.setCursor(null);
+        textArea.setOpaque(false);
+        textArea.setFocusable(false);
+        textArea.setLineWrap(true);
+        textArea.setFont(UIManager.getFont("Label.font"));
+        textArea.setBorder(new EmptyBorder(5, 5, 5, 5));
+        return textArea;
     }
 }

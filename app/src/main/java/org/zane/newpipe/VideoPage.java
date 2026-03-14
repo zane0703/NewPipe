@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -63,9 +64,8 @@ public class VideoPage extends JPanel {
     private JButton playButton;
     private JImage uploaderAvatar;
     private MediaPlayer mediaPlayer;
-    private JPanel relatedStreamsPanel;
-    private JViewport viewport;
-    private JPanel videodescriptionPanel;
+    private JLabel publishDateLabel;
+    private JLabel videoDescriptionTest;
     private JPanel videoCommentPanel;
     private JLabel viewCountLabel;
     private JLabel likeCountLabel;
@@ -73,9 +73,14 @@ public class VideoPage extends JPanel {
     private int currentSpeed = 100;
     private DecimalFormat df = new DecimalFormat("0.##");
     private BigDecimal div = new BigDecimal(100);
+    private JPanel relatedStreamsPanel;
+    private DateTimeFormatter dtf = DateTimeFormatter.ofPattern(
+        "dd MMMM yyyy HH:mm:ss"
+    );
 
     public VideoPage(App app) {
         this.app = app;
+        Class pageClass = getClass();
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         numberFormat = NumberFormat.getInstance();
         CallbackMediaPlayerComponent mediaPlayerComponent =
@@ -99,6 +104,7 @@ public class VideoPage extends JPanel {
                 public void componentResized(ComponentEvent e) {}
             }
         );
+
         mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
         mediaPlayer
             .events()
@@ -135,10 +141,10 @@ public class VideoPage extends JPanel {
         this.add(videoContol);
         try {
             playIcom = new FlatSVGIcon(
-                getClass().getResourceAsStream("/icon/ic_play_arrow.svg")
+                pageClass.getResourceAsStream("/icon/ic_play_arrow.svg")
             );
             pauseIcom = new FlatSVGIcon(
-                getClass().getResourceAsStream("/icon/ic_pause.svg")
+                pageClass.getResourceAsStream("/icon/ic_pause.svg")
             );
         } catch (IOException e) {
             e.printStackTrace();
@@ -282,6 +288,7 @@ public class VideoPage extends JPanel {
         uploaderInfo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         uploaderSubInfo.setOpaque(false);
         uploaderAvatar = new JImage();
+        uploaderAvatar.setMaximumSize(new Dimension(50, 50));
         uplodoaderName = new JLabel("", SwingConstants.LEFT);
         uplodoaderName.setFont(
             currentFont.deriveFont(Font.BOLD, currentFont.getSize())
@@ -306,7 +313,7 @@ public class VideoPage extends JPanel {
         try {
             likeCountLabel.setIcon(
                 new FlatSVGIcon(
-                    getClass().getResourceAsStream("/icon/ic_thumb_up.svg")
+                    pageClass.getResourceAsStream("/icon/ic_thumb_up.svg")
                 )
             );
         } catch (IOException e) {
@@ -316,11 +323,58 @@ public class VideoPage extends JPanel {
         likeAndViewPanel.add(likeCountLabel);
         videoInfo.add(likeAndViewPanel, BorderLayout.LINE_END);
         this.add(videoInfo);
-        JViewport viewport = new JViewport();
         relatedStreamsPanel = new JPanel();
         relatedStreamsPanel.setLayout(
             new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
         );
+        videoCommentPanel = new JPanel();
+        videoCommentPanel.setLayout(
+            new BoxLayout(videoCommentPanel, BoxLayout.Y_AXIS)
+        );
+        JPanel videoDescriptionPanel = new JPanel();
+        videoDescriptionPanel.setLayout(
+            new BoxLayout(videoDescriptionPanel, BoxLayout.Y_AXIS)
+        );
+        publishDateLabel = new JLabel();
+        videoDescriptionPanel.add(publishDateLabel);
+        videoDescriptionTest = new JLabel();
+        videoDescriptionPanel.add(videoDescriptionTest);
+        JPanel navigationBar = new JPanel(new BorderLayout());
+        JViewport viewport = new JViewport();
+        try {
+            JButton commentBtn = new JButton(
+                new FlatSVGIcon(
+                    pageClass.getResourceAsStream("/icon/ic_comment.svg")
+                )
+            );
+            commentBtn.addActionListener(e ->
+                viewport.setView(videoCommentPanel)
+            );
+            navigationBar.add(commentBtn, BorderLayout.LINE_START);
+            JButton relatedStreamsBtn = new JButton(
+                new FlatSVGIcon(
+                    pageClass.getResourceAsStream("/icon/ic_art_track.svg")
+                )
+            );
+            relatedStreamsBtn.addActionListener(e ->
+                viewport.setView(relatedStreamsPanel)
+            );
+            navigationBar.add(relatedStreamsBtn, BorderLayout.CENTER);
+            JButton descriptionBtn = new JButton(
+                new FlatSVGIcon(
+                    pageClass.getResourceAsStream("/icon/ic_description.svg")
+                )
+            );
+            descriptionBtn.addActionListener(e ->
+                viewport.setView(videoDescriptionPanel)
+            );
+            navigationBar.add(descriptionBtn, BorderLayout.LINE_END);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        this.add(navigationBar);
+
         viewport.setView(relatedStreamsPanel);
         this.add(viewport);
     }
@@ -378,18 +432,19 @@ public class VideoPage extends JPanel {
                     streamExtractor.getLikeCount()
                 );
                 //System.out.println("audi size " + audioStreams.size());
-
+                String UploadDateString =
+                    "Published on " +
+                    dtf.format(
+                        streamExtractor.getUploadDate().getLocalDateTime()
+                    );
+                String videoDescriptionString =
+                    "<html>" +
+                    streamExtractor.getDescription().getContent() +
+                    "</html>";
                 SwingUtilities.invokeLater(() -> {
                     videoLenghtLabel.setText(timeString);
-                    isEnableComboxEvent = false;
-                    videoModel.setSelectedItem(currentVideoStream);
-                    audioModel.setSelectedItem(currentAudioStream);
-                    subtitleModel.setSelectedItem(null);
-                    isEnableComboxEvent = true;
-                    viewCountLabel.setText(viewCountString);
-                    likeCountLabel.setText(likeCountString);
-                    playVideo(currentVideoStream, currentAudioStream, null, 0);
-                    mediaPlayer.controls().play();
+                    publishDateLabel.setText(UploadDateString);
+                    videoDescriptionTest.setText(videoDescriptionString);
                     try {
                         relatedStreamsPanel.removeAll();
                         for (InfoItem item : streamExtractor
@@ -406,6 +461,15 @@ public class VideoPage extends JPanel {
                     ) {
                         e.printStackTrace();
                     }
+                    isEnableComboxEvent = false;
+                    videoModel.setSelectedItem(currentVideoStream);
+                    audioModel.setSelectedItem(currentAudioStream);
+                    subtitleModel.setSelectedItem(null);
+                    isEnableComboxEvent = true;
+                    viewCountLabel.setText(viewCountString);
+                    likeCountLabel.setText(likeCountString);
+                    playVideo(currentVideoStream, currentAudioStream, null, 0);
+                    mediaPlayer.controls().play();
                 });
             } catch (ExtractionException | IOException e) {
                 e.printStackTrace();
