@@ -27,6 +27,7 @@ public class ChannelPage extends JPanel {
     private JImage banner;
     private JLabel channelName;
     private JImage channelAvatar;
+    private JLabel channelSubCountLabel;
 
     public ChannelPage(App app) {
         this.app = app;
@@ -34,11 +35,21 @@ public class ChannelPage extends JPanel {
         banner = new JImage();
         this.add(banner);
         JPanel ChannelInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel ChannelSubInfoPanel = new JPanel();
+        ChannelSubInfoPanel.setLayout(
+            new BoxLayout(ChannelSubInfoPanel, BoxLayout.Y_AXIS)
+        );
         channelAvatar = new JImage();
-        channelAvatar.setMaximumSize(new Dimension(100, 100));
+        channelAvatar.setMaximumSize(new Dimension(50, 50));
         ChannelInfoPanel.add(channelAvatar);
         channelName = new JLabel();
-        ChannelInfoPanel.add(channelName);
+        Font f = channelName.getFont();
+        channelName.setFont(f.deriveFont(Font.BOLD, f.getSize()));
+        ChannelSubInfoPanel.add(channelName);
+        channelSubCountLabel = new JLabel();
+        channelSubCountLabel.setForeground(Color.LIGHT_GRAY);
+        ChannelSubInfoPanel.add(channelSubCountLabel);
+        ChannelInfoPanel.add(ChannelSubInfoPanel);
         this.add(ChannelInfoPanel);
     }
 
@@ -49,12 +60,19 @@ public class ChannelPage extends JPanel {
                     ServiceList.YouTube.getChannelExtractor(channelURL);
                 channelExtractor.fetchPage();
                 List<Image> banners = channelExtractor.getBanners();
-                if (!banners.isEmpty()) {
-                    BufferedImage image = ImageIO.read(
+                BufferedImage imageb;
+                if (banners.isEmpty()) {
+                    imageb = ImageIO.read(
+                        getClass().getResourceAsStream(
+                            "/placeholder_channel_banner.png"
+                        )
+                    );
+                } else {
+                    imageb = ImageIO.read(
                         new URI(banners.get(0).getUrl()).toURL()
                     );
-                    banner.setImage(image);
                 }
+                banner.setImage(imageb);
                 List<Image> avatars = channelExtractor.getAvatars();
                 if (!avatars.isEmpty()) {
                     BufferedImage image = ImageIO.read(
@@ -63,10 +81,31 @@ public class ChannelPage extends JPanel {
                     channelAvatar.setImage(image);
                 }
                 channelName.setText(channelExtractor.getName());
+                channelSubCountLabel.setText(
+                    CommonUtil.numberToStringUnit(
+                            channelExtractor.getSubscriberCount()
+                        ) +
+                        " subscribers"
+                );
             } catch (ExtractionException | IOException | URISyntaxException e) {
                 e.printStackTrace();
             }
         })
             .start();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        Dimension size = super.getPreferredSize();
+        if (
+            SwingUtilities.getAncestorOfClass(JViewport.class, this) instanceof
+                JViewport viewport
+        ) {
+            return new Dimension(
+                Math.min(size.width, viewport.getWidth()),
+                size.height
+            );
+        }
+        return size;
     }
 }

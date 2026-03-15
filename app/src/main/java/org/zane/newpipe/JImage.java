@@ -59,10 +59,10 @@ public class JImage extends JPanel {
         Window topLevelWindow = SwingUtilities.getWindowAncestor(this);
 
         // Calculate width/height based on current parent size or max bounds
-        int targetW = Math.min(
-            Math.min(getParent().getWidth(), maxW),
-            topLevelWindow.getWidth()
-        );
+        int targetW = Math.min(getParent().getWidth(), maxW);
+        if (topLevelWindow != null) {
+            targetW = Math.min(targetW, topLevelWindow.getWidth());
+        }
         int targetH = (int) (targetW / aspectRatio);
 
         if (targetH > Math.min(getParent().getHeight(), maxH)) {

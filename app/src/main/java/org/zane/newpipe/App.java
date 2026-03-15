@@ -63,13 +63,31 @@ public class App extends JFrame {
             }
         );
         this.setLayout(new BorderLayout());
+        FlatSVGIcon arrowicon = null;
+        try {
+            arrowicon = new FlatSVGIcon(
+                getClass().getResourceAsStream("/icon/ic_arrow_back.svg")
+            );
+        } catch (IOException eio) {
+            eio.printStackTrace();
+            System.exit(1);
+        }
+
         JPanel searchbar = new JPanel(new BorderLayout());
+
         searchbar.setBackground(new Color(255, 0, 0));
         this.add(searchbar, BorderLayout.NORTH);
+        JButton backBtn = new JButton(arrowicon);
+        backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        backBtn.setBackground(new Color(255, 0, 0));
+        backBtn.setOpaque(false);
+        searchbar.add(backBtn, BorderLayout.LINE_START);
         searchField = new JTextField(10);
 
         searchbar.add(searchField, BorderLayout.CENTER);
         searchButton = new JButton();
+        searchButton.setOpaque(false);
+        searchButton.setBackground(new Color(255, 0, 0));
         try {
             searchButton.setIcon(
                 new FlatSVGIcon(
@@ -96,8 +114,8 @@ public class App extends JFrame {
         //mainContent.setMinimumSize(new Dimension(1000, 500));
         this.add(mainContent, BorderLayout.CENTER);
 
-        searchResultPage = new SearchResultPage(this);
-        videoPage = new VideoPage(this);
+        searchResultPage = new SearchResultPage(this, arrowicon);
+        videoPage = new VideoPage(this, mainContent.getViewport());
         channelPage = new ChannelPage(this);
         this.setVisible(true);
         searchButton.addActionListener(e ->

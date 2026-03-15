@@ -10,6 +10,7 @@ import java.net.URISyntaxException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.InfoItem;
+import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
 public class SearchItemPanel extends JPanel {
@@ -45,13 +46,19 @@ public class SearchItemPanel extends JPanel {
             JLabel uploaderLabel = new JLabel(streamInfoItem.getUploaderName());
             uploaderLabel.setForeground(Color.LIGHT_GRAY);
             infoPanel.add(uploaderLabel);
-            JLabel viewLabel = new JLabel(
+            String viewLabelString =
                 CommonUtil.numberToStringUnit(streamInfoItem.getViewCount()) +
-                    " views · " +
+                " views";
+
+            DateWrapper uploadDate = streamInfoItem.getUploadDate();
+            if (uploadDate != null) {
+                viewLabelString +=
+                    "· " +
                     CommonUtil.formatRelativeTime(
-                        streamInfoItem.getUploadDate().getLocalDateTime()
-                    )
-            );
+                        uploadDate.getLocalDateTime()
+                    );
+            }
+            JLabel viewLabel = new JLabel(viewLabelString);
 
             viewLabel.setForeground(Color.LIGHT_GRAY);
             infoPanel.add(viewLabel);

@@ -1,10 +1,14 @@
 package org.zane.newpipe;
 
 import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.ParseException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.JTextArea;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
@@ -95,5 +99,22 @@ public class CommonUtil {
         textArea.setFont(UIManager.getFont("Label.font"));
         textArea.setBorder(new EmptyBorder(5, 5, 5, 5));
         return textArea;
+    }
+
+    public static Map<String, String> getQueryMap(String query)
+        throws ParseException {
+        String[] params = query.split("&");
+        Map<String, String> map = new HashMap<>();
+        for (String param : params) {
+            String[] paramkv = param.split("=", 2);
+            if (paramkv.length != 2) {
+                throw new ParseException(
+                    "Invalid format, expected key=value",
+                    0
+                );
+            }
+            map.put(paramkv[0], paramkv[1]);
+        }
+        return map;
     }
 }
