@@ -4,12 +4,8 @@ import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.DecimalFormat;
@@ -18,7 +14,6 @@ import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import org.schabi.newpipe.extractor.InfoItem;
@@ -34,11 +29,12 @@ import org.schabi.newpipe.extractor.stream.VideoStream;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.CommentItemPanel;
+import org.zane.newpipe.ui.CommentPanel;
 import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.JHTMLPane;
-import org.zane.newpipe.ui.JImage;
 import org.zane.newpipe.ui.SearchItemPanel;
 import org.zane.newpipe.util.CommonUtil;
+import org.zane.newpipe.util.WrapLayout;
 import uk.co.caprica.vlcj.media.MediaRef;
 import uk.co.caprica.vlcj.media.MediaSlavePriority;
 import uk.co.caprica.vlcj.media.MediaSlaveType;
@@ -72,7 +68,7 @@ public class VideoPage extends JPanel {
     private MediaPlayer mediaPlayer;
     private JLabel publishDateLabel;
     private JEditorPane videoDescriptionText;
-    private JPanel videoCommentPanel;
+    private CommentPanel videoCommentPanel;
     private JLabel viewCountLabel;
     private JLabel likeCountLabel;
     private NumberFormat numberFormat;
@@ -86,6 +82,10 @@ public class VideoPage extends JPanel {
     private ChannelInfoPanel uploaderInfo;
     private String videoId;
     private MainViewPort mainViewPort;
+    private JLabel videoCategoryLabel;
+    private JLabel licenseLabel;
+    private JLabel privacyLabel;
+    private JPanel tagPanel;
 
     public VideoPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -111,12 +111,12 @@ public class VideoPage extends JPanel {
                 public void componentMoved(ComponentEvent e) {}
 
                 public void componentResized(ComponentEvent e) {
-                    videoDescriptionText.setMaximumSize(
-                        new Dimension(
-                            getPreferredSize().width,
-                            Integer.MAX_VALUE
-                        )
+                    Dimension maxSize = new Dimension(
+                        getPreferredSize().width,
+                        Integer.MAX_VALUE
                     );
+                    videoDescriptionText.setMaximumSize(maxSize);
+                    tagPanel.setMaximumSize(maxSize);
                 }
             }
         );
@@ -280,10 +280,9 @@ public class VideoPage extends JPanel {
 
         JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         videoTitle = new JLabel("", SwingConstants.LEFT);
-        Font currentFont = videoTitle.getFont();
-        videoTitle.setFont(
-            currentFont.deriveFont(Font.BOLD, currentFont.getSize())
-        );
+        Font boldFont = videoTitle.getFont();
+        boldFont = boldFont.deriveFont(Font.BOLD, boldFont.getSize());
+        videoTitle.setFont(boldFont);
         videoTitlePanel.add(videoTitle);
         this.add(videoTitlePanel);
         JPanel videoInfo = new JPanel(new GridLayout(1, 2));
@@ -312,7 +311,7 @@ public class VideoPage extends JPanel {
         relatedStreamsPanel.setLayout(
             new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
         );
-        videoCommentPanel = new JPanel();
+        videoCommentPanel = new CommentPanel(mainViewPort);
         videoCommentPanel.setLayout(
             new BoxLayout(videoCommentPanel, BoxLayout.Y_AXIS)
         );
@@ -325,7 +324,9 @@ public class VideoPage extends JPanel {
         publishDateLabel = new JLabel();
         publishDatePanel.add(publishDateLabel);
         videoDescriptionPanel.add(publishDatePanel);
-        JPanel videoDescriptionTextPanel = new JPanel(new BorderLayout());
+        JPanel videoDescriptionTextPanel = new JPanel(
+            new FlowLayout(FlowLayout.LEFT)
+        );
         videoDescriptionText = new JHTMLPane();
         videoDescriptionText.addHyperlinkListener(e -> {
             try {
@@ -377,11 +378,33 @@ public class VideoPage extends JPanel {
                 pe.printStackTrace();
             }
         });
-        videoDescriptionText.setMaximumSize(
-            new Dimension(getPreferredSize().width, Integer.MAX_VALUE)
+        Dimension maxSize = new Dimension(
+            getPreferredSize().width,
+            Integer.MAX_VALUE
         );
-        videoDescriptionTextPanel.add(videoDescriptionText, BorderLayout.NORTH);
+        videoDescriptionText.setMaximumSize(maxSize);
+        videoDescriptionTextPanel.add(videoDescriptionText);
         videoDescriptionPanel.add(videoDescriptionTextPanel);
+        JPanel descriptionMatadata = new JPanel(new GridLayout(3, 3, 10, 10));
+        JLabel tmpLabel = new JLabel("Category:", SwingConstants.RIGHT);
+        tmpLabel.setFont(boldFont);
+        descriptionMatadata.add(tmpLabel);
+        videoCategoryLabel = new JLabel("", SwingConstants.LEFT);
+        descriptionMatadata.add(videoCategoryLabel);
+        tmpLabel = new JLabel("License:", SwingConstants.RIGHT);
+        tmpLabel.setFont(boldFont);
+        descriptionMatadata.add(tmpLabel);
+        licenseLabel = new JLabel("", SwingConstants.LEFT);
+        descriptionMatadata.add(licenseLabel);
+        tmpLabel = new JLabel("Privacy:", SwingConstants.RIGHT);
+        tmpLabel.setFont(boldFont);
+        descriptionMatadata.add(tmpLabel);
+        privacyLabel = new JLabel("", SwingConstants.LEFT);
+        descriptionMatadata.add(privacyLabel);
+        videoDescriptionPanel.add(descriptionMatadata);
+        tagPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
+        tagPanel.setMaximumSize(maxSize);
+        videoDescriptionPanel.add(tagPanel);
         JPanel navigationBar = new JPanel(new GridLayout(1, 3));
         JViewport viewport = new JViewport();
         JButton commentBtn = new JButton(IconRes.COMMENT_ICOM);
@@ -456,6 +479,10 @@ public class VideoPage extends JPanel {
                 String videoDescriptionString = streamExtractor
                     .getDescription()
                     .getContent();
+                String videoCategoryString = streamExtractor.getCategory();
+                String privacyString = streamExtractor.getPrivacy().name();
+                String licenceString = streamExtractor.getLicence();
+                List<String> tagsString = streamExtractor.getTags();
                 SwingUtilities.invokeLater(() -> {
                     videoLenghtLabel.setText(timeString);
                     publishDateLabel.setText(UploadDateString);
@@ -468,6 +495,19 @@ public class VideoPage extends JPanel {
                             relatedStreamsPanel.add(
                                 new SearchItemPanel(mainViewPort, item)
                             );
+                        }
+                        tagPanel.removeAll();
+                        for (String tagString : tagsString) {
+                            JButton tagBtn = new JButton(tagString);
+                            tagBtn.addActionListener(e ->
+                                mainViewPort.nevigate(
+                                    new NevigateOpation(
+                                        MainViewPort.Page.SEARCH,
+                                        "#" + tagString
+                                    )
+                                )
+                            );
+                            tagPanel.add(tagBtn);
                         }
                     } catch (
                         ExtractionException
@@ -483,25 +523,14 @@ public class VideoPage extends JPanel {
                     isEnableComboxEvent = true;
                     viewCountLabel.setText(viewCountString);
                     likeCountLabel.setText(likeCountString);
+                    videoCategoryLabel.setText(videoCategoryString);
+                    privacyLabel.setText(privacyString);
+                    licenseLabel.setText(licenceString);
                     playVideo(currentVideoStream, currentAudioStream, null, 0);
                     mediaPlayer.controls().play();
                 });
-                CommentsExtractor commentsExtractor =
-                    ServiceList.YouTube.getCommentsExtractor(videoUrl);
-                commentsExtractor.fetchPage();
-                InfoItemsPage<CommentsInfoItem> cInfoItemsPage =
-                    commentsExtractor.getInitialPage();
-                List<CommentsInfoItem> clist = cInfoItemsPage.getItems();
-                videoCommentPanel.removeAll();
-                for (CommentsInfoItem cit : clist) {
-                    videoCommentPanel.add(
-                        new CommentItemPanel(
-                            cit,
-                            commentsExtractor,
-                            mainViewPort
-                        )
-                    );
-                }
+
+                videoCommentPanel.fetchComment(videoUrl);
             } catch (ExtractionException | IOException e) {
                 e.printStackTrace();
             }

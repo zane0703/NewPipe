@@ -17,6 +17,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.util.CommonUtil;
@@ -86,7 +87,9 @@ public class ChannelInfoPanel extends JPanel {
             BufferedImage image = ImageIO.read(
                 new URI(channelAvatarURL).toURL()
             );
-            channelAvatar.setImage(image);
+            SwingUtilities.invokeLater(() -> {
+                channelAvatar.setImage(image);
+            });
         } catch (URISyntaxException | IOException e) {
             e.printStackTrace();
         }
@@ -101,12 +104,13 @@ public class ChannelInfoPanel extends JPanel {
         long channelSubcraberCount,
         String channelURL
     ) {
-        System.out.println("test");
-        channelNameLabel.setText(channelName);
-        channelSubCountLabel.setText(
-            CommonUtil.numberToStringUnit(channelSubcraberCount) +
-                " subscribers"
-        );
+        SwingUtilities.invokeLater(() -> {
+            channelNameLabel.setText(channelName);
+            channelSubCountLabel.setText(
+                CommonUtil.numberToStringUnit(channelSubcraberCount) +
+                    " subscribers"
+            );
+        });
         this.channelURL = channelURL;
     }
 

@@ -15,18 +15,19 @@ import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.util.CommonUtil;
 
 public class CommentItemPanel extends JPanel {
 
-    private JViewport scrollViewPort;
+    private MainViewPort mainViewPort;
 
     public CommentItemPanel(
         CommentsInfoItem cit,
         CommentsExtractor commentsExtractor,
-        JViewport scrollViewPort
+        MainViewPort mainViewPort
     ) {
-        this.scrollViewPort = scrollViewPort;
+        this.mainViewPort = mainViewPort;
         setLayout(new FlowLayout(FlowLayout.LEFT));
         List<Image> avatars = cit.getUploaderAvatars();
         JImage jImage = new JImage();
@@ -104,19 +105,13 @@ public class CommentItemPanel extends JPanel {
                 scrollReplayViewPort.setPreferredSize(new Dimension(700, 500));
                 new Thread(() -> {
                     try {
-                        InfoItemsPage<CommentsInfoItem> repliestemsPage =
-                            commentsExtractor.getPage(cit.getReplies());
-                        List<CommentsInfoItem> replieyItems =
-                            repliestemsPage.getItems();
-                        for (CommentsInfoItem rItem : replieyItems) {
-                            CommentItemPanel replayItemPanel =
-                                new CommentItemPanel(
-                                    rItem,
-                                    commentsExtractor,
-                                    scrollViewPort
-                                );
-                            replayListPanel.add(replayItemPanel);
-                        }
+                        CommentPanel commentPanel = new CommentPanel(
+                            mainViewPort,
+                            commentsExtractor,
+                            cit.getReplies()
+                        );
+
+                        scrollReplayViewPort.setView(commentPanel);
                         SwingUtilities.invokeLater(() -> {
                             JOptionPane.showMessageDialog(
                                 this,
@@ -125,7 +120,7 @@ public class CommentItemPanel extends JPanel {
                                 JOptionPane.PLAIN_MESSAGE
                             );
                         });
-                    } catch (IOException | ExtractionException err) {
+                    } catch (Exception err) {
                         err.printStackTrace();
                     }
                 })
@@ -161,6 +156,6 @@ public class CommentItemPanel extends JPanel {
     public Dimension getPreferredSize() {
         Dimension size = super.getPreferredSize();
         //int maxSize = Math.min(size.width, scrollViewPort.getWidth());
-        return new Dimension(scrollViewPort.getWidth(), size.height);
+        return new Dimension(mainViewPort.getWidth(), size.height);
     }
 }

@@ -1,4 +1,4 @@
-package org.zane.newpipe.page;
+package org.zane.newpipe.ui;
 
 import java.awt.*;
 import java.io.IOException;
@@ -10,55 +10,87 @@ import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.comments.CommentsExtractor;
+import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.search.SearchExtractor;
 import org.zane.newpipe.App;
+import org.zane.newpipe.page.MainViewPort;
+import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.SearchItemPanel;
+import org.zane.newpipe.util.CommonUtil;
 
-public class SearchResultPage extends JPanel {
+public class CommentPanel extends JPanel {
 
-    private final MainViewPort mainViewPort;
-    private JPanel resultListPanel;
+    private MainViewPort mainViewPort;
+    private JPanel mainCommentPanel;
     private JButton preBtn;
     private JButton nextBtn;
-    private SearchExtractor se;
     private JLabel pageNumLabel;
-    private InfoItemsPage<InfoItem> itp;
-    private Stack<Page> pageStack = new Stack<>();
+    private CommentsExtractor ce;
+    private Stack<Page> pageStack;
+    private InfoItemsPage<CommentsInfoItem> itp;
     private Page currentPage;
 
-    public SearchResultPage(MainViewPort mainViewPort) {
-        this.setLayout(new BorderLayout());
+    public CommentPanel(
+        MainViewPort mainViewPort,
+        CommentsExtractor ce,
+        Page page
+    ) {
+        this(mainViewPort);
+        pageStack.removeAllElements();
+        pageNumLabel.setText("1");
+        preBtn.setEnabled(false);
+        currentPage = page;
+        this.ce = ce;
+        new Thread(() -> {
+            try {
+                itp = ce.getPage(page);
+                showPage();
+            } catch (IOException | ExtractionException err) {
+                err.printStackTrace();
+            }
+        })
+            .start();
+    }
+
+    public CommentPanel(MainViewPort mainViewPort) {
+        super(new BorderLayout());
         this.mainViewPort = mainViewPort;
-        resultListPanel = new JPanel();
-        resultListPanel.setLayout(
-            new BoxLayout(resultListPanel, BoxLayout.Y_AXIS)
+        pageStack = new Stack<>();
+        mainCommentPanel = new JPanel();
+        mainCommentPanel.setLayout(
+            new BoxLayout(mainCommentPanel, BoxLayout.Y_AXIS)
         );
-        this.add(resultListPanel, BorderLayout.CENTER);
+        this.add(mainCommentPanel, BorderLayout.CENTER);
         JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pageNevPanel.setBackground(new Color(255, 0, 0));
         preBtn = new JButton(IconRes.ARROW_BACK_ICOM);
         preBtn.addActionListener(e -> {
-            resultListPanel.removeAll();
+            mainCommentPanel.removeAll();
             new Thread(() -> {
                 try {
                     Page prePage = pageStack.pop();
                     if (prePage == null) {
-                        itp = se.getInitialPage();
+                        itp = ce.getInitialPage();
                         showPage();
                         SwingUtilities.invokeLater(() -> {
                             pageNumLabel.setText("1");
                             preBtn.setEnabled(false);
                         });
                     } else {
-                        itp = se.getPage(prePage);
+                        itp = ce.getPage(prePage);
                         showPage();
+                        int stackSize = pageStack.size();
                         SwingUtilities.invokeLater(() -> {
                             pageNumLabel.setText(
-                                Integer.toString(pageStack.size() + 1)
+                                Integer.toString(stackSize + 1)
                             );
                         });
+                        if (stackSize < 1) {
+                            preBtn.setEnabled(false);
+                        }
                     }
                     currentPage = prePage;
                 } catch (ExtractionException | IOException err) {
@@ -72,11 +104,11 @@ public class SearchResultPage extends JPanel {
         pageNevPanel.add(pageNumLabel);
         nextBtn = new JButton(IconRes.ARROW_NEXT_ICOM);
         nextBtn.addActionListener(e -> {
-            resultListPanel.removeAll();
+            mainCommentPanel.removeAll();
             new Thread(() -> {
                 try {
                     Page nextPage = itp.getNextPage();
-                    itp = se.getPage(nextPage);
+                    itp = ce.getPage(nextPage);
                     showPage();
                     pageStack.add(currentPage);
                     SwingUtilities.invokeLater(() -> {
@@ -93,51 +125,43 @@ public class SearchResultPage extends JPanel {
                 .start();
         });
         pageNevPanel.add(nextBtn);
-
         this.add(pageNevPanel, BorderLayout.SOUTH);
     }
 
-    public void search(String query, Runnable finaly) {
-        resultListPanel.removeAll();
+    public void fetchComment(String videoURL) {
+        mainCommentPanel.removeAll();
         pageStack.removeAllElements();
         pageNumLabel.setText("1");
         preBtn.setEnabled(false);
         currentPage = null;
         new Thread(() -> {
             try {
-                se = ServiceList.YouTube.getSearchExtractor(query);
-                se.fetchPage();
-                itp = se.getInitialPage();
+                ce = ServiceList.YouTube.getCommentsExtractor(videoURL);
+                ce.fetchPage();
+                itp = ce.getInitialPage();
                 showPage();
             } catch (IOException | ExtractionException err) {
                 err.printStackTrace();
-            } finally {
-                finaly.run();
             }
         })
             .start();
     }
 
     private void showPage() {
-        try {
-            List<InfoItem> items = itp.getItems();
-            for (int i = 0; i < items.size(); ++i) {
-                InfoItem item = items.get(i);
-                SearchItemPanel searchItemPanel = new SearchItemPanel(
-                    mainViewPort,
-                    item
-                );
-                SwingUtilities.invokeLater(() ->
-                    resultListPanel.add(searchItemPanel)
-                );
-            }
-
-            SwingUtilities.invokeLater(() -> {
-                resultListPanel.updateUI();
-                nextBtn.setEnabled(itp.hasNextPage());
-            });
-        } catch (URISyntaxException | IOException err) {
-            err.printStackTrace();
+        List<CommentsInfoItem> clist = itp.getItems();
+        for (CommentsInfoItem cit : clist) {
+            CommentItemPanel commentItemPanel = new CommentItemPanel(
+                cit,
+                ce,
+                mainViewPort
+            );
+            SwingUtilities.invokeLater(() ->
+                mainCommentPanel.add(commentItemPanel)
+            );
         }
+        SwingUtilities.invokeLater(() -> {
+            mainCommentPanel.updateUI();
+            nextBtn.setEnabled(itp.hasNextPage());
+        });
     }
 }

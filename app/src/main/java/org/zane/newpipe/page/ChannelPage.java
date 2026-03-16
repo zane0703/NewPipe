@@ -17,18 +17,23 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.Image;
+import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.channel.ChannelExtractor;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.schabi.newpipe.extractor.feed.FeedExtractor;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.JImage;
+import org.zane.newpipe.ui.SearchItemPanel;
 import org.zane.newpipe.util.CommonUtil;
 
 public class ChannelPage extends JPanel {
 
     private final MainViewPort mainViewPort;
     private JImage banner;
-    ChannelInfoPanel channelInfoPanel;
+    private ChannelInfoPanel channelInfoPanel;
+    private JPanel videoFeedPanel;
 
     public ChannelPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -37,9 +42,15 @@ public class ChannelPage extends JPanel {
         this.add(banner);
         channelInfoPanel = new ChannelInfoPanel();
         this.add(channelInfoPanel);
+        videoFeedPanel = new JPanel();
+        videoFeedPanel.setLayout(
+            new BoxLayout(videoFeedPanel, BoxLayout.Y_AXIS)
+        );
+        this.add(videoFeedPanel);
     }
 
     public void ShowChannel(String channelURL) {
+        videoFeedPanel.removeAll();
         new Thread(() -> {
             try {
                 ChannelExtractor channelExtractor =
@@ -67,6 +78,23 @@ public class ChannelPage extends JPanel {
                     channelExtractor.getName(),
                     channelExtractor.getSubscriberCount()
                 );
+
+                FeedExtractor feedExtractor =
+                    ServiceList.YouTube.getFeedExtractor(channelURL);
+                feedExtractor.fetchPage();
+                InfoItemsPage<StreamInfoItem> fInfoItemsPage =
+                    feedExtractor.getInitialPage();
+                List<StreamInfoItem> fList = fInfoItemsPage.getItems();
+                for (StreamInfoItem fItem : fList) {
+                    SearchItemPanel searchItemPanel = new SearchItemPanel(
+                        mainViewPort,
+                        fItem
+                    );
+                    SwingUtilities.invokeLater(() ->
+                        videoFeedPanel.add(searchItemPanel)
+                    );
+                }
+                SwingUtilities.invokeLater(videoFeedPanel::updateUI);
             } catch (ExtractionException | IOException | URISyntaxException e) {
                 e.printStackTrace();
             }
