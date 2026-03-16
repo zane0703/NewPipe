@@ -42,6 +42,7 @@ public class CommentPanel extends JPanel {
         pageStack.removeAllElements();
         pageNumLabel.setText("1");
         preBtn.setEnabled(false);
+        nextBtn.setEnabled(false);
         currentPage = page;
         this.ce = ce;
         new Thread(() -> {
@@ -133,6 +134,7 @@ public class CommentPanel extends JPanel {
         pageStack.removeAllElements();
         pageNumLabel.setText("1");
         preBtn.setEnabled(false);
+        nextBtn.setEnabled(false);
         currentPage = null;
         new Thread(() -> {
             try {

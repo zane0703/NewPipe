@@ -89,7 +89,7 @@ public class MainViewPort extends JViewport {
                 break;
             case CHANNEL:
                 this.setView(channelPage);
-                channelPage.ShowChannel(nevigateOpation.QUERY);
+                channelPage.fetchChannel(nevigateOpation.QUERY);
         }
     }
 

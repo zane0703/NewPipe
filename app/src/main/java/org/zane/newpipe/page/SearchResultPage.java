@@ -12,7 +12,6 @@ import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.search.SearchExtractor;
-import org.zane.newpipe.App;
 import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.SearchItemPanel;
 
@@ -102,6 +101,7 @@ public class SearchResultPage extends JPanel {
         pageStack.removeAllElements();
         pageNumLabel.setText("1");
         preBtn.setEnabled(false);
+        nextBtn.setEnabled(false);
         currentPage = null;
         new Thread(() -> {
             try {

@@ -17,10 +17,7 @@ import java.util.Map;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import org.schabi.newpipe.extractor.InfoItem;
-import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.ServiceList;
-import org.schabi.newpipe.extractor.comments.CommentsExtractor;
-import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
@@ -28,7 +25,6 @@ import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.ui.ChannelInfoPanel;
-import org.zane.newpipe.ui.CommentItemPanel;
 import org.zane.newpipe.ui.CommentPanel;
 import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.JHTMLPane;
@@ -89,7 +85,6 @@ public class VideoPage extends JPanel {
 
     public VideoPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
-        Class pageClass = getClass();
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         numberFormat = NumberFormat.getInstance();
         CallbackMediaPlayerComponent mediaPlayerComponent =

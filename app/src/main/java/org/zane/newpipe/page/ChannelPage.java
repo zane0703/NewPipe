@@ -13,17 +13,21 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
 import java.util.List;
+import java.util.Stack;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
+import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.channel.ChannelExtractor;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.feed.FeedExtractor;
+import org.schabi.newpipe.extractor.feed.FeedInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.zane.newpipe.ui.ChannelInfoPanel;
+import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.JImage;
 import org.zane.newpipe.ui.SearchItemPanel;
 import org.zane.newpipe.util.CommonUtil;
@@ -34,6 +38,14 @@ public class ChannelPage extends JPanel {
     private JImage banner;
     private ChannelInfoPanel channelInfoPanel;
     private JPanel videoFeedPanel;
+    private JPanel resultListPanel;
+    private JButton preBtn;
+    private JButton nextBtn;
+    private Stack<Page> pageStack = new Stack<>();
+    private JLabel pageNumLabel;
+    private FeedExtractor fe;
+    private InfoItemsPage<StreamInfoItem> itp;
+    private Page currentPage;
 
     public ChannelPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -47,10 +59,71 @@ public class ChannelPage extends JPanel {
             new BoxLayout(videoFeedPanel, BoxLayout.Y_AXIS)
         );
         this.add(videoFeedPanel);
+        JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pageNevPanel.setBackground(new Color(255, 0, 0));
+        preBtn = new JButton(IconRes.ARROW_BACK_ICOM);
+        preBtn.addActionListener(e -> {
+            resultListPanel.removeAll();
+            new Thread(() -> {
+                try {
+                    Page prePage = pageStack.pop();
+                    if (prePage == null) {
+                        itp = fe.getInitialPage();
+                        showFeed();
+                        SwingUtilities.invokeLater(() -> {
+                            pageNumLabel.setText("1");
+                            preBtn.setEnabled(false);
+                        });
+                    } else {
+                        itp = fe.getPage(prePage);
+                        showFeed();
+                        SwingUtilities.invokeLater(() -> {
+                            pageNumLabel.setText(
+                                Integer.toString(pageStack.size() + 1)
+                            );
+                        });
+                    }
+                    currentPage = prePage;
+                } catch (ExtractionException | IOException err) {
+                    err.printStackTrace();
+                }
+            })
+                .start();
+        });
+        pageNevPanel.add(preBtn);
+        pageNumLabel = new JLabel("1", SwingConstants.CENTER);
+        pageNevPanel.add(pageNumLabel);
+        nextBtn = new JButton(IconRes.ARROW_NEXT_ICOM);
+        nextBtn.addActionListener(e -> {
+            resultListPanel.removeAll();
+            new Thread(() -> {
+                try {
+                    Page nextPage = itp.getNextPage();
+                    itp = fe.getPage(nextPage);
+                    showFeed();
+                    pageStack.add(currentPage);
+                    SwingUtilities.invokeLater(() -> {
+                        pageNumLabel.setText(
+                            Integer.toString(pageStack.size() + 1)
+                        );
+                        preBtn.setEnabled(true);
+                    });
+                    currentPage = nextPage;
+                } catch (ExtractionException | IOException err) {
+                    err.printStackTrace();
+                }
+            })
+                .start();
+        });
+        pageNevPanel.add(nextBtn);
+
+        this.add(pageNevPanel);
     }
 
-    public void ShowChannel(String channelURL) {
+    public void fetchChannel(String channelURL) {
         videoFeedPanel.removeAll();
+        preBtn.setEnabled(false);
+        nextBtn.setEnabled(false);
         new Thread(() -> {
             try {
                 ChannelExtractor channelExtractor =
@@ -79,22 +152,10 @@ public class ChannelPage extends JPanel {
                     channelExtractor.getSubscriberCount()
                 );
 
-                FeedExtractor feedExtractor =
-                    ServiceList.YouTube.getFeedExtractor(channelURL);
-                feedExtractor.fetchPage();
-                InfoItemsPage<StreamInfoItem> fInfoItemsPage =
-                    feedExtractor.getInitialPage();
-                List<StreamInfoItem> fList = fInfoItemsPage.getItems();
-                for (StreamInfoItem fItem : fList) {
-                    SearchItemPanel searchItemPanel = new SearchItemPanel(
-                        mainViewPort,
-                        fItem
-                    );
-                    SwingUtilities.invokeLater(() ->
-                        videoFeedPanel.add(searchItemPanel)
-                    );
-                }
-                SwingUtilities.invokeLater(videoFeedPanel::updateUI);
+                fe = ServiceList.YouTube.getFeedExtractor(channelURL);
+                fe.fetchPage();
+                itp = fe.getInitialPage();
+                showFeed();
             } catch (ExtractionException | IOException | URISyntaxException e) {
                 e.printStackTrace();
             }
@@ -115,5 +176,26 @@ public class ChannelPage extends JPanel {
             );
         }
         return size;
+    }
+
+    private void showFeed() {
+        try {
+            List<StreamInfoItem> fList = itp.getItems();
+            for (StreamInfoItem fItem : fList) {
+                SearchItemPanel searchItemPanel = new SearchItemPanel(
+                    mainViewPort,
+                    fItem
+                );
+                SwingUtilities.invokeLater(() ->
+                    videoFeedPanel.add(searchItemPanel)
+                );
+            }
+            SwingUtilities.invokeLater(() -> {
+                videoFeedPanel.updateUI();
+                nextBtn.setEnabled(itp.hasNextPage());
+            });
+        } catch (IOException | URISyntaxException e) {
+            e.printStackTrace();
+        }
     }
 }
