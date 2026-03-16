@@ -1,6 +1,5 @@
-package org.zane.newpipe;
+package org.zane.newpipe.page;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -13,10 +12,13 @@ import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.search.SearchExtractor;
+import org.zane.newpipe.App;
+import org.zane.newpipe.ui.IconRes;
+import org.zane.newpipe.ui.SearchItemPanel;
 
 public class SearchResultPage extends JPanel {
 
-    private final App app;
+    private final MainViewPort mainViewPort;
     private JPanel resultListPanel;
     private JButton preBtn;
     private JButton nextBtn;
@@ -26,18 +28,9 @@ public class SearchResultPage extends JPanel {
     private Stack<Page> pageStack = new Stack<>();
     private Page currentPage;
 
-    public SearchResultPage(App app, Icon arrowIocn) {
+    public SearchResultPage(MainViewPort mainViewPort) {
         this.setLayout(new BorderLayout());
-        FlatSVGIcon arrowNexticon = null;
-        try {
-            arrowNexticon = new FlatSVGIcon(
-                getClass().getResourceAsStream("/icon/ic_arrow_next.svg")
-            );
-        } catch (IOException eio) {
-            eio.printStackTrace();
-            System.exit(1);
-        }
-        this.app = app;
+        this.mainViewPort = mainViewPort;
         resultListPanel = new JPanel();
         resultListPanel.setLayout(
             new BoxLayout(resultListPanel, BoxLayout.Y_AXIS)
@@ -45,7 +38,7 @@ public class SearchResultPage extends JPanel {
         this.add(resultListPanel, BorderLayout.CENTER);
         JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pageNevPanel.setBackground(new Color(255, 0, 0));
-        preBtn = new JButton(arrowIocn);
+        preBtn = new JButton(IconRes.ARROW_BACK_ICOM);
         preBtn.addActionListener(e -> {
             resultListPanel.removeAll();
             new Thread(() -> {
@@ -77,7 +70,7 @@ public class SearchResultPage extends JPanel {
         pageNevPanel.add(preBtn);
         pageNumLabel = new JLabel("1", SwingConstants.CENTER);
         pageNevPanel.add(pageNumLabel);
-        nextBtn = new JButton(arrowNexticon);
+        nextBtn = new JButton(IconRes.ARROW_NEXT_ICOM);
         nextBtn.addActionListener(e -> {
             resultListPanel.removeAll();
             new Thread(() -> {
@@ -129,7 +122,7 @@ public class SearchResultPage extends JPanel {
                 for (int i = 0; i < items.size(); ++i) {
                     InfoItem item = items.get(i);
                     SearchItemPanel searchItemPanel = new SearchItemPanel(
-                        app,
+                        mainViewPort,
                         item
                     );
                     SwingUtilities.invokeLater(() ->

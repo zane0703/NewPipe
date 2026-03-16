@@ -1,4 +1,4 @@
-package org.zane.newpipe;
+package org.zane.newpipe.ui;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -12,15 +12,18 @@ import javax.swing.*;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.zane.newpipe.page.MainViewPort;
+import org.zane.newpipe.page.MainViewPort.NevigateOpation;
+import org.zane.newpipe.util.CommonUtil;
 
 public class SearchItemPanel extends JPanel {
 
-    private final App app;
+    private final MainViewPort mainViewPort;
 
-    public SearchItemPanel(App app, InfoItem item)
+    public SearchItemPanel(MainViewPort mainViewPort, InfoItem item)
         throws IOException, URISyntaxException {
         super(new FlowLayout(FlowLayout.LEFT));
-        this.app = app;
+        this.mainViewPort = mainViewPort;
 
         this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         BufferedImage image = ImageIO.read(
@@ -79,14 +82,20 @@ public class SearchItemPanel extends JPanel {
         @Override
         public void mouseClicked(MouseEvent e) {
             // Your "onclick" logic goes here
+            MainViewPort.Page newPage;
             switch (infoItem.getInfoType()) {
                 case STREAM:
-                    app.nevigate(App.Page.VIDEO, infoItem.getUrl());
+                    newPage = MainViewPort.Page.VIDEO;
                     break;
                 case CHANNEL:
-                    app.nevigate(App.Page.CHANNEL, infoItem.getUrl());
+                    newPage = MainViewPort.Page.CHANNEL;
                     break;
+                default:
+                    return;
             }
+            mainViewPort.nevigate(
+                new NevigateOpation(newPage, infoItem.getUrl())
+            );
         }
 
         // Other MouseListener methods (must be implemented, even if empty)

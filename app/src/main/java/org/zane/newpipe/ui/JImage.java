@@ -1,4 +1,4 @@
-package org.zane.newpipe;
+package org.zane.newpipe.ui;
 
 import java.awt.Dimension;
 import java.awt.Graphics;

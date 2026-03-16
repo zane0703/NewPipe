@@ -1,4 +1,4 @@
-package org.zane.newpipe;
+package org.zane.newpipe.page;
 
 import java.awt.*;
 import java.awt.*;
@@ -20,37 +20,23 @@ import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.channel.ChannelExtractor;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.zane.newpipe.ui.ChannelInfoPanel;
+import org.zane.newpipe.ui.JImage;
+import org.zane.newpipe.util.CommonUtil;
 
 public class ChannelPage extends JPanel {
 
-    private final App app;
+    private final MainViewPort mainViewPort;
     private JImage banner;
-    private JLabel channelName;
-    private JImage channelAvatar;
-    private JLabel channelSubCountLabel;
+    ChannelInfoPanel channelInfoPanel;
 
-    public ChannelPage(App app) {
-        this.app = app;
+    public ChannelPage(MainViewPort mainViewPort) {
+        this.mainViewPort = mainViewPort;
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         banner = new JImage();
         this.add(banner);
-        JPanel ChannelInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JPanel ChannelSubInfoPanel = new JPanel();
-        ChannelSubInfoPanel.setLayout(
-            new BoxLayout(ChannelSubInfoPanel, BoxLayout.Y_AXIS)
-        );
-        channelAvatar = new JImage();
-        channelAvatar.setMaximumSize(new Dimension(50, 50));
-        ChannelInfoPanel.add(channelAvatar);
-        channelName = new JLabel();
-        Font f = channelName.getFont();
-        channelName.setFont(f.deriveFont(Font.BOLD, f.getSize()));
-        ChannelSubInfoPanel.add(channelName);
-        channelSubCountLabel = new JLabel();
-        channelSubCountLabel.setForeground(Color.LIGHT_GRAY);
-        ChannelSubInfoPanel.add(channelSubCountLabel);
-        ChannelInfoPanel.add(ChannelSubInfoPanel);
-        this.add(ChannelInfoPanel);
+        channelInfoPanel = new ChannelInfoPanel();
+        this.add(channelInfoPanel);
     }
 
     public void ShowChannel(String channelURL) {
@@ -75,17 +61,11 @@ public class ChannelPage extends JPanel {
                 banner.setImage(imageb);
                 List<Image> avatars = channelExtractor.getAvatars();
                 if (!avatars.isEmpty()) {
-                    BufferedImage image = ImageIO.read(
-                        new URI(avatars.get(0).getUrl()).toURL()
-                    );
-                    channelAvatar.setImage(image);
+                    channelInfoPanel.setChanelAvatar(avatars.get(0).getUrl());
                 }
-                channelName.setText(channelExtractor.getName());
-                channelSubCountLabel.setText(
-                    CommonUtil.numberToStringUnit(
-                            channelExtractor.getSubscriberCount()
-                        ) +
-                        " subscribers"
+                channelInfoPanel.setInfo(
+                    channelExtractor.getName(),
+                    channelExtractor.getSubscriberCount()
                 );
             } catch (ExtractionException | IOException | URISyntaxException e) {
                 e.printStackTrace();

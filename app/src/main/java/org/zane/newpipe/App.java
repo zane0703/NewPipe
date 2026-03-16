@@ -4,27 +4,26 @@
 package org.zane.newpipe;
 
 import com.formdev.flatlaf.IntelliJTheme;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import java.awt.*;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.NewPipe;
+import org.zane.newpipe.page.ChannelPage;
+import org.zane.newpipe.page.MainViewPort;
+import org.zane.newpipe.page.MainViewPort.NevigateOpation;
+import org.zane.newpipe.page.SearchResultPage;
+import org.zane.newpipe.page.VideoPage;
+import org.zane.newpipe.ui.IconRes;
+import org.zane.newpipe.util.Downloader;
 
 public class App extends JFrame {
-
-    public enum Page {
-        SEARCH,
-        VIDEO,
-        CHANNEL,
-    }
 
     private JButton searchButton;
     private SearchResultPage searchResultPage;
     private VideoPage videoPage;
     private JTextField searchField;
-    private JScrollPane mainContent;
-    private Page currentPage;
+    private MainViewPort mainViewPort;
     private ChannelPage channelPage;
 
     public App() {
@@ -63,24 +62,17 @@ public class App extends JFrame {
             }
         );
         this.setLayout(new BorderLayout());
-        FlatSVGIcon arrowicon = null;
-        try {
-            arrowicon = new FlatSVGIcon(
-                getClass().getResourceAsStream("/icon/ic_arrow_back.svg")
-            );
-        } catch (IOException eio) {
-            eio.printStackTrace();
-            System.exit(1);
-        }
 
         JPanel searchbar = new JPanel(new BorderLayout());
 
         searchbar.setBackground(new Color(255, 0, 0));
         this.add(searchbar, BorderLayout.NORTH);
-        JButton backBtn = new JButton(arrowicon);
+        JButton backBtn = new JButton(IconRes.ARROW_BACK_ICOM);
+        backBtn.setEnabled(false);
         backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         backBtn.setBackground(new Color(255, 0, 0));
         backBtn.setOpaque(false);
+        backBtn.addActionListener(e -> mainViewPort.back());
         searchbar.add(backBtn, BorderLayout.LINE_START);
         searchField = new JTextField(10);
 
@@ -88,74 +80,39 @@ public class App extends JFrame {
         searchButton = new JButton();
         searchButton.setOpaque(false);
         searchButton.setBackground(new Color(255, 0, 0));
-        try {
-            searchButton.setIcon(
-                new FlatSVGIcon(
-                    getClass().getResourceAsStream("/icon/ic_search.svg")
-                )
-            );
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        searchButton.setIcon(IconRes.SEARCH_ICOM);
         searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         searchbar.add(searchButton, BorderLayout.LINE_END);
-        JPanel defultPage = new JPanel(new BorderLayout());
-        defultPage.add(
-            new JLabel("Try searching to get started", SwingConstants.CENTER),
-            BorderLayout.CENTER
+
+        mainViewPort = new MainViewPort(
+            backBtn::setEnabled,
+            searchButton::setEnabled
         );
-        mainContent = new JScrollPane(
-            defultPage,
+        JScrollPane mainContent = new JScrollPane(
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
             JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         );
-
+        mainContent.setViewport(mainViewPort);
         //mainContent.setMinimumSize(new Dimension(1000, 500));
         this.add(mainContent, BorderLayout.CENTER);
 
-        searchResultPage = new SearchResultPage(this, arrowicon);
-        videoPage = new VideoPage(this, mainContent.getViewport());
-        channelPage = new ChannelPage(this);
         this.setVisible(true);
         searchButton.addActionListener(e ->
-            nevigate(Page.SEARCH, searchField.getText())
+            mainViewPort.nevigate(
+                new NevigateOpation(
+                    MainViewPort.Page.SEARCH,
+                    searchField.getText()
+                )
+            )
         );
         searchField.addActionListener(e ->
-            nevigate(Page.SEARCH, searchField.getText())
+            mainViewPort.nevigate(
+                new NevigateOpation(
+                    MainViewPort.Page.SEARCH,
+                    searchField.getText()
+                )
+            )
         );
-    }
-
-    public void nevigate(Page page, String query) {
-        if (currentPage != null) {
-            switch (currentPage) {
-                case VIDEO:
-                    videoPage.stop();
-                    break;
-                case SEARCH:
-                    break;
-            }
-        }
-
-        switch (page) {
-            case SEARCH:
-                searchButton.setEnabled(false);
-                searchResultPage.search(query, () -> {
-                    searchButton.setEnabled(true);
-                });
-                mainContent.setViewportView(searchResultPage);
-                break;
-            case VIDEO:
-                mainContent.setViewportView(videoPage);
-                videoPage.showVideo(query);
-                //this.pack();
-                break;
-            case CHANNEL:
-                mainContent.setViewportView(channelPage);
-                channelPage.ShowChannel(query);
-        }
-        mainContent.doLayout();
-        currentPage = page;
     }
 
     public static void main(String[] args) {

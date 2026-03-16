@@ -1,7 +1,6 @@
-package org.zane.newpipe;
+package org.zane.newpipe.util;
 
 import java.text.DecimalFormat;
-import java.text.ParseException;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.LocalDateTime;

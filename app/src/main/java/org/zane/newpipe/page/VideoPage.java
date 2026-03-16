@@ -1,6 +1,5 @@
-package org.zane.newpipe;
+package org.zane.newpipe.page;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -32,7 +31,14 @@ import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
-import org.zane.newpipe.App.Page;
+import org.zane.newpipe.page.MainViewPort.NevigateOpation;
+import org.zane.newpipe.ui.ChannelInfoPanel;
+import org.zane.newpipe.ui.CommentItemPanel;
+import org.zane.newpipe.ui.IconRes;
+import org.zane.newpipe.ui.JHTMLPane;
+import org.zane.newpipe.ui.JImage;
+import org.zane.newpipe.ui.SearchItemPanel;
+import org.zane.newpipe.util.CommonUtil;
 import uk.co.caprica.vlcj.media.MediaRef;
 import uk.co.caprica.vlcj.media.MediaSlavePriority;
 import uk.co.caprica.vlcj.media.MediaSlaveType;
@@ -44,7 +50,6 @@ import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent;
 
 public class VideoPage extends JPanel {
 
-    private final App app;
     private JPanel videoContol;
     private JComboBox videoComboBox;
     private DefaultComboBoxModel<VideoStream> videoModel;
@@ -62,14 +67,8 @@ public class VideoPage extends JPanel {
     private JLabel videoLenghtLabel;
     private JLabel videoTitle;
     private long currentTimestamp = 0;
-    private JLabel uplodoaderName;
-    private String channelURL;
     private double videoLengthDiff;
-    private JLabel uplodoaderSubCountLabel;
-    private FlatSVGIcon playIcom;
-    private FlatSVGIcon pauseIcom;
     private JButton playButton;
-    private JImage uploaderAvatar;
     private MediaPlayer mediaPlayer;
     private JLabel publishDateLabel;
     private JEditorPane videoDescriptionText;
@@ -84,12 +83,12 @@ public class VideoPage extends JPanel {
     private DateTimeFormatter dtf = DateTimeFormatter.ofPattern(
         "dd MMMM yyyy HH:mm:ss"
     );
+    private ChannelInfoPanel uploaderInfo;
     private String videoId;
-    private JViewport scrollViewPort;
+    private MainViewPort mainViewPort;
 
-    public VideoPage(App app, JViewport scrollViewPort) {
-        this.app = app;
-        this.scrollViewPort = scrollViewPort;
+    public VideoPage(MainViewPort mainViewPort) {
+        this.mainViewPort = mainViewPort;
         Class pageClass = getClass();
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         numberFormat = NumberFormat.getInstance();
@@ -156,18 +155,7 @@ public class VideoPage extends JPanel {
         // video Contol
         videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
         this.add(videoContol);
-        try {
-            playIcom = new FlatSVGIcon(
-                pageClass.getResourceAsStream("/icon/ic_play_arrow.svg")
-            );
-            pauseIcom = new FlatSVGIcon(
-                pageClass.getResourceAsStream("/icon/ic_pause.svg")
-            );
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-        playButton = new JButton(playIcom);
+        playButton = new JButton(IconRes.PLAY_ARROW_ICOM);
         playButton.addActionListener(e -> {
             if (mediaPlayer.status().isPlaying()) {
                 mediaPlayer.controls().pause();
@@ -299,23 +287,7 @@ public class VideoPage extends JPanel {
         videoTitlePanel.add(videoTitle);
         this.add(videoTitlePanel);
         JPanel videoInfo = new JPanel(new GridLayout(1, 2));
-        JPanel uploaderInfo = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JPanel uploaderSubInfo = new JPanel(new GridLayout(2, 1));
-        uploaderInfo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        uploaderSubInfo.setOpaque(false);
-        uploaderAvatar = new JImage();
-        uploaderAvatar.setMaximumSize(new Dimension(50, 50));
-        uplodoaderName = new JLabel("", SwingConstants.LEFT);
-        uplodoaderName.setFont(
-            currentFont.deriveFont(Font.BOLD, currentFont.getSize())
-        );
-        uplodoaderSubCountLabel = new JLabel("", SwingConstants.LEFT);
-        uplodoaderSubCountLabel.setForeground(Color.LIGHT_GRAY);
-        uploaderInfo.addMouseListener(new PanelClickListener());
-        uploaderInfo.add(uploaderAvatar);
-        uploaderSubInfo.add(uplodoaderName);
-        uploaderSubInfo.add(uplodoaderSubCountLabel);
-        uploaderInfo.add(uploaderSubInfo);
+        uploaderInfo = new ChannelInfoPanel(mainViewPort);
         videoInfo.add(uploaderInfo);
         JPanel likeAndViewPanelPanel = new JPanel(
             new FlowLayout(FlowLayout.RIGHT)
@@ -327,17 +299,11 @@ public class VideoPage extends JPanel {
         );
         viewCountLabel = new JLabel("", SwingConstants.RIGHT);
         likeAndViewPanel.add(viewCountLabel);
-        likeCountLabel = new JLabel("", JLabel.RIGHT);
-        try {
-            likeCountLabel.setIcon(
-                new FlatSVGIcon(
-                    pageClass.getResourceAsStream("/icon/ic_thumb_up.svg")
-                )
-            );
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        likeCountLabel = new JLabel(
+            "",
+            IconRes.THUMP_UP_ICOM,
+            SwingConstants.RIGHT
+        );
         likeAndViewPanel.add(likeCountLabel);
         likeAndViewPanelPanel.add(likeAndViewPanel);
         videoInfo.add(likeAndViewPanelPanel);
@@ -382,9 +348,11 @@ public class VideoPage extends JPanel {
                                                 .controls()
                                                 .setTime(newTime * 1000);
                                         } else {
-                                            app.nevigate(
-                                                App.Page.VIDEO,
-                                                url.toString()
+                                            mainViewPort.nevigate(
+                                                new NevigateOpation(
+                                                    MainViewPort.Page.VIDEO,
+                                                    url.toString()
+                                                )
                                             );
                                         }
                                     }
@@ -392,7 +360,12 @@ public class VideoPage extends JPanel {
                                 break;
                             case 3:
                                 if (paths[1].equals("hashtag")) {
-                                    app.nevigate(Page.SEARCH, "#" + paths[2]);
+                                    mainViewPort.nevigate(
+                                        new NevigateOpation(
+                                            MainViewPort.Page.SEARCH,
+                                            "#" + paths[2]
+                                        )
+                                    );
                                 }
                                 break;
                         }
@@ -411,38 +384,19 @@ public class VideoPage extends JPanel {
         videoDescriptionPanel.add(videoDescriptionTextPanel);
         JPanel navigationBar = new JPanel(new GridLayout(1, 3));
         JViewport viewport = new JViewport();
-        try {
-            JButton commentBtn = new JButton(
-                new FlatSVGIcon(
-                    pageClass.getResourceAsStream("/icon/ic_comment.svg")
-                )
-            );
-            commentBtn.addActionListener(e ->
-                viewport.setView(videoCommentPanel)
-            );
-            navigationBar.add(commentBtn);
-            JButton relatedStreamsBtn = new JButton(
-                new FlatSVGIcon(
-                    pageClass.getResourceAsStream("/icon/ic_art_track.svg")
-                )
-            );
-            relatedStreamsBtn.addActionListener(e ->
-                viewport.setView(relatedStreamsPanel)
-            );
-            navigationBar.add(relatedStreamsBtn);
-            JButton descriptionBtn = new JButton(
-                new FlatSVGIcon(
-                    pageClass.getResourceAsStream("/icon/ic_description.svg")
-                )
-            );
-            descriptionBtn.addActionListener(e ->
-                viewport.setView(videoDescriptionPanel)
-            );
-            navigationBar.add(descriptionBtn);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        JButton commentBtn = new JButton(IconRes.COMMENT_ICOM);
+        commentBtn.addActionListener(e -> viewport.setView(videoCommentPanel));
+        navigationBar.add(commentBtn);
+        JButton relatedStreamsBtn = new JButton(IconRes.ART_TRACK_ICOM);
+        relatedStreamsBtn.addActionListener(e ->
+            viewport.setView(relatedStreamsPanel)
+        );
+        navigationBar.add(relatedStreamsBtn);
+        JButton descriptionBtn = new JButton(IconRes.DESCRIPTION_ICOM);
+        descriptionBtn.addActionListener(e ->
+            viewport.setView(videoDescriptionPanel)
+        );
+        navigationBar.add(descriptionBtn);
         this.add(navigationBar);
 
         viewport.setView(relatedStreamsPanel);
@@ -456,26 +410,16 @@ public class VideoPage extends JPanel {
                     ServiceList.YouTube.getStreamExtractor(videoUrl);
                 streamExtractor.fetchPage();
                 videoId = streamExtractor.getId();
-                channelURL = streamExtractor.getUploaderUrl();
                 videoTitle.setText(streamExtractor.getName());
-                uplodoaderName.setText(streamExtractor.getUploaderName());
                 List<org.schabi.newpipe.extractor.Image> avatars =
                     streamExtractor.getUploaderAvatars();
                 if (!avatars.isEmpty()) {
-                    try {
-                        BufferedImage image = ImageIO.read(
-                            new URI(avatars.get(0).getUrl()).toURL()
-                        );
-                        uploaderAvatar.setImage(image);
-                    } catch (URISyntaxException e) {
-                        e.printStackTrace();
-                    }
+                    uploaderInfo.setChanelAvatar(avatars.get(0).getUrl());
                 }
-                uplodoaderSubCountLabel.setText(
-                    CommonUtil.numberToStringUnit(
-                            streamExtractor.getUploaderSubscriberCount()
-                        ) +
-                        " subscribers"
+                uploaderInfo.setInfo(
+                    streamExtractor.getUploaderName(),
+                    streamExtractor.getUploaderSubscriberCount(),
+                    streamExtractor.getUploaderUrl()
                 );
                 List<VideoStream> videoStreams =
                     streamExtractor.getVideoOnlyStreams();
@@ -522,7 +466,7 @@ public class VideoPage extends JPanel {
                             .getRelatedItems()
                             .getItems()) {
                             relatedStreamsPanel.add(
-                                new SearchItemPanel(app, item)
+                                new SearchItemPanel(mainViewPort, item)
                             );
                         }
                     } catch (
@@ -554,7 +498,7 @@ public class VideoPage extends JPanel {
                         new CommentItemPanel(
                             cit,
                             commentsExtractor,
-                            scrollViewPort
+                            mainViewPort
                         )
                     );
                 }
@@ -709,17 +653,17 @@ public class VideoPage extends JPanel {
 
         @Override
         public void playing(MediaPlayer mediaPlayer) {
-            playButton.setIcon(pauseIcom);
+            playButton.setIcon(IconRes.PAUSE_ICOM);
         }
 
         @Override
         public void paused(MediaPlayer mediaPlayer) {
-            playButton.setIcon(playIcom);
+            playButton.setIcon(IconRes.PLAY_ARROW_ICOM);
         }
 
         @Override
         public void stopped(MediaPlayer mediaPlayer) {
-            playButton.setIcon(playIcom);
+            playButton.setIcon(IconRes.PLAY_ARROW_ICOM);
         }
 
         @Override
@@ -730,7 +674,7 @@ public class VideoPage extends JPanel {
 
         @Override
         public void finished(MediaPlayer mediaPlayer) {
-            playButton.setIcon(playIcom);
+            playButton.setIcon(IconRes.PLAY_ARROW_ICOM);
         }
 
         @Override
@@ -843,32 +787,6 @@ public class VideoPage extends JPanel {
         }
     }
 
-    private class PanelClickListener implements MouseListener {
-
-        @Override
-        public void mouseClicked(MouseEvent e) {
-            // Your "onclick" logic goes here
-            app.nevigate(App.Page.CHANNEL, channelURL);
-        }
-
-        // Other MouseListener methods (must be implemented, even if empty)
-        @Override
-        public void mousePressed(MouseEvent e) {}
-
-        @Override
-        public void mouseReleased(MouseEvent e) {}
-
-        @Override
-        public void mouseEntered(MouseEvent e) {
-            e.getComponent().setBackground(Color.DARK_GRAY);
-        }
-
-        @Override
-        public void mouseExited(MouseEvent e) {
-            e.getComponent().setBackground(Color.BLACK);
-        }
-    }
-
     private class SpeedSelectorPanel extends JPanel {
 
         private int speed;
@@ -918,7 +836,7 @@ public class VideoPage extends JPanel {
     @Override
     public Dimension getPreferredSize() {
         Dimension size = super.getPreferredSize();
-        int maxSize = Math.min(size.width, scrollViewPort.getWidth());
+        int maxSize = Math.min(size.width, mainViewPort.getWidth());
         return new Dimension(maxSize, size.height);
     }
 }

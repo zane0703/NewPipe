@@ -1,6 +1,5 @@
-package org.zane.newpipe;
+package org.zane.newpipe.ui;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -16,6 +15,7 @@ import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.zane.newpipe.util.CommonUtil;
 
 public class CommentItemPanel extends JPanel {
 
@@ -63,32 +63,14 @@ public class CommentItemPanel extends JPanel {
         commentInfoPanel.add(commentText);
 
         JPanel commentMetaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel likeCunt = new JLabel(Integer.toString(cit.getLikeCount()));
-        try {
-            likeCunt.setIcon(
-                new FlatSVGIcon(
-                    getClass().getResourceAsStream("/icon/ic_thumb_up.svg")
-                ).derive(15, 15)
-            );
-        } catch (IOException eio) {
-            eio.printStackTrace();
-            System.exit(1);
-        }
-
+        JLabel likeCunt = new JLabel(
+            Integer.toString(cit.getLikeCount()),
+            IconRes.THUMP_UP_SMALL_ICOM,
+            SwingConstants.LEFT
+        );
         commentMetaPanel.add(likeCunt);
         if (cit.isHeartedByUploader()) {
-            try {
-                commentMetaPanel.add(
-                    new JLabel(
-                        new FlatSVGIcon(
-                            getClass().getResourceAsStream("/icon/ic_heart.svg")
-                        ).derive(15, 15)
-                    )
-                );
-            } catch (IOException eio) {
-                eio.printStackTrace();
-                System.exit(1);
-            }
+            commentMetaPanel.add(new JLabel(IconRes.HEART_ICOM));
         }
         commentMetaPanel.add(
             new JLabel(
