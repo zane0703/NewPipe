@@ -16,7 +16,7 @@ This port is made possible by the modular architecture of the original project. 
 
 Before running building the project, ensure you have the following installed on your system:
 
-- Java 25(JDK25 if wnat to build the project)
+- Java 25 (JDK 25 if want to build the project yourself)
 - VLC Media Player: The application relies on VLC for media playback functionality
   
 # 📦 Downloads (Pre-built Files)
@@ -41,7 +41,7 @@ Unix(Linux, Mac)
 ```
 
 3. ***Locate the Executable:*** Once the build is successful, your executable JAR will be located at:
-===app/build/libs/app-all.jar===
+<mark>app/build/libs/app-all.jar</mark>
 
 # Disclaimer
 
