@@ -1,6 +1,8 @@
 package org.zane.newpipe.ui;
 
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -15,16 +17,18 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.util.CommonUtil;
+import org.zane.newpipe.util.VideoUtil;
 
 public class SearchItemPanel extends JPanel {
 
     private final MainViewPort mainViewPort;
+    private JPopupMenu popupMenu;
 
     public SearchItemPanel(MainViewPort mainViewPort, InfoItem item)
         throws IOException, URISyntaxException {
         super(new FlowLayout(FlowLayout.LEFT));
         this.mainViewPort = mainViewPort;
-
+        popupMenu = new JPopupMenu();
         this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         BufferedImage image = ImageIO.read(
             new URI(item.getThumbnails().get(0).getUrl()).toURL()
@@ -45,6 +49,23 @@ public class SearchItemPanel extends JPanel {
         infoPanel.setOpaque(false);
         itemTitle.setText(item.getName());
         infoPanel.add(itemTitle);
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        JMenuItem openInBrowser = new JMenuItem("Open in Browser");
+        openInBrowser.addActionListener(e -> {
+            if (Desktop.isDesktopSupported()) {
+                try {
+                    Desktop.getDesktop().browse(URI.create(item.getUrl()));
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+        });
+        popupMenu.add(openInBrowser);
+        JMenuItem copyURL = new JMenuItem("Copy URL");
+        copyURL.addActionListener(e ->
+            clipboard.setContents(new StringSelection(item.getUrl()), null)
+        );
+        popupMenu.add(copyURL);
         if (item instanceof StreamInfoItem streamInfoItem) {
             JLabel uploaderLabel = new JLabel(streamInfoItem.getUploaderName());
             uploaderLabel.setForeground(Color.LIGHT_GRAY);
@@ -65,7 +86,25 @@ public class SearchItemPanel extends JPanel {
 
             viewLabel.setForeground(Color.LIGHT_GRAY);
             infoPanel.add(viewLabel);
+
+            JMenuItem showChannelDetile = new JMenuItem("Show channel Details");
+            showChannelDetile.addActionListener(e ->
+                mainViewPort.nevigate(
+                    new NevigateOpation(
+                        MainViewPort.Page.CHANNEL,
+                        streamInfoItem.getUploaderUrl()
+                    )
+                )
+            );
+            popupMenu.add(showChannelDetile);
+            JMenuItem openInVlc = new JMenuItem("Open in VLC media player");
+            openInVlc.addActionListener(e ->
+                VideoUtil.openVLC(item.getUrl(), mainViewPort)
+            );
+            popupMenu.add(openInVlc);
         }
+
+        this.setComponentPopupMenu(popupMenu);
         this.addMouseListener(new PanelClickListener(item));
 
         SwingUtilities.invokeLater(() -> this.add(infoPanel));
@@ -82,6 +121,9 @@ public class SearchItemPanel extends JPanel {
         @Override
         public void mouseClicked(MouseEvent e) {
             // Your "onclick" logic goes here
+            if (SwingUtilities.isRightMouseButton(e)) {
+                return;
+            }
             MainViewPort.Page newPage;
             switch (infoItem.getInfoType()) {
                 case STREAM:

@@ -1,7 +1,7 @@
 package org.zane.newpipe.page;
 
 import java.awt.BorderLayout;
-import java.util.Stack;
+import java.util.ArrayDeque;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JViewport;
@@ -13,26 +13,35 @@ public class MainViewPort extends JViewport {
     private SearchResultPage searchResultPage;
     private VideoPage videoPage;
     private NevigateOpation currentPage;
-    private Stack<NevigateOpation> nevigateHistory;
+    private ArrayDeque<NevigateOpation> nevigateHistory;
     private SetEnabledBtn setBackEnable;
     private SetEnabledBtn setSearchEnable;
+    private SetText setSearchText;
 
     public MainViewPort(
         SetEnabledBtn setBackEnable,
-        SetEnabledBtn setSearchEnable
+        SetEnabledBtn setSearchEnable,
+        SetText setSearchText,
+        boolean showDefault
     ) {
         this.setBackEnable = setBackEnable;
         this.setSearchEnable = setSearchEnable;
+        this.setSearchText = setSearchText;
         channelPage = new ChannelPage(this);
         searchResultPage = new SearchResultPage(this);
         videoPage = new VideoPage(this);
-        nevigateHistory = new Stack<>();
-        JPanel defultPage = new JPanel(new BorderLayout());
-        defultPage.add(
-            new JLabel("Try searching to get started", SwingConstants.CENTER),
-            BorderLayout.CENTER
-        );
-        this.setView(defultPage);
+        nevigateHistory = new ArrayDeque<>();
+        if (showDefault) {
+            JPanel defultPage = new JPanel(new BorderLayout());
+            defultPage.add(
+                new JLabel(
+                    "Try searching to get started",
+                    SwingConstants.CENTER
+                ),
+                BorderLayout.CENTER
+            );
+            this.setView(defultPage);
+        }
     }
 
     public static class NevigateOpation {
@@ -48,6 +57,7 @@ public class MainViewPort extends JViewport {
 
     public void nevigate(NevigateOpation nevigateOpation) {
         boolean isNotFirst = currentPage != null;
+        setBackEnable.setEnabled(false);
         if (isNotFirst) {
             switch (currentPage.PAGE) {
                 case VIDEO:
@@ -56,7 +66,7 @@ public class MainViewPort extends JViewport {
         }
         SwitchView(nevigateOpation);
         if (isNotFirst) {
-            nevigateHistory.add(currentPage);
+            nevigateHistory.push(currentPage);
         }
         currentPage = nevigateOpation;
         setBackEnable.setEnabled(isNotFirst);
@@ -81,6 +91,7 @@ public class MainViewPort extends JViewport {
                     setSearchEnable.setEnabled(true);
                 });
                 this.setView(searchResultPage);
+                setSearchText.setText(nevigateOpation.QUERY);
                 break;
             case VIDEO:
                 this.setView(videoPage);
@@ -101,5 +112,9 @@ public class MainViewPort extends JViewport {
 
     public static interface SetEnabledBtn {
         public void setEnabled(boolean enable);
+    }
+
+    public static interface SetText {
+        public void setText(String text);
     }
 }

@@ -3,19 +3,21 @@
  */
 package org.zane.newpipe;
 
-import com.formdev.flatlaf.IntelliJTheme;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import org.schabi.newpipe.extractor.NewPipe;
 import org.zane.newpipe.page.ChannelPage;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.page.SearchResultPage;
 import org.zane.newpipe.page.VideoPage;
 import org.zane.newpipe.ui.IconRes;
-import org.zane.newpipe.util.Downloader;
+import org.zane.newpipe.util.VideoUtil;
+import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
 
 public class App extends JFrame {
 
@@ -26,7 +28,21 @@ public class App extends JFrame {
     private MainViewPort mainViewPort;
     private ChannelPage channelPage;
 
+    public App(String searchQuery) {
+        this(false);
+        searchField.setText(searchQuery);
+        searchButton.doClick();
+    }
+
     public App() {
+        this(true);
+    }
+
+    private App(boolean showDefault) {
+        NativeDiscovery nd = new NativeDiscovery();
+        if (nd.discover()) {
+            VideoUtil.setVlcPath(nd.discoveredPath());
+        }
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setTitle("NewPipe");
         try {
@@ -86,7 +102,9 @@ public class App extends JFrame {
 
         mainViewPort = new MainViewPort(
             backBtn::setEnabled,
-            searchButton::setEnabled
+            searchButton::setEnabled,
+            searchField::setText,
+            showDefault
         );
         JScrollPane mainContent = new JScrollPane(
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
@@ -96,34 +114,59 @@ public class App extends JFrame {
         //mainContent.setMinimumSize(new Dimension(1000, 500));
         this.add(mainContent, BorderLayout.CENTER);
 
-        this.setVisible(true);
-        searchButton.addActionListener(e ->
-            mainViewPort.nevigate(
-                new NevigateOpation(
-                    MainViewPort.Page.SEARCH,
-                    searchField.getText()
-                )
-            )
-        );
-        searchField.addActionListener(e ->
-            mainViewPort.nevigate(
-                new NevigateOpation(
-                    MainViewPort.Page.SEARCH,
-                    searchField.getText()
-                )
-            )
-        );
+        searchButton.addActionListener(this::onSearchAction);
+        searchField.addActionListener(this::onSearchAction);
     }
 
-    public static void main(String[] args) {
-        NewPipe.init(new Downloader());
-        IntelliJTheme.setup(
-            App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
-        );
-        SwingUtilities.invokeLater(() -> {
-            App main = new App();
-        });
-
-        /* */
+    public void onSearchAction(ActionEvent e) {
+        MainViewPort.Page newPage;
+        String qurey = searchField.getText().trim();
+        try {
+            URI uri = new URI(qurey);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (host == null) {
+                throw new URISyntaxException(qurey, "no Host");
+            }
+            if (path == null) {
+                throw new URISyntaxException(qurey, "no Path");
+            }
+            switch (host.toLowerCase()) {
+                case "youtube.com":
+                case "www.youtube.com":
+                case "m.youtube.com":
+                    String[] paths = path.split("/", 3);
+                    if (paths.length > 1) {
+                        switch (paths[1].toLowerCase()) {
+                            case "watch":
+                                newPage = MainViewPort.Page.VIDEO;
+                                break;
+                            case "hashtag":
+                                newPage = MainViewPort.Page.SEARCH;
+                                qurey = "#" + qurey;
+                                break;
+                            default:
+                                if (paths[1].charAt(0) == '@') {
+                                    newPage = MainViewPort.Page.CHANNEL;
+                                } else {
+                                    newPage = MainViewPort.Page.SEARCH;
+                                }
+                        }
+                    } else {
+                        {
+                            newPage = MainViewPort.Page.SEARCH;
+                        }
+                    }
+                    break;
+                case "youtu.be":
+                    newPage = MainViewPort.Page.VIDEO;
+                    break;
+                default:
+                    newPage = MainViewPort.Page.SEARCH;
+            }
+        } catch (URISyntaxException err) {
+            newPage = MainViewPort.Page.SEARCH;
+        }
+        mainViewPort.nevigate(new NevigateOpation(newPage, qurey));
     }
 }

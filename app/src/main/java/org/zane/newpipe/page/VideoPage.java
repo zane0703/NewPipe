@@ -6,6 +6,7 @@ import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.DecimalFormat;
@@ -30,13 +31,19 @@ import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.JHTMLPane;
 import org.zane.newpipe.ui.SearchItemPanel;
 import org.zane.newpipe.util.CommonUtil;
+import org.zane.newpipe.util.VideoUtil.AudioComboBoxRenderer;
+import org.zane.newpipe.util.VideoUtil.SubTitleComboBoxRenderer;
+import org.zane.newpipe.util.VideoUtil.VideoComboBoxRenderer;
 import org.zane.newpipe.util.WrapLayout;
+import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
+import uk.co.caprica.vlcj.factory.discovery.strategy.NativeDiscoveryStrategy;
 import uk.co.caprica.vlcj.media.MediaRef;
 import uk.co.caprica.vlcj.media.MediaSlavePriority;
 import uk.co.caprica.vlcj.media.MediaSlaveType;
 import uk.co.caprica.vlcj.media.TrackType;
 import uk.co.caprica.vlcj.player.base.MediaApi;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
+import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventListener;
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent;
 
@@ -88,7 +95,9 @@ public class VideoPage extends JPanel {
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         numberFormat = NumberFormat.getInstance();
         CallbackMediaPlayerComponent mediaPlayerComponent =
-            new CallbackMediaPlayerComponent();
+            new CallbackMediaPlayerComponent(
+                new String[] { "--avcodec-hw=auto", "--ffmpeg-hw" }
+            );
         mediaPlayer = mediaPlayerComponent.mediaPlayer();
         this.addComponentListener(
             new ComponentListener() {
@@ -160,9 +169,8 @@ public class VideoPage extends JPanel {
         });
         videoContol.add(playButton);
 
-        videoModel = new DefaultComboBoxModel<>();
-
         //ComboBox
+        videoModel = new DefaultComboBoxModel<>();
         videoComboBox = new JComboBox<VideoStream>(videoModel);
         videoComboBox.setRenderer(new VideoComboBoxRenderer());
         videoComboBox.addItemListener(e -> {
@@ -254,7 +262,7 @@ public class VideoPage extends JPanel {
             Object[] options = new Object[] { resetBtn, "Ok", "Cancel" };
             if (
                 JOptionPane.showOptionDialog(
-                    this,
+                    mainViewPort,
                     s,
                     "Playback speed option",
                     JOptionPane.DEFAULT_OPTION,
@@ -332,7 +340,7 @@ public class VideoPage extends JPanel {
                         String[] paths = url.getPath().split("/");
                         switch (paths.length) {
                             case 2:
-                                if (paths[1].equals("watch")) {
+                                if (paths[1].equalsIgnoreCase("watch")) {
                                     Map<String, String> query =
                                         CommonUtil.getQueryMap(url.getQuery());
                                     String v = query.get("v");
@@ -355,7 +363,7 @@ public class VideoPage extends JPanel {
                                 }
                                 break;
                             case 3:
-                                if (paths[1].equals("hashtag")) {
+                                if (paths[1].equalsIgnoreCase("hashtag")) {
                                     mainViewPort.nevigate(
                                         new NevigateOpation(
                                             MainViewPort.Page.SEARCH,
@@ -364,6 +372,7 @@ public class VideoPage extends JPanel {
                                     );
                                 }
                                 break;
+                            case 1:
                         }
                     } else if (Desktop.isDesktopSupported()) {
                         Desktop.getDesktop().browse(url.toURI());
@@ -424,9 +433,27 @@ public class VideoPage extends JPanel {
     public void showVideo(String videoUrl) {
         new Thread(() -> {
             try {
+                long[] startTime = { 0 };
                 StreamExtractor streamExtractor =
                     ServiceList.YouTube.getStreamExtractor(videoUrl);
                 streamExtractor.fetchPage();
+                try {
+                    URI videoURI = new URI(videoUrl);
+                    String videoQ = videoURI.getQuery();
+                    if (videoQ != null) {
+                        Map<String, String> videoQMap = CommonUtil.getQueryMap(
+                            videoQ
+                        );
+                        String t = videoQMap.get("t");
+                        if (t != null) {
+                            startTime[0] = Long.parseLong(t) * 1000l;
+                        }
+                    }
+                } catch (
+                    URISyntaxException
+                    | ParseException
+                    | NumberFormatException err
+                ) {}
                 videoId = streamExtractor.getId();
                 videoTitle.setText(streamExtractor.getName());
                 List<org.schabi.newpipe.extractor.Image> avatars =
@@ -521,7 +548,12 @@ public class VideoPage extends JPanel {
                     videoCategoryLabel.setText(videoCategoryString);
                     privacyLabel.setText(privacyString);
                     licenseLabel.setText(licenceString);
-                    playVideo(currentVideoStream, currentAudioStream, null, 0);
+                    playVideo(
+                        currentVideoStream,
+                        currentAudioStream,
+                        null,
+                        startTime[0]
+                    );
                     mediaPlayer.controls().play();
                 });
 
@@ -564,113 +596,7 @@ public class VideoPage extends JPanel {
         }
     }
 
-    private class VideoComboBoxRenderer extends DefaultListCellRenderer {
-
-        @Override
-        public Component getListCellRendererComponent(
-            JList<?> list,
-            Object value,
-            int index,
-            boolean isSelected,
-            boolean cellHasFocus
-        ) {
-            super.getListCellRendererComponent(
-                list,
-                value,
-                index,
-                isSelected,
-                cellHasFocus
-            );
-            if (value instanceof VideoStream videoStream) {
-                String codec = videoStream.getCodec();
-                int dotIndex = codec.indexOf('.');
-                if (dotIndex > -1) {
-                    codec = codec.subSequence(0, dotIndex).toString();
-                }
-                setText(
-                    codec +
-                        " " +
-                        videoStream.getResolution() +
-                        " " +
-                        videoStream.getFps() +
-                        "FPS"
-                );
-            }
-            return this;
-        }
-    }
-
-    private class AudioComboBoxRenderer extends DefaultListCellRenderer {
-
-        @Override
-        public Component getListCellRendererComponent(
-            JList<?> list,
-            Object value,
-            int index,
-            boolean isSelected,
-            boolean cellHasFocus
-        ) {
-            super.getListCellRendererComponent(
-                list,
-                value,
-                index,
-                isSelected,
-                cellHasFocus
-            );
-            if (value instanceof AudioStream audioStream) {
-                String codec = audioStream.getCodec();
-                int dotIndex = codec.indexOf('.');
-                if (dotIndex > -1) {
-                    codec = codec.subSequence(0, dotIndex).toString();
-                }
-                setText(
-                    codec +
-                        " " +
-                        CommonUtil.numberToStringUnit(
-                            audioStream.getBitrate()
-                        ) +
-                        "bps"
-                );
-            }
-            return this;
-        }
-    }
-
-    private class SubTitleComboBoxRenderer extends DefaultListCellRenderer {
-
-        @Override
-        public Component getListCellRendererComponent(
-            JList<?> list,
-            Object value,
-            int index,
-            boolean isSelected,
-            boolean cellHasFocus
-        ) {
-            super.getListCellRendererComponent(
-                list,
-                value,
-                index,
-                isSelected,
-                cellHasFocus
-            );
-            if (value instanceof SubtitlesStream subtitlesStream) {
-                setText(subtitlesStream.getDisplayLanguageName());
-            } else if (value == null) {
-                setText("None");
-            }
-            return this;
-        }
-    }
-
-    private class MyMediaPlayerEventListener
-        implements MediaPlayerEventListener
-    {
-
-        @Override
-        public void mediaChanged(MediaPlayer mediaPlayer, MediaRef media) {}
-
-        @Override
-        public void opening(MediaPlayer mediaPlayer) {}
+    private class MyMediaPlayerEventListener extends MediaPlayerEventAdapter {
 
         @Override
         public void buffering(MediaPlayer mediaPlayer, float newCache) {}
@@ -691,12 +617,6 @@ public class VideoPage extends JPanel {
         }
 
         @Override
-        public void forward(MediaPlayer mediaPlayer) {}
-
-        @Override
-        public void backward(MediaPlayer mediaPlayer) {}
-
-        @Override
         public void finished(MediaPlayer mediaPlayer) {
             playButton.setIcon(IconRes.PLAY_ARROW_ICOM);
         }
@@ -706,9 +626,9 @@ public class VideoPage extends JPanel {
             long newTimeSec = newTime / 1000;
             if (newTimeSec != currentTimestamp) {
                 String newTimeString = CommonUtil.getTimeString(newTime / 1000);
-                SwingUtilities.invokeLater(() -> {
-                    currentTimestampLabel.setText(newTimeString);
-                });
+                SwingUtilities.invokeLater(() ->
+                    currentTimestampLabel.setText(newTimeString)
+                );
             }
 
             int newTimeSlid = (int) (newTime / videoLengthDiff);
@@ -721,87 +641,6 @@ public class VideoPage extends JPanel {
                 isPositionChanged = false;
             });
         }
-
-        @Override
-        public void positionChanged(
-            MediaPlayer mediaPlayer,
-            float newPosition
-        ) {
-            // if (playbackSlider.getValueIsAdjusting()) {
-            //     return;
-            // }
-            // isPositionChanged = true;
-            // playbackSlider.setValue((int) (newPosition * 100));
-            // SwingUtilities.invokeLater(() -> {
-            //     isPositionChanged = false;
-            // });
-        }
-
-        @Override
-        public void seekableChanged(MediaPlayer mediaPlayer, int newSeekable) {}
-
-        @Override
-        public void pausableChanged(MediaPlayer mediaPlayer, int newPausable) {}
-
-        @Override
-        public void titleChanged(MediaPlayer mediaPlayer, int newTitle) {}
-
-        @Override
-        public void snapshotTaken(MediaPlayer mediaPlayer, String filename) {}
-
-        @Override
-        public void lengthChanged(MediaPlayer mediaPlayer, long newLength) {}
-
-        @Override
-        public void videoOutput(MediaPlayer mediaPlayer, int newCount) {}
-
-        @Override
-        public void scrambledChanged(
-            MediaPlayer mediaPlayer,
-            int newScrambled
-        ) {}
-
-        @Override
-        public void elementaryStreamAdded(
-            MediaPlayer mediaPlayer,
-            TrackType type,
-            int id
-        ) {}
-
-        @Override
-        public void elementaryStreamDeleted(
-            MediaPlayer mediaPlayer,
-            TrackType type,
-            int id
-        ) {}
-
-        @Override
-        public void elementaryStreamSelected(
-            MediaPlayer mediaPlayer,
-            TrackType type,
-            int id
-        ) {}
-
-        @Override
-        public void corked(MediaPlayer mediaPlayer, boolean corked) {}
-
-        @Override
-        public void muted(MediaPlayer mediaPlayer, boolean muted) {}
-
-        @Override
-        public void volumeChanged(MediaPlayer mediaPlayer, float volume) {}
-
-        @Override
-        public void audioDeviceChanged(
-            MediaPlayer mediaPlayer,
-            String audioDevice
-        ) {}
-
-        @Override
-        public void chapterChanged(MediaPlayer mediaPlayer, int newChapter) {}
-
-        @Override
-        public void error(MediaPlayer mediaPlayer) {}
 
         @Override
         public void mediaPlayerReady(MediaPlayer mediaPlayer) {

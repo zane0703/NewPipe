@@ -41,6 +41,7 @@ dependencies {
         // ARM 64-bit (not needed if your application does not support Windows on ARM)
     implementation( "com.formdev:flatlaf:${flatlafVersion}:windows-arm64@dll" )
     implementation( "com.formdev:flatlaf-extras:${flatlafVersion}" )
+    implementation("info.picocli:picocli:4.7.7")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -51,13 +52,13 @@ java {
 }
 tasks.jar {
     manifest {
-        attributes("Main-Class" to "org.zane.newpipe.App")
+        attributes("Main-Class" to "org.zane.newpipe.Main")
     }
 }
 
 application {
     // Define the main class for the application.
-    mainClass = "org.zane.newpipe.App"
+    mainClass = "org.zane.newpipe.Main"
 }
 
 tasks.named<Test>("test") {

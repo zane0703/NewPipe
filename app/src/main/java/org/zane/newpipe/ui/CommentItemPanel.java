@@ -3,11 +3,15 @@ package org.zane.newpipe.ui;
 import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.Image;
@@ -16,11 +20,13 @@ import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.zane.newpipe.page.MainViewPort;
+import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.util.CommonUtil;
 
 public class CommentItemPanel extends JPanel {
 
     private MainViewPort mainViewPort;
+    private JLabel uploaderNameLabel;
 
     public CommentItemPanel(
         CommentsInfoItem cit,
@@ -30,7 +36,12 @@ public class CommentItemPanel extends JPanel {
         this.mainViewPort = mainViewPort;
         setLayout(new FlowLayout(FlowLayout.LEFT));
         List<Image> avatars = cit.getUploaderAvatars();
+        ChannelClickListener ccl = new ChannelClickListener(
+            cit.getUploaderUrl()
+        );
         JImage jImage = new JImage();
+        jImage.addMouseListener(ccl);
+        jImage.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         jImage.setMaximumSize(new Dimension(50, 50));
         if (!avatars.isEmpty()) {
             try {
@@ -49,9 +60,16 @@ public class CommentItemPanel extends JPanel {
         commentInfoPanel.setLayout(
             new BoxLayout(commentInfoPanel, BoxLayout.Y_AXIS)
         );
+
         commentInfoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JPanel uploaderNamepPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        uploaderNamepPanel.add(new JLabel(cit.getUploaderName()));
+
+        uploaderNameLabel = new JLabel(cit.getUploaderName());
+        uploaderNameLabel.addMouseListener(ccl);
+        uploaderNameLabel.setCursor(
+            Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        );
+        uploaderNamepPanel.add(uploaderNameLabel);
         commentInfoPanel.add(uploaderNamepPanel);
         JHTMLPane commentText = new JHTMLPane();
         commentText.setText(cit.getCommentText().getContent());
@@ -150,6 +168,52 @@ public class CommentItemPanel extends JPanel {
                 }
             }
         );
+    }
+
+    private class ChannelClickListener implements MouseListener {
+
+        private final String channelURL;
+
+        public ChannelClickListener(String channelURL) {
+            this.channelURL = channelURL;
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            // Your "onclick" logic goes here
+            mainViewPort.nevigate(
+                new NevigateOpation(MainViewPort.Page.CHANNEL, channelURL)
+            );
+        }
+
+        // Other MouseListener methods (must be implemented, even if empty)
+        @Override
+        public void mousePressed(MouseEvent e) {}
+
+        @Override
+        public void mouseReleased(MouseEvent e) {}
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            Font f = uploaderNameLabel.getFont();
+            Map<TextAttribute, Object> attr = (Map<
+                TextAttribute,
+                Object
+            >) f.getAttributes();
+            attr.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
+            uploaderNameLabel.setFont(f.deriveFont(attr));
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+            Font f = uploaderNameLabel.getFont();
+            Map<TextAttribute, Object> attr = (Map<
+                TextAttribute,
+                Object
+            >) f.getAttributes();
+            attr.put(TextAttribute.UNDERLINE, -1);
+            uploaderNameLabel.setFont(f.deriveFont(attr));
+        }
     }
 
     @Override
