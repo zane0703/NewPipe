@@ -1,6 +1,8 @@
 package org.zane.newpipe.page;
 
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
@@ -20,6 +22,7 @@ import javax.swing.event.HyperlinkEvent;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.SubtitlesStream;
@@ -31,6 +34,7 @@ import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.JHTMLPane;
 import org.zane.newpipe.ui.SearchItemPanel;
 import org.zane.newpipe.util.CommonUtil;
+import org.zane.newpipe.util.VideoUtil;
 import org.zane.newpipe.util.VideoUtil.AudioComboBoxRenderer;
 import org.zane.newpipe.util.VideoUtil.SubTitleComboBoxRenderer;
 import org.zane.newpipe.util.VideoUtil.VideoComboBoxRenderer;
@@ -89,6 +93,7 @@ public class VideoPage extends JPanel {
     private JLabel licenseLabel;
     private JLabel privacyLabel;
     private JPanel tagPanel;
+    private StreamExtractor streamExtractor;
 
     public VideoPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -159,7 +164,7 @@ public class VideoPage extends JPanel {
         // video Contol
         videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
         this.add(videoContol);
-        playButton = new JButton(IconRes.PLAY_ARROW_ICOM);
+        playButton = new JButton(IconRes.PLAY_ARROW_ICON);
         playButton.addActionListener(e -> {
             if (mediaPlayer.status().isPlaying()) {
                 mediaPlayer.controls().pause();
@@ -303,13 +308,59 @@ public class VideoPage extends JPanel {
         likeAndViewPanel.add(viewCountLabel);
         likeCountLabel = new JLabel(
             "",
-            IconRes.THUMP_UP_ICOM,
+            IconRes.THUMP_UP_ICON,
             SwingConstants.RIGHT
         );
         likeAndViewPanel.add(likeCountLabel);
         likeAndViewPanelPanel.add(likeAndViewPanel);
         videoInfo.add(likeAndViewPanelPanel);
         this.add(videoInfo);
+
+        JPanel videoMenuBtnPanel = new JPanel(new GridLayout(1, 3));
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        JButton copyUrlBtn = new JButton("Copy URL", IconRes.COPY_ICON);
+        copyUrlBtn.addActionListener(e -> {
+            try {
+                clipboard.setContents(
+                    new StringSelection(streamExtractor.getUrl()),
+                    null
+                );
+            } catch (ParsingException pe) {
+                pe.printStackTrace();
+            }
+        });
+        videoMenuBtnPanel.add(copyUrlBtn);
+        JButton openBrowserBtn = new JButton(
+            "Open in browser",
+            IconRes.LANGUAGE_ICON
+        );
+        openBrowserBtn.addActionListener(e -> {
+            if (Desktop.isDesktopSupported()) {
+                mediaPlayer.controls().pause();
+                try {
+                    Desktop.getDesktop().browse(
+                        URI.create(streamExtractor.getUrl())
+                    );
+                } catch (IOException | ParsingException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+        });
+        videoMenuBtnPanel.add(openBrowserBtn);
+        JButton openVLCBtn = new JButton(
+            "Open in VLC Player",
+            IconRes.VLC_ICON
+        );
+        openVLCBtn.addActionListener(e -> {
+            mediaPlayer.controls().pause();
+            new Thread(() -> {
+                VideoUtil.openVLC(streamExtractor, mainViewPort);
+            })
+                .start();
+        });
+        videoMenuBtnPanel.add(openVLCBtn);
+        this.add(videoMenuBtnPanel);
+
         relatedStreamsPanel = new JPanel();
         relatedStreamsPanel.setLayout(
             new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
@@ -411,15 +462,15 @@ public class VideoPage extends JPanel {
         videoDescriptionPanel.add(tagPanel);
         JPanel navigationBar = new JPanel(new GridLayout(1, 3));
         JViewport viewport = new JViewport();
-        JButton commentBtn = new JButton(IconRes.COMMENT_ICOM);
+        JButton commentBtn = new JButton(IconRes.COMMENT_ICON);
         commentBtn.addActionListener(e -> viewport.setView(videoCommentPanel));
         navigationBar.add(commentBtn);
-        JButton relatedStreamsBtn = new JButton(IconRes.ART_TRACK_ICOM);
+        JButton relatedStreamsBtn = new JButton(IconRes.ART_TRACK_ICON);
         relatedStreamsBtn.addActionListener(e ->
             viewport.setView(relatedStreamsPanel)
         );
         navigationBar.add(relatedStreamsBtn);
-        JButton descriptionBtn = new JButton(IconRes.DESCRIPTION_ICOM);
+        JButton descriptionBtn = new JButton(IconRes.DESCRIPTION_ICON);
         descriptionBtn.addActionListener(e ->
             viewport.setView(videoDescriptionPanel)
         );
@@ -434,8 +485,9 @@ public class VideoPage extends JPanel {
         new Thread(() -> {
             try {
                 long[] startTime = { 0 };
-                StreamExtractor streamExtractor =
-                    ServiceList.YouTube.getStreamExtractor(videoUrl);
+                streamExtractor = ServiceList.YouTube.getStreamExtractor(
+                    videoUrl
+                );
                 streamExtractor.fetchPage();
                 try {
                     URI videoURI = new URI(videoUrl);
@@ -603,22 +655,22 @@ public class VideoPage extends JPanel {
 
         @Override
         public void playing(MediaPlayer mediaPlayer) {
-            playButton.setIcon(IconRes.PAUSE_ICOM);
+            playButton.setIcon(IconRes.PAUSE_ICON);
         }
 
         @Override
         public void paused(MediaPlayer mediaPlayer) {
-            playButton.setIcon(IconRes.PLAY_ARROW_ICOM);
+            playButton.setIcon(IconRes.PLAY_ARROW_ICON);
         }
 
         @Override
         public void stopped(MediaPlayer mediaPlayer) {
-            playButton.setIcon(IconRes.PLAY_ARROW_ICOM);
+            playButton.setIcon(IconRes.PLAY_ARROW_ICON);
         }
 
         @Override
         public void finished(MediaPlayer mediaPlayer) {
-            playButton.setIcon(IconRes.PLAY_ARROW_ICOM);
+            playButton.setIcon(IconRes.PLAY_ARROW_ICON);
         }
 
         @Override

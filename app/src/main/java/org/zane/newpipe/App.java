@@ -83,7 +83,7 @@ public class App extends JFrame {
 
         searchbar.setBackground(new Color(255, 0, 0));
         this.add(searchbar, BorderLayout.NORTH);
-        JButton backBtn = new JButton(IconRes.ARROW_BACK_ICOM);
+        JButton backBtn = new JButton(IconRes.ARROW_BACK_ICON);
         backBtn.setEnabled(false);
         backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         backBtn.setBackground(new Color(255, 0, 0));
@@ -96,7 +96,7 @@ public class App extends JFrame {
         searchButton = new JButton();
         searchButton.setOpaque(false);
         searchButton.setBackground(new Color(255, 0, 0));
-        searchButton.setIcon(IconRes.SEARCH_ICOM);
+        searchButton.setIcon(IconRes.SEARCH_ICON);
         searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         searchbar.add(searchButton, BorderLayout.LINE_END);
 

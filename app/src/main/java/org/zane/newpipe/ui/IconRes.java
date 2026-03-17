@@ -5,51 +5,65 @@ import java.io.IOException;
 
 public class IconRes {
 
-    public static FlatSVGIcon ARROW_BACK_ICOM;
-    public static FlatSVGIcon ARROW_NEXT_ICOM;
-    public static FlatSVGIcon ART_TRACK_ICOM;
-    public static FlatSVGIcon COMMENT_ICOM;
-    public static FlatSVGIcon DESCRIPTION_ICOM;
-    public static FlatSVGIcon HEART_ICOM;
-    public static FlatSVGIcon PAUSE_ICOM;
-    public static FlatSVGIcon PLAY_ARROW_ICOM;
-    public static FlatSVGIcon SEARCH_ICOM;
-    public static FlatSVGIcon THUMP_UP_ICOM;
-    public static FlatSVGIcon THUMP_UP_SMALL_ICOM;
+    public static FlatSVGIcon ARROW_BACK_ICON;
+    public static FlatSVGIcon ARROW_NEXT_ICON;
+    public static FlatSVGIcon ART_TRACK_ICON;
+    public static FlatSVGIcon COMMENT_ICON;
+    public static FlatSVGIcon DESCRIPTION_ICON;
+    public static FlatSVGIcon HEART_ICON;
+    public static FlatSVGIcon PAUSE_ICON;
+    public static FlatSVGIcon PLAY_ARROW_ICON;
+    public static FlatSVGIcon SEARCH_ICON;
+    public static FlatSVGIcon THUMP_UP_ICON;
+    public static FlatSVGIcon THUMP_UP_SMALL_ICON;
+    public static FlatSVGIcon LANGUAGE_ICON;
+    public static FlatSVGIcon VLC_ICON;
+    public static FlatSVGIcon COPY_ICON;
 
     static {
         try {
-            ARROW_BACK_ICOM = new FlatSVGIcon(
+            ARROW_BACK_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_arrow_back.svg")
             );
-            ARROW_NEXT_ICOM = new FlatSVGIcon(
+            ARROW_NEXT_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_arrow_next.svg")
             );
-            COMMENT_ICOM = new FlatSVGIcon(
+            COMMENT_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_comment.svg")
             );
-            ART_TRACK_ICOM = new FlatSVGIcon(
+            ART_TRACK_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_art_track.svg")
             );
-            DESCRIPTION_ICOM = new FlatSVGIcon(
+            DESCRIPTION_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_description.svg")
             );
-            HEART_ICOM = new FlatSVGIcon(
+            HEART_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_heart.svg")
             ).derive(15, 15);
-            PAUSE_ICOM = new FlatSVGIcon(
+            PAUSE_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_pause.svg")
             );
-            PLAY_ARROW_ICOM = new FlatSVGIcon(
+            PLAY_ARROW_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_play_arrow.svg")
             );
-            SEARCH_ICOM = new FlatSVGIcon(
+            SEARCH_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_search.svg")
             );
-            THUMP_UP_ICOM = new FlatSVGIcon(
+            THUMP_UP_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_thumb_up.svg")
             );
-            THUMP_UP_SMALL_ICOM = THUMP_UP_ICOM.derive(15, 15);
+            THUMP_UP_SMALL_ICON = THUMP_UP_ICON.derive(15, 15);
+            VLC_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream(
+                    "/icon/vlc-logo-player-svgrepo-com.svg"
+                )
+            ).derive(20, 20);
+            LANGUAGE_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream("/icon/ic_language.svg")
+            ).derive(20, 20);
+            COPY_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream("/icon/copy-svgrepo-com.svg")
+            ).derive(20, 20);
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);

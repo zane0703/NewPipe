@@ -84,12 +84,12 @@ public class CommentItemPanel extends JPanel {
         JPanel commentMetaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel likeCunt = new JLabel(
             Integer.toString(cit.getLikeCount()),
-            IconRes.THUMP_UP_SMALL_ICOM,
+            IconRes.THUMP_UP_SMALL_ICON,
             SwingConstants.LEFT
         );
         commentMetaPanel.add(likeCunt);
         if (cit.isHeartedByUploader()) {
-            commentMetaPanel.add(new JLabel(IconRes.HEART_ICOM));
+            commentMetaPanel.add(new JLabel(IconRes.HEART_ICON));
         }
         commentMetaPanel.add(
             new JLabel(

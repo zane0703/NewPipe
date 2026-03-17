@@ -50,7 +50,10 @@ public class SearchItemPanel extends JPanel {
         itemTitle.setText(item.getName());
         infoPanel.add(itemTitle);
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        JMenuItem openInBrowser = new JMenuItem("Open in Browser");
+        JMenuItem openInBrowser = new JMenuItem(
+            "Open in Browser",
+            IconRes.LANGUAGE_ICON
+        );
         openInBrowser.addActionListener(e -> {
             if (Desktop.isDesktopSupported()) {
                 try {
@@ -61,7 +64,7 @@ public class SearchItemPanel extends JPanel {
             }
         });
         popupMenu.add(openInBrowser);
-        JMenuItem copyURL = new JMenuItem("Copy URL");
+        JMenuItem copyURL = new JMenuItem("Copy URL", IconRes.COPY_ICON);
         copyURL.addActionListener(e ->
             clipboard.setContents(new StringSelection(item.getUrl()), null)
         );
@@ -97,7 +100,10 @@ public class SearchItemPanel extends JPanel {
                 )
             );
             popupMenu.add(showChannelDetile);
-            JMenuItem openInVlc = new JMenuItem("Open in VLC media player");
+            JMenuItem openInVlc = new JMenuItem(
+                "Open in VLC media player",
+                IconRes.VLC_ICON
+            );
             openInVlc.addActionListener(e ->
                 VideoUtil.openVLC(item.getUrl(), mainViewPort)
             );

@@ -37,7 +37,7 @@ public class SearchResultPage extends JPanel {
         this.add(resultListPanel, BorderLayout.CENTER);
         JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pageNevPanel.setBackground(new Color(255, 0, 0));
-        preBtn = new JButton(IconRes.ARROW_BACK_ICOM);
+        preBtn = new JButton(IconRes.ARROW_BACK_ICON);
         preBtn.addActionListener(e -> {
             resultListPanel.removeAll();
             new Thread(() -> {
@@ -69,7 +69,7 @@ public class SearchResultPage extends JPanel {
         pageNevPanel.add(preBtn);
         pageNumLabel = new JLabel("1", SwingConstants.CENTER);
         pageNevPanel.add(pageNumLabel);
-        nextBtn = new JButton(IconRes.ARROW_NEXT_ICOM);
+        nextBtn = new JButton(IconRes.ARROW_NEXT_ICON);
         nextBtn.addActionListener(e -> {
             resultListPanel.removeAll();
             new Thread(() -> {
