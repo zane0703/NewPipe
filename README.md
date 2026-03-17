@@ -18,7 +18,7 @@ Before running building the project, ensure you have the following installed on 
 
 - Java 25(JDK25 if wnat to build the project)
 - VLC Media Player: The application relies on VLC for media playback functionality
-- 
+  
 # 📦 Downloads (Pre-built Files)
 You can download the latest pre-built versions of the application from the Releases section of the repository:
 👉 [Download Pre-built Assets](https://github.com/zane0703/NewPipe/releases)
@@ -41,7 +41,7 @@ Unix(Linux, Mac)
 ```
 
 3. ***Locate the Executable:*** Once the build is successful, your executable JAR will be located at:
-==app/build/libs/app-all.jar==
+===app/build/libs/app-all.jar===
 
 # Disclaimer
 
