@@ -315,7 +315,7 @@ public class VideoPage extends JPanel {
         videoInfo.add(likeAndViewPanelPanel);
         this.add(videoInfo);
 
-        JPanel videoMenuBtnPanel = new JPanel(new GridLayout(1, 3));
+        JPanel videoMenuBtnPanel = new JPanel(new GridLayout(1, 4));
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         JButton copyUrlBtn = new JButton("Copy URL", IconRes.COPY_ICON);
         copyUrlBtn.addActionListener(e -> {
@@ -358,6 +358,14 @@ public class VideoPage extends JPanel {
                 .start();
         });
         videoMenuBtnPanel.add(openVLCBtn);
+        JButton downloadBtn = new JButton("Donwload", IconRes.DOWNLOAD_ICON);
+        downloadBtn.addActionListener(e -> {
+            new Thread(() -> {
+                VideoUtil.downloadVideo(streamExtractor);
+            })
+                .start();
+        });
+        videoMenuBtnPanel.add(downloadBtn);
         this.add(videoMenuBtnPanel);
 
         relatedStreamsPanel = new JPanel();
@@ -498,14 +506,17 @@ public class VideoPage extends JPanel {
         JPanel navigationBar = new JPanel(new GridLayout(1, 3));
         JViewport viewport = new JViewport();
         JButton commentBtn = new JButton(IconRes.COMMENT_ICON);
+        commentBtn.setToolTipText("View video comment");
         commentBtn.addActionListener(e -> viewport.setView(videoCommentPanel));
         navigationBar.add(commentBtn);
         JButton relatedStreamsBtn = new JButton(IconRes.ART_TRACK_ICON);
+        relatedStreamsBtn.setToolTipText("View related video");
         relatedStreamsBtn.addActionListener(e ->
             viewport.setView(relatedStreamsPanel)
         );
         navigationBar.add(relatedStreamsBtn);
         JButton descriptionBtn = new JButton(IconRes.DESCRIPTION_ICON);
+        descriptionBtn.setToolTipText("View video description");
         descriptionBtn.addActionListener(e ->
             viewport.setView(videoDescriptionPanel)
         );

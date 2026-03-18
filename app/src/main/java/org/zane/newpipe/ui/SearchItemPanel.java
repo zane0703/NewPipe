@@ -17,6 +17,7 @@ import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.schabi.newpipe.extractor.stream.StreamType;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.util.CommonUtil;
@@ -119,6 +120,16 @@ public class SearchItemPanel extends JPanel {
                     VideoUtil.openVLC(item.getUrl(), mainViewPort)
                 );
                 popupMenu.add(openInVlc);
+                if (streamInfoItem.getStreamType() == StreamType.VIDEO_STREAM) {
+                    JMenuItem downloadMenu = new JMenuItem(
+                        "Download video",
+                        IconRes.DOWNLOAD_ICON
+                    );
+                    downloadMenu.addActionListener(e ->
+                        VideoUtil.downloadVideo(item.getUrl())
+                    );
+                    popupMenu.add(downloadMenu);
+                }
                 break;
             case PlaylistInfoItem playlistInfo:
                 JLabel uploaderLabel2 = new JLabel(
