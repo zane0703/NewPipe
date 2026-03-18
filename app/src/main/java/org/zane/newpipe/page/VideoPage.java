@@ -360,6 +360,7 @@ public class VideoPage extends JPanel {
         videoMenuBtnPanel.add(openVLCBtn);
         JButton downloadBtn = new JButton("Donwload", IconRes.DOWNLOAD_ICON);
         downloadBtn.addActionListener(e -> {
+            mediaPlayer.controls().pause();
             new Thread(() -> {
                 VideoUtil.downloadVideo(streamExtractor);
             })

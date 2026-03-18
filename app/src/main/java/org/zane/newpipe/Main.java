@@ -14,7 +14,7 @@ import uk.co.caprica.vlcj.binding.support.runtime.RuntimeUtil;
 @Command(
     name = "NewPipe Desktop",
     mixinStandardHelpOptions = true,
-    version = "NewPipe Desktop v0.1"
+    version = "NewPipe Desktop v0.2"
 )
 public class Main implements Runnable {
 
