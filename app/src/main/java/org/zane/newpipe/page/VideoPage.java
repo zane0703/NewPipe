@@ -16,15 +16,18 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
+import org.schabi.newpipe.extractor.stream.StreamType;
 import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
@@ -39,16 +42,11 @@ import org.zane.newpipe.util.VideoUtil.AudioComboBoxRenderer;
 import org.zane.newpipe.util.VideoUtil.SubTitleComboBoxRenderer;
 import org.zane.newpipe.util.VideoUtil.VideoComboBoxRenderer;
 import org.zane.newpipe.util.WrapLayout;
-import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
-import uk.co.caprica.vlcj.factory.discovery.strategy.NativeDiscoveryStrategy;
-import uk.co.caprica.vlcj.media.MediaRef;
 import uk.co.caprica.vlcj.media.MediaSlavePriority;
 import uk.co.caprica.vlcj.media.MediaSlaveType;
-import uk.co.caprica.vlcj.media.TrackType;
 import uk.co.caprica.vlcj.player.base.MediaApi;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
-import uk.co.caprica.vlcj.player.base.MediaPlayerEventListener;
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent;
 
 public class VideoPage extends JPanel {
@@ -94,6 +92,7 @@ public class VideoPage extends JPanel {
     private JLabel privacyLabel;
     private JPanel tagPanel;
     private StreamExtractor streamExtractor;
+    private boolean isLive;
 
     public VideoPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -365,7 +364,92 @@ public class VideoPage extends JPanel {
         relatedStreamsPanel.setLayout(
             new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
         );
-        videoCommentPanel = new CommentPanel(mainViewPort);
+        HyperlinkListener hyperlinkListener = e -> {
+            try {
+                if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                    URL url = e.getURL();
+                    switch (url.getHost().toLowerCase()) {
+                        case "www.youtube.com":
+                        case "youtube.com":
+                        case "m.youtube.com":
+                            String[] paths = url.getPath().split("/");
+                            switch (paths.length) {
+                                case 2:
+                                    if (paths[1].equalsIgnoreCase("watch")) {
+                                        Map<String, String> query =
+                                            CommonUtil.getQueryMap(
+                                                url.getQuery()
+                                            );
+                                        String v = query.get("v");
+                                        if (v != null) {
+                                            if (v.equals(videoId)) {
+                                                String t = query.get("t");
+                                                long newTime = Long.parseLong(
+                                                    t
+                                                );
+                                                mediaPlayer
+                                                    .controls()
+                                                    .setTime(newTime * 1000);
+                                            } else {
+                                                mainViewPort.nevigate(
+                                                    new NevigateOpation(
+                                                        MainViewPort.Page.VIDEO,
+                                                        url.toString()
+                                                    )
+                                                );
+                                            }
+                                        } else if (paths[1].charAt(0) == '@') {
+                                            mainViewPort.nevigate(
+                                                new NevigateOpation(
+                                                    MainViewPort.Page.CHANNEL,
+                                                    url.toString()
+                                                )
+                                            );
+                                        }
+                                    }
+                                    break;
+                                case 3:
+                                    switch (paths[1].toLowerCase()) {
+                                        case "hashtag":
+                                            mainViewPort.nevigate(
+                                                new NevigateOpation(
+                                                    MainViewPort.Page.SEARCH,
+                                                    "#" + paths[2]
+                                                )
+                                            );
+                                            break;
+                                        case "channel":
+                                            mainViewPort.nevigate(
+                                                new NevigateOpation(
+                                                    MainViewPort.Page.CHANNEL,
+                                                    url.toString()
+                                                )
+                                            );
+                                            break;
+                                    }
+
+                                    break;
+                            }
+                            break;
+                        case "youtu.be":
+                            mainViewPort.nevigate(
+                                new NevigateOpation(
+                                    MainViewPort.Page.VIDEO,
+                                    url.toString()
+                                )
+                            );
+                            break;
+                        default:
+                            if (Desktop.isDesktopSupported()) {
+                                Desktop.getDesktop().browse(url.toURI());
+                            }
+                    }
+                }
+            } catch (ParseException | IOException | URISyntaxException pe) {
+                pe.printStackTrace();
+            }
+        };
+        videoCommentPanel = new CommentPanel(mainViewPort, hyperlinkListener);
         videoCommentPanel.setLayout(
             new BoxLayout(videoCommentPanel, BoxLayout.Y_AXIS)
         );
@@ -382,57 +466,8 @@ public class VideoPage extends JPanel {
             new FlowLayout(FlowLayout.LEFT)
         );
         videoDescriptionText = new JHTMLPane();
-        videoDescriptionText.addHyperlinkListener(e -> {
-            try {
-                if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                    URL url = e.getURL();
-                    if (url.getHost().toLowerCase().equals("www.youtube.com")) {
-                        System.out.println(url.getPath());
-                        String[] paths = url.getPath().split("/");
-                        switch (paths.length) {
-                            case 2:
-                                if (paths[1].equalsIgnoreCase("watch")) {
-                                    Map<String, String> query =
-                                        CommonUtil.getQueryMap(url.getQuery());
-                                    String v = query.get("v");
-                                    if (v != null) {
-                                        if (v.equals(videoId)) {
-                                            String t = query.get("t");
-                                            long newTime = Long.parseLong(t);
-                                            mediaPlayer
-                                                .controls()
-                                                .setTime(newTime * 1000);
-                                        } else {
-                                            mainViewPort.nevigate(
-                                                new NevigateOpation(
-                                                    MainViewPort.Page.VIDEO,
-                                                    url.toString()
-                                                )
-                                            );
-                                        }
-                                    }
-                                }
-                                break;
-                            case 3:
-                                if (paths[1].equalsIgnoreCase("hashtag")) {
-                                    mainViewPort.nevigate(
-                                        new NevigateOpation(
-                                            MainViewPort.Page.SEARCH,
-                                            "#" + paths[2]
-                                        )
-                                    );
-                                }
-                                break;
-                            case 1:
-                        }
-                    } else if (Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().browse(url.toURI());
-                    }
-                }
-            } catch (ParseException | IOException | URISyntaxException pe) {
-                pe.printStackTrace();
-            }
-        });
+
+        videoDescriptionText.addHyperlinkListener(hyperlinkListener);
         Dimension maxSize = new Dimension(
             getPreferredSize().width,
             Integer.MAX_VALUE
@@ -489,9 +524,11 @@ public class VideoPage extends JPanel {
                     videoUrl
                 );
                 streamExtractor.fetchPage();
+
                 try {
                     URI videoURI = new URI(videoUrl);
                     String videoQ = videoURI.getQuery();
+
                     if (videoQ != null) {
                         Map<String, String> videoQMap = CommonUtil.getQueryMap(
                             videoQ
@@ -518,21 +555,66 @@ public class VideoPage extends JPanel {
                     streamExtractor.getUploaderSubscriberCount(),
                     streamExtractor.getUploaderUrl()
                 );
-                List<VideoStream> videoStreams =
-                    streamExtractor.getVideoOnlyStreams();
-                List<AudioStream> audioStreams =
-                    streamExtractor.getAudioStreams();
-                List<SubtitlesStream> subtitlesStreams =
-                    streamExtractor.getSubtitlesDefault();
-                subtitlesStreams.addFirst(null);
-                currentVideoStream = videoStreams.get(0);
-                currentAudioStream = audioStreams.get(0);
-                currentSubtitlesStream = null;
+
                 videoModel.removeAllElements();
                 audioModel.removeAllElements();
-                videoModel.addAll(videoStreams);
-                audioModel.addAll(audioStreams);
-                subtitleModel.addAll(subtitlesStreams);
+                subtitleModel.removeAllElements();
+                isLive =
+                    streamExtractor.getStreamType() == StreamType.LIVE_STREAM;
+
+                if (isLive) {
+                    playbackSlider.setEnabled(false);
+                    videoComboBox.setEnabled(false);
+                    audioComboBox.setEnabled(false);
+                    subtitleComboBox.setEnabled(false);
+                    isPositionChanged = true;
+                    playbackSlider.setValue(0);
+                    isPositionChanged = false;
+                    mediaPlayer.media().play(streamExtractor.getHlsUrl());
+                } else {
+                    List<VideoStream> videoStreams =
+                        streamExtractor.getVideoOnlyStreams();
+                    List<AudioStream> audioStreams =
+                        streamExtractor.getAudioStreams();
+                    List<SubtitlesStream> subtitlesStreams =
+                        streamExtractor.getSubtitlesDefault();
+                    currentVideoStream = videoStreams.get(0);
+                    currentAudioStream = null;
+                    for (AudioStream audioStream : audioStreams) {
+                        Locale audiosLocale = audioStream.getAudioLocale();
+                        if (
+                            audiosLocale != null &&
+                            audiosLocale.getLanguage() == "en"
+                        ) {
+                            currentAudioStream = audioStream;
+                            break;
+                        }
+                    }
+                    if (currentAudioStream == null) {
+                        currentAudioStream = audioStreams.get(0);
+                    }
+
+                    currentSubtitlesStream = null;
+
+                    videoModel.addAll(videoStreams);
+                    audioModel.addAll(audioStreams);
+                    videoComboBox.setEnabled(true);
+                    audioComboBox.setEnabled(true);
+                    videoComboBox.setEnabled(true);
+                    if (audioStreams.isEmpty()) {
+                        subtitleComboBox.setEnabled(false);
+                    } else {
+                        subtitlesStreams.addFirst(null);
+                        subtitleModel.addAll(subtitlesStreams);
+                        subtitleComboBox.setEnabled(true);
+                    }
+
+                    isEnableComboxEvent = false;
+                    videoModel.setSelectedItem(currentVideoStream);
+                    audioModel.setSelectedItem(currentAudioStream);
+                    subtitleModel.setSelectedItem(null);
+                    isEnableComboxEvent = true;
+                }
 
                 String timeString = CommonUtil.getTimeString(
                     streamExtractor.getLength()
@@ -586,32 +668,42 @@ public class VideoPage extends JPanel {
                     } catch (
                         ExtractionException
                         | IOException
-                        | URISyntaxException e
+                        | URISyntaxException
+                        | NullPointerException
+                        | IndexOutOfBoundsException e
                     ) {
                         e.printStackTrace();
+                        if (CommonUtil.retryPrompt(mainViewPort, "video")) {
+                            showVideo(videoUrl);
+                        }
                     }
-                    isEnableComboxEvent = false;
-                    videoModel.setSelectedItem(currentVideoStream);
-                    audioModel.setSelectedItem(currentAudioStream);
-                    subtitleModel.setSelectedItem(null);
-                    isEnableComboxEvent = true;
+
                     viewCountLabel.setText(viewCountString);
                     likeCountLabel.setText(likeCountString);
                     videoCategoryLabel.setText(videoCategoryString);
                     privacyLabel.setText(privacyString);
                     licenseLabel.setText(licenceString);
-                    playVideo(
-                        currentVideoStream,
-                        currentAudioStream,
-                        null,
-                        startTime[0]
-                    );
+                    if (!isLive) {
+                        playVideo(
+                            currentVideoStream,
+                            currentAudioStream,
+                            null,
+                            startTime[0]
+                        );
+                    }
                     mediaPlayer.controls().play();
                 });
 
                 videoCommentPanel.fetchComment(videoUrl);
-            } catch (ExtractionException | IOException e) {
+            } catch (
+                ExtractionException
+                | IOException
+                | IndexOutOfBoundsException e
+            ) {
                 e.printStackTrace();
+                if (CommonUtil.retryPrompt(mainViewPort, "video")) {
+                    showVideo(videoUrl);
+                }
             }
         })
             .start();
@@ -630,16 +722,17 @@ public class VideoPage extends JPanel {
         MediaApi mediaApi = mediaPlayer.media();
         mediaApi.prepare(
             videoStream.getContent(),
-            String.format(":start-time=%.3f", currentTime / 1000.0)
+            String.format(":start-time=%.3f", currentTime / 1000.0),
+            ":input-slave=" + currentAudioStream.getContent()
         );
 
-        mediaApi
-            .slaves()
-            .add(
-                MediaSlaveType.AUDIO,
-                MediaSlavePriority.HIGH,
-                currentAudioStream.getContent()
-            );
+        // mediaApi
+        //     .slaves()
+        //     .add(
+        //         MediaSlaveType.AUDIO,
+        //         MediaSlavePriority.HIGH,
+        //         currentAudioStream.getContent()
+        //     );
         if (subtitlesStream != null) {
             //System.out.println(subtitlesStream.getContent());
             mediaPlayer
@@ -675,6 +768,9 @@ public class VideoPage extends JPanel {
 
         @Override
         public void timeChanged(MediaPlayer mediaPlayer, long newTime) {
+            if (isLive) {
+                return;
+            }
             long newTimeSec = newTime / 1000;
             if (newTimeSec != currentTimestamp) {
                 String newTimeString = CommonUtil.getTimeString(newTime / 1000);
@@ -696,6 +792,9 @@ public class VideoPage extends JPanel {
 
         @Override
         public void mediaPlayerReady(MediaPlayer mediaPlayer) {
+            if (isLive) {
+                return;
+            }
             videoLengthDiff =
                 ((double) mediaPlayer.status().length()) /
                 ((double) Integer.MAX_VALUE);

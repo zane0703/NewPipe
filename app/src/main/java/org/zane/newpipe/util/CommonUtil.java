@@ -1,5 +1,6 @@
 package org.zane.newpipe.util;
 
+import java.awt.Container;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.time.Duration;
@@ -8,9 +9,11 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
+import org.zane.newpipe.page.MainViewPort;
 
 public class CommonUtil {
 
@@ -115,5 +118,22 @@ public class CommonUtil {
             map.put(paramkv[0], paramkv[1]);
         }
         return map;
+    }
+
+    public static boolean retryPrompt(Container container, String itemName) {
+        Object[] options = { "Retry", "cancel" };
+        return (
+            JOptionPane.showOptionDialog(
+                container,
+                "Error loading " + itemName + " info do you wnat to retry",
+                "Error",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.ERROR_MESSAGE,
+                null,
+                options,
+                options[0]
+            ) ==
+            0
+        );
     }
 }

@@ -2,24 +2,18 @@ package org.zane.newpipe.ui;
 
 import java.awt.*;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.util.ArrayDeque;
 import java.util.List;
-import java.util.Stack;
 import javax.swing.*;
-import org.schabi.newpipe.extractor.InfoItem;
+import javax.swing.event.HyperlinkListener;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
-import org.schabi.newpipe.extractor.search.SearchExtractor;
-import org.zane.newpipe.App;
+import org.schabi.newpipe.extractor.timeago.patterns.hy;
 import org.zane.newpipe.page.MainViewPort;
-import org.zane.newpipe.page.MainViewPort.NevigateOpation;
-import org.zane.newpipe.ui.IconRes;
-import org.zane.newpipe.ui.SearchItemPanel;
-import org.zane.newpipe.util.CommonUtil;
 
 public class CommentPanel extends JPanel {
 
@@ -29,17 +23,20 @@ public class CommentPanel extends JPanel {
     private JButton nextBtn;
     private JLabel pageNumLabel;
     private CommentsExtractor ce;
-    private Stack<Page> pageStack;
+    private ArrayDeque<Page> pageStack;
     private InfoItemsPage<CommentsInfoItem> itp;
     private Page currentPage;
+    private boolean isReplay;
+    private HyperlinkListener hyperlinkListener;
 
     public CommentPanel(
         MainViewPort mainViewPort,
+        HyperlinkListener hyperlinkListener,
         CommentsExtractor ce,
         Page page
     ) {
-        this(mainViewPort);
-        pageStack.removeAllElements();
+        this(mainViewPort, hyperlinkListener);
+        isReplay = true;
         pageNumLabel.setText("1");
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
@@ -56,10 +53,15 @@ public class CommentPanel extends JPanel {
             .start();
     }
 
-    public CommentPanel(MainViewPort mainViewPort) {
+    public CommentPanel(
+        MainViewPort mainViewPort,
+        HyperlinkListener hyperlinkListener
+    ) {
         super(new BorderLayout());
         this.mainViewPort = mainViewPort;
-        pageStack = new Stack<>();
+        this.hyperlinkListener = hyperlinkListener;
+        isReplay = false;
+        pageStack = new ArrayDeque<>();
         mainCommentPanel = new JPanel();
         mainCommentPanel.setLayout(
             new BoxLayout(mainCommentPanel, BoxLayout.Y_AXIS)
@@ -72,28 +74,29 @@ public class CommentPanel extends JPanel {
             mainCommentPanel.removeAll();
             new Thread(() -> {
                 try {
-                    Page prePage = pageStack.pop();
-                    if (prePage == null) {
+                    if (pageStack.isEmpty()) {
                         itp = ce.getInitialPage();
                         showPage();
                         SwingUtilities.invokeLater(() -> {
                             pageNumLabel.setText("1");
                             preBtn.setEnabled(false);
                         });
+                        currentPage = null;
                     } else {
+                        Page prePage = pageStack.pop();
                         itp = ce.getPage(prePage);
                         showPage();
                         int stackSize = pageStack.size();
                         SwingUtilities.invokeLater(() -> {
                             pageNumLabel.setText(
-                                Integer.toString(stackSize + 1)
+                                Integer.toString(stackSize + (isReplay ? 1 : 2))
                             );
                         });
-                        if (stackSize < 1) {
+                        if (isReplay && stackSize < 1) {
                             preBtn.setEnabled(false);
                         }
+                        currentPage = prePage;
                     }
-                    currentPage = prePage;
                 } catch (ExtractionException | IOException err) {
                     err.printStackTrace();
                 }
@@ -111,10 +114,15 @@ public class CommentPanel extends JPanel {
                     Page nextPage = itp.getNextPage();
                     itp = ce.getPage(nextPage);
                     showPage();
-                    pageStack.add(currentPage);
+                    if (currentPage != null) {
+                        pageStack.push(currentPage);
+                    }
+
                     SwingUtilities.invokeLater(() -> {
                         pageNumLabel.setText(
-                            Integer.toString(pageStack.size() + 1)
+                            Integer.toString(
+                                pageStack.size() + (isReplay ? 1 : 2)
+                            )
                         );
                         preBtn.setEnabled(true);
                     });
@@ -131,7 +139,7 @@ public class CommentPanel extends JPanel {
 
     public void fetchComment(String videoURL) {
         mainCommentPanel.removeAll();
-        pageStack.removeAllElements();
+        pageStack.clear();
         pageNumLabel.setText("1");
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
@@ -153,9 +161,10 @@ public class CommentPanel extends JPanel {
         List<CommentsInfoItem> clist = itp.getItems();
         for (CommentsInfoItem cit : clist) {
             CommentItemPanel commentItemPanel = new CommentItemPanel(
+                mainViewPort,
+                hyperlinkListener,
                 cit,
-                ce,
-                mainViewPort
+                ce
             );
             SwingUtilities.invokeLater(() ->
                 mainCommentPanel.add(commentItemPanel)

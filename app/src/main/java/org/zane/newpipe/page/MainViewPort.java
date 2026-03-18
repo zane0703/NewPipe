@@ -101,6 +101,11 @@ public class MainViewPort extends JViewport {
             case CHANNEL:
                 this.setView(channelPage);
                 channelPage.fetchChannel(nevigateOpation.QUERY);
+                break;
+            case PLAYLIST:
+                PlayListPage playListPage = new PlayListPage(this);
+                this.setView(playListPage);
+                playListPage.fatchPlayList(nevigateOpation.QUERY);
         }
     }
 
@@ -108,6 +113,7 @@ public class MainViewPort extends JViewport {
         SEARCH,
         VIDEO,
         CHANNEL,
+        PLAYLIST,
     }
 
     public static interface SetEnabledBtn {

@@ -1,41 +1,60 @@
 package org.zane.newpipe.page;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.NumberFormat;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.List;
+import javax.imageio.ImageIO;
 import javax.swing.*;
-import org.schabi.newpipe.extractor.InfoItem;
+import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
-import org.schabi.newpipe.extractor.search.SearchExtractor;
+import org.schabi.newpipe.extractor.playlist.PlaylistExtractor;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.SearchItemPanel;
-import org.zane.newpipe.util.CommonUtil;
 
-public class SearchResultPage extends JPanel {
+public class PlayListPage extends JPanel {
 
     private final MainViewPort mainViewPort;
     private JPanel resultListPanel;
     private JButton preBtn;
     private JButton nextBtn;
-    private SearchExtractor se;
+    private PlaylistExtractor pe;
     private JLabel pageNumLabel;
-    private InfoItemsPage<InfoItem> itp;
+    private InfoItemsPage<StreamInfoItem> itp;
     private ArrayDeque<Page> pageStack = new ArrayDeque<>();
     private Page currentPage;
+    private JLabel playListTitleLabel;
+    private JLabel playListSubInfo;
+    private JLabel channelName;
 
-    public SearchResultPage(MainViewPort mainViewPort) {
+    public PlayListPage(MainViewPort mainViewPort) {
         this.setLayout(new BorderLayout());
         this.mainViewPort = mainViewPort;
         resultListPanel = new JPanel();
         resultListPanel.setLayout(
             new BoxLayout(resultListPanel, BoxLayout.Y_AXIS)
         );
+        JPanel playlistHeader = new JPanel(new GridLayout(2, 1));
+        playListTitleLabel = new JLabel("", SwingConstants.LEFT);
+        Font f = playListTitleLabel.getFont();
+        playListTitleLabel.setFont(f.deriveFont(Font.BOLD));
+        playlistHeader.add(playListTitleLabel);
+        JPanel playListSubInfoPanel = new JPanel(new GridLayout(1, 2));
+        channelName = new JLabel("", SwingConstants.LEFT);
+        playListSubInfoPanel.add(channelName);
+        playListSubInfo = new JLabel("", SwingConstants.RIGHT);
+        playListSubInfoPanel.add(playListSubInfo);
+        playlistHeader.add(playListSubInfoPanel);
+        this.add(playlistHeader, BorderLayout.NORTH);
         this.add(resultListPanel, BorderLayout.CENTER);
         JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pageNevPanel.setBackground(new Color(255, 0, 0));
@@ -45,7 +64,7 @@ public class SearchResultPage extends JPanel {
             new Thread(() -> {
                 try {
                     if (pageStack.isEmpty()) {
-                        itp = se.getInitialPage();
+                        itp = pe.getInitialPage();
                         showPage();
                         SwingUtilities.invokeLater(() -> {
                             pageNumLabel.setText("1");
@@ -54,8 +73,7 @@ public class SearchResultPage extends JPanel {
                         currentPage = null;
                     } else {
                         Page prePage = pageStack.pop();
-                        itp = se.getPage(prePage);
-                        System.out.println(Arrays.toString(prePage.getBody()));
+                        itp = pe.getPage(prePage);
                         showPage();
                         SwingUtilities.invokeLater(() -> {
                             pageNumLabel.setText(
@@ -81,7 +99,7 @@ public class SearchResultPage extends JPanel {
             new Thread(() -> {
                 try {
                     Page nextPage = itp.getNextPage();
-                    itp = se.getPage(nextPage);
+                    itp = pe.getPage(nextPage);
                     mainViewPort.setViewPosition(new Point(0, 0));
                     showPage();
                     if (currentPage != null) {
@@ -105,7 +123,7 @@ public class SearchResultPage extends JPanel {
         this.add(pageNevPanel, BorderLayout.SOUTH);
     }
 
-    public void search(String query, Runnable finaly) {
+    public void fatchPlayList(String playListUrl) {
         resultListPanel.removeAll();
         pageStack.clear();
         pageNumLabel.setText("1");
@@ -114,17 +132,31 @@ public class SearchResultPage extends JPanel {
         currentPage = null;
         new Thread(() -> {
             try {
-                se = ServiceList.YouTube.getSearchExtractor(query);
-                se.fetchPage();
-                itp = se.getInitialPage();
+                pe = ServiceList.YouTube.getPlaylistExtractor(playListUrl);
+                pe.fetchPage();
+
+                playListTitleLabel.setText(pe.getName());
+                channelName.setText(pe.getUploaderName());
+                List<Image> uploaderAvatars = pe.getUploaderAvatars();
+                if (uploaderAvatars != null && !uploaderAvatars.isEmpty()) {
+                    Image uploaderAvatar = uploaderAvatars.get(0);
+                    BufferedImage bImage = ImageIO.read(
+                        URI.create(uploaderAvatar.getUrl()).toURL()
+                    );
+                    if (bImage != null) {
+                        channelName.setIcon(new ImageIcon(bImage));
+                    }
+                }
+
+                playListSubInfo.setText(
+                    NumberFormat.getInstance().format(pe.getStreamCount()) +
+                        " Videos"
+                );
+                System.out.println(pe.getTimeAgoParser());
+                itp = pe.getInitialPage();
                 showPage();
             } catch (IOException | ExtractionException err) {
                 err.printStackTrace();
-                if (CommonUtil.retryPrompt(mainViewPort, "search")) {
-                    search(query, finaly);
-                }
-            } finally {
-                finaly.run();
             }
         })
             .start();
@@ -132,9 +164,9 @@ public class SearchResultPage extends JPanel {
 
     private void showPage() {
         try {
-            List<InfoItem> items = itp.getItems();
+            List<StreamInfoItem> items = itp.getItems();
             for (int i = 0; i < items.size(); ++i) {
-                InfoItem item = items.get(i);
+                StreamInfoItem item = items.get(i);
                 SearchItemPanel searchItemPanel = new SearchItemPanel(
                     mainViewPort,
                     item
@@ -150,9 +182,6 @@ public class SearchResultPage extends JPanel {
             });
         } catch (URISyntaxException | IOException err) {
             err.printStackTrace();
-            if (CommonUtil.retryPrompt(mainViewPort, "search")) {
-                showPage();
-            }
         }
     }
 }

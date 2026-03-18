@@ -9,10 +9,13 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.NumberFormat;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
+import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
+import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
@@ -69,45 +72,84 @@ public class SearchItemPanel extends JPanel {
             clipboard.setContents(new StringSelection(item.getUrl()), null)
         );
         popupMenu.add(copyURL);
-        if (item instanceof StreamInfoItem streamInfoItem) {
-            JLabel uploaderLabel = new JLabel(streamInfoItem.getUploaderName());
-            uploaderLabel.setForeground(Color.LIGHT_GRAY);
-            infoPanel.add(uploaderLabel);
-            String viewLabelString =
-                CommonUtil.numberToStringUnit(streamInfoItem.getViewCount()) +
-                " views";
+        switch (item) {
+            case StreamInfoItem streamInfoItem:
+                JLabel uploaderLabel = new JLabel(
+                    streamInfoItem.getUploaderName()
+                );
+                uploaderLabel.setForeground(Color.LIGHT_GRAY);
+                infoPanel.add(uploaderLabel);
+                String viewLabelString =
+                    CommonUtil.numberToStringUnit(
+                        streamInfoItem.getViewCount()
+                    ) +
+                    " views";
 
-            DateWrapper uploadDate = streamInfoItem.getUploadDate();
-            if (uploadDate != null) {
-                viewLabelString +=
-                    "· " +
-                    CommonUtil.formatRelativeTime(
-                        uploadDate.getLocalDateTime()
-                    );
-            }
-            JLabel viewLabel = new JLabel(viewLabelString);
+                DateWrapper uploadDate = streamInfoItem.getUploadDate();
+                if (uploadDate != null) {
+                    viewLabelString +=
+                        "· " +
+                        CommonUtil.formatRelativeTime(
+                            uploadDate.getLocalDateTime()
+                        );
+                }
+                JLabel viewLabel = new JLabel(viewLabelString);
 
-            viewLabel.setForeground(Color.LIGHT_GRAY);
-            infoPanel.add(viewLabel);
+                viewLabel.setForeground(Color.LIGHT_GRAY);
+                infoPanel.add(viewLabel);
 
-            JMenuItem showChannelDetile = new JMenuItem("Show channel Details");
-            showChannelDetile.addActionListener(e ->
-                mainViewPort.nevigate(
-                    new NevigateOpation(
-                        MainViewPort.Page.CHANNEL,
-                        streamInfoItem.getUploaderUrl()
+                JMenuItem showChannelDetile = new JMenuItem(
+                    "Show channel Details",
+                    IconRes.LIVE_TV_ICON
+                );
+                showChannelDetile.addActionListener(e ->
+                    mainViewPort.nevigate(
+                        new NevigateOpation(
+                            MainViewPort.Page.CHANNEL,
+                            streamInfoItem.getUploaderUrl()
+                        )
                     )
-                )
-            );
-            popupMenu.add(showChannelDetile);
-            JMenuItem openInVlc = new JMenuItem(
-                "Open in VLC media player",
-                IconRes.VLC_ICON
-            );
-            openInVlc.addActionListener(e ->
-                VideoUtil.openVLC(item.getUrl(), mainViewPort)
-            );
-            popupMenu.add(openInVlc);
+                );
+                popupMenu.add(showChannelDetile);
+                JMenuItem openInVlc = new JMenuItem(
+                    "Open in VLC media player",
+                    IconRes.VLC_ICON
+                );
+                openInVlc.addActionListener(e ->
+                    VideoUtil.openVLC(item.getUrl(), mainViewPort)
+                );
+                popupMenu.add(openInVlc);
+                break;
+            case PlaylistInfoItem playlistInfo:
+                JLabel uploaderLabel2 = new JLabel(
+                    playlistInfo.getUploaderName()
+                );
+                uploaderLabel2.setForeground(Color.LIGHT_GRAY);
+                infoPanel.add(uploaderLabel2);
+                JLabel videoCount = new JLabel(
+                    CommonUtil.numberToStringUnit(
+                            playlistInfo.getStreamCount()
+                        ) +
+                        " videos"
+                );
+                JMenuItem showChannelDetile2 = new JMenuItem(
+                    "Show channel Details",
+                    IconRes.LIVE_TV_ICON
+                );
+                showChannelDetile2.setForeground(Color.LIGHT_GRAY);
+                infoPanel.add(videoCount);
+                showChannelDetile2.addActionListener(e ->
+                    mainViewPort.nevigate(
+                        new NevigateOpation(
+                            MainViewPort.Page.CHANNEL,
+                            playlistInfo.getUploaderUrl()
+                        )
+                    )
+                );
+                popupMenu.add(showChannelDetile2);
+                break;
+            default:
+                break;
         }
 
         this.setComponentPopupMenu(popupMenu);
@@ -137,6 +179,9 @@ public class SearchItemPanel extends JPanel {
                     break;
                 case CHANNEL:
                     newPage = MainViewPort.Page.CHANNEL;
+                    break;
+                case PLAYLIST:
+                    newPage = MainViewPort.Page.PLAYLIST;
                     break;
                 default:
                     return;

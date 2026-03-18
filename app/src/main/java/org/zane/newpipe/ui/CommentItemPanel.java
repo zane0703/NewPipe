@@ -14,11 +14,10 @@ import java.util.List;
 import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.HyperlinkListener;
 import org.schabi.newpipe.extractor.Image;
-import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
-import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.util.CommonUtil;
@@ -29,9 +28,10 @@ public class CommentItemPanel extends JPanel {
     private JLabel uploaderNameLabel;
 
     public CommentItemPanel(
+        MainViewPort mainViewPort,
+        HyperlinkListener hyperlinkListener,
         CommentsInfoItem cit,
-        CommentsExtractor commentsExtractor,
-        MainViewPort mainViewPort
+        CommentsExtractor commentsExtractor
     ) {
         this.mainViewPort = mainViewPort;
         setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -79,6 +79,7 @@ public class CommentItemPanel extends JPanel {
                 Integer.MAX_VALUE
             )
         );
+        commentText.addHyperlinkListener(hyperlinkListener);
         commentInfoPanel.add(commentText);
 
         JPanel commentMetaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -125,6 +126,7 @@ public class CommentItemPanel extends JPanel {
                     try {
                         CommentPanel commentPanel = new CommentPanel(
                             mainViewPort,
+                            hyperlinkListener,
                             commentsExtractor,
                             cit.getReplies()
                         );

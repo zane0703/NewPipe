@@ -2,14 +2,17 @@ package org.zane.newpipe.util;
 
 import java.awt.*;
 import java.io.IOException;
+import java.lang.Thread.Builder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
+import org.schabi.newpipe.extractor.stream.StreamType;
 import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
 import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
@@ -40,6 +43,26 @@ public class VideoUtil {
     public static void openVLC(StreamExtractor se, Component component) {
         try {
             if (VideoUtil.vlcPath == null) {
+                return;
+            }
+            String videoTitle = se.getName();
+            String uploaderName = se.getUploaderName();
+            if (se.getStreamType() == StreamType.LIVE_STREAM) {
+                String hlsUrl = se.getHlsUrl();
+                new Thread(() -> {
+                    ProcessBuilder builder = new ProcessBuilder(
+                        VideoUtil.vlcPath + "/vlc",
+                        "--meta-title=" + videoTitle,
+                        "--meta-artist=" + uploaderName,
+                        hlsUrl
+                    );
+                    try {
+                        builder.start();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                })
+                    .start();
                 return;
             }
             List<VideoStream> videoStreams = se.getVideoOnlyStreams();
@@ -80,8 +103,6 @@ public class VideoUtil {
                 videoContol.add(subtitleComboBox);
             }
             JComboBox<SubtitlesStream> subtitleComboBox2 = subtitleComboBox;
-            String videoTitle = se.getName();
-            String uploaderName = se.getUploaderName();
             SwingUtilities.invokeLater(() -> {
                 if (
                     JOptionPane.showConfirmDialog(
@@ -115,9 +136,9 @@ public class VideoUtil {
                                     "#" +
                                     ss.getContent()
                             );
+                            commands.add("--sub-track=1");
                         } else {
                             commands.add("--input-slave=" + as.getContent());
-                            commands.add("--sub-track=1");
                         }
                         commands.add(vs.getContent());
 
@@ -197,14 +218,21 @@ public class VideoUtil {
                 if (dotIndex > -1) {
                     codec = codec.subSequence(0, dotIndex).toString();
                 }
-                setText(
+                String text =
                     codec +
-                        " " +
-                        CommonUtil.numberToStringUnit(
-                            audioStream.getBitrate()
-                        ) +
-                        "bps"
-                );
+                    " " +
+                    CommonUtil.numberToStringUnit(audioStream.getBitrate()) +
+                    "bps";
+                Locale locale = audioStream.getAudioLocale();
+                if (locale != null) {
+                    text += " " + locale.getDisplayLanguage();
+
+                    String countryString = locale.getCountry();
+                    if (countryString != null && !countryString.isBlank()) {
+                        text += "(" + locale.getCountry() + ")";
+                    }
+                }
+                setText(text);
             }
             return this;
         }
