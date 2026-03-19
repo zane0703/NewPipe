@@ -3,8 +3,8 @@ package org.zane.newpipe.page;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -93,6 +93,7 @@ public class VideoPage extends JPanel {
     private JPanel tagPanel;
     private StreamExtractor streamExtractor;
     private boolean isLive;
+    private int oldWidth;
 
     public VideoPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -104,7 +105,7 @@ public class VideoPage extends JPanel {
             );
         mediaPlayer = mediaPlayerComponent.mediaPlayer();
         this.addComponentListener(
-            new ComponentListener() {
+            new ComponentAdapter() {
                 @Override
                 public void componentHidden(ComponentEvent e) {
                     // Code to execute when the JPanel is hidden
@@ -114,10 +115,6 @@ public class VideoPage extends JPanel {
                 }
 
                 @Override
-                public void componentShown(ComponentEvent e) {}
-
-                public void componentMoved(ComponentEvent e) {}
-
                 public void componentResized(ComponentEvent e) {
                     Dimension maxSize = new Dimension(
                         getPreferredSize().width,
@@ -125,6 +122,10 @@ public class VideoPage extends JPanel {
                     );
                     videoDescriptionText.setMaximumSize(maxSize);
                     tagPanel.setMaximumSize(maxSize);
+                    if (oldWidth > maxSize.width) {
+                        videoDescriptionText.updateUI();
+                    }
+                    oldWidth = maxSize.width;
                 }
             }
         );
@@ -481,6 +482,7 @@ public class VideoPage extends JPanel {
             getPreferredSize().width,
             Integer.MAX_VALUE
         );
+        oldWidth = maxSize.width;
         videoDescriptionText.setMaximumSize(maxSize);
         videoDescriptionTextPanel.add(videoDescriptionText);
         videoDescriptionPanel.add(videoDescriptionTextPanel);

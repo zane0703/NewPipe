@@ -315,9 +315,7 @@ public class VideoUtil {
                     fileName.lastIndexOf('.') + 1
                 );
                 String slaveInput = ":input-slave=" + as.getContent();
-                if (ss != null) {
-                    slaveInput += "#" + ss.getContent();
-                }
+
                 String sout =
                     "#std{access=file,mux=" +
                     fileExt +
@@ -351,12 +349,17 @@ public class VideoUtil {
                                     null,
                                     "Download Complated"
                                 );
+                                mediaPlayer.release();
                             }
                         }
                     );
                 mediaPlayer
                     .media()
-                    .play(vs.getContent(), slaveInput, ":sout=" + sout);
+                    .prepare(vs.getContent(), slaveInput, ":sout=" + sout);
+                if (ss != null) {
+                    mediaPlayer.subpictures().setSubTitleUri(ss.getContent());
+                }
+                mediaPlayer.controls().play();
                 dialog.addWindowListener(
                     new WindowAdapter() {
                         @Override

@@ -12,7 +12,11 @@ public class JHTMLPane extends JEditorPane {
     private int maxWidth;
 
     public JHTMLPane() {
-        super("text/html", "");
+        this("text/html");
+    }
+
+    public JHTMLPane(String type) {
+        super(type, "");
         maxWidth = getMaximumSize().width;
         setOpaque(false);
         setEditable(false);
@@ -36,6 +40,7 @@ public class JHTMLPane extends JEditorPane {
         //         viewport.getWidth()
         //     );
         // }
+        System.out.println("jhtml: " + PreferredMaxWidth);
         return new Dimension(PreferredMaxWidth, size.height);
     }
 

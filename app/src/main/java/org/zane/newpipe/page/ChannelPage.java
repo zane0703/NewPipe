@@ -2,6 +2,7 @@ package org.zane.newpipe.page;
 
 import java.awt.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
@@ -28,17 +29,18 @@ import org.schabi.newpipe.extractor.feed.FeedInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.IconRes;
+import org.zane.newpipe.ui.JHTMLPane;
 import org.zane.newpipe.ui.JImage;
 import org.zane.newpipe.ui.SearchItemPanel;
 import org.zane.newpipe.util.CommonUtil;
+import org.zane.newpipe.util.WrapLayout;
 
 public class ChannelPage extends JPanel {
 
     private final MainViewPort mainViewPort;
     private JImage banner;
     private ChannelInfoPanel channelInfoPanel;
-    private JPanel videoFeedPanel;
-    private JPanel resultListPanel;
+    private JPanel videoFeedListPanel;
     private JButton preBtn;
     private JButton nextBtn;
     private Stack<Page> pageStack = new Stack<>();
@@ -46,6 +48,8 @@ public class ChannelPage extends JPanel {
     private FeedExtractor fe;
     private InfoItemsPage<StreamInfoItem> itp;
     private Page currentPage;
+    private JHTMLPane channelInfoText;
+    private JPanel tagListPanel;
 
     public ChannelPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -54,16 +58,62 @@ public class ChannelPage extends JPanel {
         this.add(banner);
         channelInfoPanel = new ChannelInfoPanel();
         this.add(channelInfoPanel);
-        videoFeedPanel = new JPanel();
-        videoFeedPanel.setLayout(
-            new BoxLayout(videoFeedPanel, BoxLayout.Y_AXIS)
+        JViewport channelNevView = new JViewport();
+        JPanel videoFeedPanel = new JPanel(new BorderLayout());
+        Dimension maxSize = new Dimension(
+            getPreferredSize().width,
+            Integer.MAX_VALUE
         );
-        this.add(videoFeedPanel);
+        JPanel channelInfoPanel = new JPanel();
+        channelInfoPanel.setLayout(
+            new BoxLayout(channelInfoPanel, BoxLayout.Y_AXIS)
+        );
+        channelInfoText = new JHTMLPane("text/plain");
+        channelInfoText.setMaximumSize(maxSize);
+        channelInfoPanel.add(channelInfoText);
+
+        JLabel tagLabel = new JLabel("Tag", SwingConstants.CENTER);
+        Font f = tagLabel.getFont();
+        tagLabel.setFont(f.deriveFont(Font.BOLD));
+        channelInfoPanel.add(tagLabel);
+        tagListPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
+        channelInfoPanel.add(tagListPanel);
+        tagListPanel.setMaximumSize(maxSize);
+        this.addComponentListener(
+            new ComponentAdapter() {
+                @Override
+                public void componentResized(ComponentEvent e) {
+                    Dimension maxSize = new Dimension(
+                        getPreferredSize().width,
+                        Integer.MAX_VALUE
+                    );
+                    channelInfoText.setMaximumSize(maxSize);
+                    tagListPanel.setMaximumSize(maxSize);
+                }
+            }
+        );
+        videoFeedListPanel = new JPanel();
+        videoFeedListPanel.setLayout(
+            new BoxLayout(videoFeedListPanel, BoxLayout.Y_AXIS)
+        );
+        videoFeedPanel.add(videoFeedListPanel, BorderLayout.CENTER);
+        JPanel channelNevBar = new JPanel(new GridLayout(1, 2));
+        JButton videoFeedBtn = new JButton("video");
+        videoFeedBtn.addActionListener(e ->
+            channelNevView.setView(videoFeedPanel)
+        );
+        channelNevBar.add(videoFeedBtn);
+        JButton infoBtn = new JButton("Info");
+        infoBtn.addActionListener(e ->
+            channelNevView.setView(channelInfoPanel)
+        );
+        channelNevBar.add(infoBtn);
+        this.add(channelNevBar);
         JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pageNevPanel.setBackground(new Color(255, 0, 0));
         preBtn = new JButton(IconRes.ARROW_BACK_ICON);
         preBtn.addActionListener(e -> {
-            resultListPanel.removeAll();
+            videoFeedListPanel.removeAll();
             new Thread(() -> {
                 try {
                     Page prePage = pageStack.pop();
@@ -95,7 +145,7 @@ public class ChannelPage extends JPanel {
         pageNevPanel.add(pageNumLabel);
         nextBtn = new JButton(IconRes.ARROW_NEXT_ICON);
         nextBtn.addActionListener(e -> {
-            resultListPanel.removeAll();
+            videoFeedListPanel.removeAll();
             new Thread(() -> {
                 try {
                     Page nextPage = itp.getNextPage();
@@ -117,11 +167,13 @@ public class ChannelPage extends JPanel {
         });
         pageNevPanel.add(nextBtn);
 
-        this.add(pageNevPanel);
+        videoFeedPanel.add(pageNevPanel, BorderLayout.SOUTH);
+        channelNevView.setView(videoFeedPanel);
+        this.add(channelNevView);
     }
 
     public void fetchChannel(String channelURL) {
-        videoFeedPanel.removeAll();
+        videoFeedListPanel.removeAll();
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
         new Thread(() -> {
@@ -151,7 +203,25 @@ public class ChannelPage extends JPanel {
                     channelExtractor.getName(),
                     channelExtractor.getSubscriberCount()
                 );
-
+                System.out.println(channelExtractor.getDescription());
+                String channelDist = channelExtractor.getDescription();
+                List<String> tagList = channelExtractor.getTags();
+                SwingUtilities.invokeLater(() -> {
+                    channelInfoText.setText(channelDist);
+                    tagListPanel.removeAll();
+                    for (String tag : tagList) {
+                        JButton tagBtn = new JButton(tag);
+                        tagBtn.addActionListener(e ->
+                            mainViewPort.nevigate(
+                                new MainViewPort.NevigateOpation(
+                                    MainViewPort.Page.SEARCH,
+                                    "#" + tag
+                                )
+                            )
+                        );
+                        tagListPanel.add(tagBtn);
+                    }
+                });
                 fe = ServiceList.YouTube.getFeedExtractor(channelURL);
                 fe.fetchPage();
                 itp = fe.getInitialPage();
@@ -187,11 +257,11 @@ public class ChannelPage extends JPanel {
                     fItem
                 );
                 SwingUtilities.invokeLater(() ->
-                    videoFeedPanel.add(searchItemPanel)
+                    videoFeedListPanel.add(searchItemPanel)
                 );
             }
             SwingUtilities.invokeLater(() -> {
-                videoFeedPanel.updateUI();
+                videoFeedListPanel.updateUI();
                 nextBtn.setEnabled(itp.hasNextPage());
             });
         } catch (IOException | URISyntaxException e) {
