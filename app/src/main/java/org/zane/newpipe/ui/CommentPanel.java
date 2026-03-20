@@ -68,7 +68,7 @@ public class CommentPanel extends JPanel {
         );
         this.add(mainCommentPanel, BorderLayout.CENTER);
         JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        pageNevPanel.setBackground(new Color(255, 0, 0));
+        pageNevPanel.setBackground(IconRes.YOUTUBE_COLOUR);
         preBtn = new JButton(IconRes.ARROW_BACK_ICON);
         preBtn.addActionListener(e -> {
             mainCommentPanel.removeAll();

@@ -81,12 +81,12 @@ public class App extends JFrame {
 
         JPanel searchbar = new JPanel(new BorderLayout());
 
-        searchbar.setBackground(new Color(255, 0, 0));
+        searchbar.setBackground(IconRes.YOUTUBE_COLOUR);
         this.add(searchbar, BorderLayout.NORTH);
         JButton backBtn = new JButton(IconRes.ARROW_BACK_ICON);
         backBtn.setEnabled(false);
         backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        backBtn.setBackground(new Color(255, 0, 0));
+        backBtn.setBackground(IconRes.YOUTUBE_COLOUR);
         backBtn.setOpaque(false);
         backBtn.addActionListener(e -> mainViewPort.back());
         searchbar.add(backBtn, BorderLayout.LINE_START);
@@ -95,7 +95,7 @@ public class App extends JFrame {
         searchbar.add(searchField, BorderLayout.CENTER);
         searchButton = new JButton();
         searchButton.setOpaque(false);
-        searchButton.setBackground(new Color(255, 0, 0));
+        searchButton.setBackground(IconRes.YOUTUBE_COLOUR);
         searchButton.setIcon(IconRes.SEARCH_ICON);
         searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         searchbar.add(searchButton, BorderLayout.LINE_END);

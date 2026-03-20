@@ -17,6 +17,7 @@ import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamType;
 import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
+import org.zane.newpipe.ui.IconRes;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
@@ -190,6 +191,7 @@ public class VideoUtil {
             JPanel videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
             DefaultComboBoxModel<VideoStream> videoModel =
                 new DefaultComboBoxModel<>();
+            videoModel.addElement(null);
             videoModel.addAll(videoStreams);
             videoModel.setSelectedItem(videoStreams.get(0));
             JComboBox<VideoStream> videoComboBox = new JComboBox<VideoStream>(
@@ -200,6 +202,7 @@ public class VideoUtil {
             videoContol.add(videoComboBox);
             DefaultComboBoxModel<AudioStream> audioModel =
                 new DefaultComboBoxModel<>();
+            audioModel.addElement(null);
             audioModel.addAll(audioStreams);
             audioModel.setSelectedItem(audioStreams.get(0));
             JComboBox<AudioStream> audioComboBox = new JComboBox<AudioStream>(
@@ -208,20 +211,20 @@ public class VideoUtil {
             audioComboBox.setRenderer(new AudioComboBoxRenderer());
             videoContol.add(new JLabel("Audio:"));
             videoContol.add(audioComboBox);
-            JComboBox<SubtitlesStream> subtitleComboBox = null;
+            DefaultComboBoxModel<SubtitlesStream> subtitleModel =
+                new DefaultComboBoxModel<SubtitlesStream>();
+            subtitleModel.addElement(null);
+            JComboBox<SubtitlesStream> subtitleComboBox = new JComboBox<
+                SubtitlesStream
+            >(subtitleModel);
+            subtitleComboBox.setRenderer(new SubTitleComboBoxRenderer());
+            videoContol.add(new JLabel("Subtitle:"));
+            videoContol.add(subtitleComboBox);
             if (!subtitlesStreams.isEmpty()) {
-                DefaultComboBoxModel<SubtitlesStream> subtitleModel =
-                    new DefaultComboBoxModel<SubtitlesStream>();
-                subtitleModel.addElement(null);
                 subtitleModel.addAll(subtitlesStreams);
-                subtitleComboBox = new JComboBox<SubtitlesStream>(
-                    subtitleModel
-                );
-                subtitleComboBox.setRenderer(new SubTitleComboBoxRenderer());
-                videoContol.add(new JLabel("Subtitle:"));
-                videoContol.add(subtitleComboBox);
+            } else {
+                subtitleComboBox.setEnabled(false);
             }
-            JComboBox<SubtitlesStream> subtitleComboBox2 = subtitleComboBox;
             downloadPanel.add(videoContol);
             JPanel saveFilepanel = new JPanel(new GridBagLayout());
             JTextField saveFileText = new JTextField();
@@ -235,24 +238,130 @@ public class VideoUtil {
             JButton saveFileBtn = new JButton("Browser");
             JButton downloadBtn = new JButton("Download");
             downloadBtn.setEnabled(false);
+            videoComboBox.addItemListener(e -> {
+                downloadBtn.setEnabled(false);
+                saveFileText.setText("");
+            });
+            audioComboBox.addItemListener(e -> {
+                downloadBtn.setEnabled(false);
+                saveFileText.setText("");
+            });
             saveFileBtn.addActionListener(e -> {
                 SystemFileChooser fileChooser = new SystemFileChooser();
                 fileChooser.setDialogTitle("Specify a file to save");
-                fileChooser.addChoosableFileFilter(
-                    new SystemFileChooser.FileNameExtensionFilter(
-                        "Video Files (*.mp4)",
-                        "mp4"
-                    )
-                );
-                fileChooser.addChoosableFileFilter(
-                    new SystemFileChooser.FileNameExtensionFilter(
-                        "Video Files (*.mkv)",
-                        "mkv"
-                    )
-                );
+                VideoStream vs = (VideoStream) videoComboBox.getSelectedItem();
+                AudioStream as = (AudioStream) audioComboBox.getSelectedItem();
+                String vCodec = null;
+                if (vs != null) {
+                    vCodec = vs.getCodec();
+                    int dotindex = vCodec.indexOf('.');
+                    if (dotindex > -1) {
+                        vCodec = vCodec.substring(0, dotindex);
+                    }
+                }
+                String aCodec = null;
+                if (as != null) {
+                    aCodec = as.getCodec();
+                    int dotindex = aCodec.indexOf('.');
+                    if (dotindex > -1) {
+                        aCodec = aCodec.substring(0, dotindex);
+                    }
+                }
+                switch (vCodec) {
+                    case "avc1":
+                        switch (aCodec) {
+                            case null:
+                            case "mp4a":
+                                fileChooser.addChoosableFileFilter(
+                                    new SystemFileChooser.FileNameExtensionFilter(
+                                        "Video Files (*.mp4)",
+                                        "mp4"
+                                    )
+                                );
+                            default:
+                                fileChooser.addChoosableFileFilter(
+                                    new SystemFileChooser.FileNameExtensionFilter(
+                                        "Video Files (*.mkv)",
+                                        "mkv"
+                                    )
+                                );
+                                break;
+                        }
+                        break;
+                    case "vp9":
+                    case "av01":
+                        switch (aCodec) {
+                            case null:
+                            case "opus":
+                                fileChooser.addChoosableFileFilter(
+                                    new SystemFileChooser.FileNameExtensionFilter(
+                                        "Video Files (*.webm)",
+                                        "webm"
+                                    )
+                                );
+                            default:
+                                fileChooser.addChoosableFileFilter(
+                                    new SystemFileChooser.FileNameExtensionFilter(
+                                        "Video Files (*.mkv)",
+                                        "mkv"
+                                    )
+                                );
+                        }
+                        break;
+                    case null:
+                        switch (aCodec) {
+                            case "mp4a":
+                                fileChooser.addChoosableFileFilter(
+                                    new SystemFileChooser.FileNameExtensionFilter(
+                                        "Audio Files (*.m4a)",
+                                        "m4a"
+                                    )
+                                );
+                                break;
+                            case "opus":
+                                fileChooser.addChoosableFileFilter(
+                                    new SystemFileChooser.FileNameExtensionFilter(
+                                        "Audio Files (*.weba)",
+                                        "weba"
+                                    )
+                                );
+                                break;
+                            case null:
+                                JOptionPane.showMessageDialog(
+                                    null,
+                                    "Must have eiter video or audio",
+                                    "No codex seleted",
+                                    JOptionPane.ERROR_MESSAGE
+                                );
+                                return;
+                            default:
+                                break;
+                        }
+                        fileChooser.addChoosableFileFilter(
+                            new SystemFileChooser.FileNameExtensionFilter(
+                                "Audio Files (*.ogg)",
+                                "ogg"
+                            )
+                        );
+                        break;
+                    default:
+                        fileChooser.addChoosableFileFilter(
+                            new SystemFileChooser.FileNameExtensionFilter(
+                                "Video Files (*.mkv)",
+                                "mkv"
+                            )
+                        );
+                        break;
+                }
+
                 String savefilePath = saveFileText.getText();
                 if (savefilePath.isBlank()) {
-                    savefilePath = videoTitle + ".mp4";
+                    savefilePath =
+                        videoTitle.replaceAll("[\\\\/:*?\"<>|]", "") +
+                        "." +
+                        (
+                            (SystemFileChooser.FileNameExtensionFilter) fileChooser.getChoosableFileFilters()[0]
+                        ).getExtensions()[0];
                 }
 
                 fileChooser.setSelectedFile(new File(savefilePath));
@@ -280,7 +389,7 @@ public class VideoUtil {
             saveFilepanel.add(saveFileBtn, gbc);
             downloadPanel.add(saveFilepanel);
             JProgressBar progressBar = new JProgressBar(0, 100);
-
+            progressBar.setForeground(IconRes.YOUTUBE_COLOUR);
             downloadPanel.add(progressBar);
 
             Object[] options = new Object[] { downloadBtn, "Cancel" };
@@ -301,21 +410,23 @@ public class VideoUtil {
                 saveFileBtn.setEnabled(false);
                 videoComboBox.setEnabled(false);
                 audioComboBox.setEnabled(false);
-                if (subtitleComboBox2 != null) {
-                    subtitleComboBox2.setEnabled(false);
-                }
+                subtitleComboBox.setEnabled(false);
                 VideoStream vs = (VideoStream) videoComboBox.getSelectedItem();
                 AudioStream as = (AudioStream) audioComboBox.getSelectedItem();
-                SubtitlesStream ss = null;
-                if (subtitleComboBox2 != null) {
-                    ss = (SubtitlesStream) subtitleComboBox2.getSelectedItem();
-                }
+                SubtitlesStream ss =
+                    (SubtitlesStream) subtitleComboBox.getSelectedItem();
                 String fileName = saveFileText.getText();
                 String fileExt = fileName.substring(
                     fileName.lastIndexOf('.') + 1
                 );
-                String slaveInput = ":input-slave=" + as.getContent();
-
+                switch (fileExt) {
+                    case "m4a":
+                        fileExt = "mp4";
+                        break;
+                    case "weba":
+                        fileExt = "webm";
+                        break;
+                }
                 String sout =
                     "#std{access=file,mux=" +
                     fileExt +
@@ -349,13 +460,31 @@ public class VideoUtil {
                                     null,
                                     "Download Complated"
                                 );
-                                mediaPlayer.release();
+                                //mediaPlayer.release();
                             }
                         }
                     );
-                mediaPlayer
-                    .media()
-                    .prepare(vs.getContent(), slaveInput, ":sout=" + sout);
+
+                if (vs == null) {
+                    mediaPlayer
+                        .media()
+                        .prepare(as.getContent(), ":sout=" + sout);
+                } else {
+                    if (as == null) {
+                        mediaPlayer
+                            .media()
+                            .prepare(vs.getContent(), ":sout=" + sout);
+                    } else {
+                        mediaPlayer
+                            .media()
+                            .prepare(
+                                vs.getContent(),
+                                ":input-slave=" + as.getContent(),
+                                ":sout=" + sout
+                            );
+                    }
+                }
+
                 if (ss != null) {
                     mediaPlayer.subpictures().setSubTitleUri(ss.getContent());
                 }
@@ -408,6 +537,8 @@ public class VideoUtil {
                         videoStream.getFps() +
                         "FPS"
                 );
+            } else if (value == null) {
+                setText("None");
             }
             return this;
         }
@@ -451,6 +582,8 @@ public class VideoUtil {
                     }
                 }
                 setText(text);
+            } else if (value == null) {
+                setText("None");
             }
             return this;
         }

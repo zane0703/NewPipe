@@ -1,10 +1,12 @@
 package org.zane.newpipe.ui;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import java.awt.Color;
 import java.io.IOException;
 
 public class IconRes {
 
+    public static Color YOUTUBE_COLOUR = new Color(205, 32, 31);
     public static FlatSVGIcon ARROW_BACK_ICON;
     public static FlatSVGIcon ARROW_NEXT_ICON;
     public static FlatSVGIcon ART_TRACK_ICON;
