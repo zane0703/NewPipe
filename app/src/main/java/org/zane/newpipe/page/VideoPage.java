@@ -1,11 +1,16 @@
 package org.zane.newpipe.page;
 
 import java.awt.*;
+import java.awt.Taskbar.Feature;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -30,6 +35,7 @@ import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamType;
 import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
+import org.zane.newpipe.App;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
 import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.CommentPanel;
@@ -42,12 +48,16 @@ import org.zane.newpipe.util.VideoUtil.AudioComboBoxRenderer;
 import org.zane.newpipe.util.VideoUtil.SubTitleComboBoxRenderer;
 import org.zane.newpipe.util.VideoUtil.VideoComboBoxRenderer;
 import org.zane.newpipe.util.WrapLayout;
+import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.media.MediaSlavePriority;
 import uk.co.caprica.vlcj.media.MediaSlaveType;
 import uk.co.caprica.vlcj.player.base.MediaApi;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
-import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent;
+import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent;
+import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
+import uk.co.caprica.vlcj.player.embedded.FullScreenApi;
+import uk.co.caprica.vlcj.player.embedded.fullscreen.adaptive.AdaptiveFullScreenStrategy;
 
 public class VideoPage extends JPanel {
 
@@ -70,7 +80,7 @@ public class VideoPage extends JPanel {
     private long currentTimestamp = 0;
     private double videoLengthDiff;
     private JButton playButton;
-    private MediaPlayer mediaPlayer;
+    private EmbeddedMediaPlayer mediaPlayer;
     private JLabel publishDateLabel;
     private JEditorPane videoDescriptionText;
     private CommentPanel videoCommentPanel;
@@ -100,9 +110,13 @@ public class VideoPage extends JPanel {
         this.mainViewPort = mainViewPort;
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         numberFormat = NumberFormat.getInstance();
-        CallbackMediaPlayerComponent mediaPlayerComponent =
-            new CallbackMediaPlayerComponent(
-                new String[] { "--avcodec-hw=auto", "--ffmpeg-hw" }
+        EmbeddedMediaPlayerComponent mediaPlayerComponent =
+            new EmbeddedMediaPlayerComponent(
+                new MediaPlayerFactory("--avcodec-hw=auto", "--ffmpeg-hw"),
+                null,
+                new AdaptiveFullScreenStrategy(App.getInstance()),
+                null,
+                null
             );
         mediaPlayer = mediaPlayerComponent.mediaPlayer();
         this.addComponentListener(
@@ -135,6 +149,7 @@ public class VideoPage extends JPanel {
         mediaPlayer
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
+        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
         this.add(mediaPlayerComponent);
         // c.gridy = 1;
         JPanel playbackSliderRow = new JPanel(new BorderLayout());
@@ -147,6 +162,7 @@ public class VideoPage extends JPanel {
             Integer.MAX_VALUE,
             0
         );
+        playbackSlider.setForeground(IconRes.YOUTUBE_COLOUR);
         playbackSlider.addChangeListener(e -> {
             if (playbackSlider.getValueIsAdjusting() || isPositionChanged) {
                 return;
@@ -286,6 +302,9 @@ public class VideoPage extends JPanel {
             }
         });
         videoContol.add(speedBtm);
+        JButton fullScreenBtn = new JButton(IconRes.FULLSCREEN_ICON);
+
+        videoContol.add(fullScreenBtn);
 
         JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         videoTitle = new JLabel("", SwingConstants.LEFT);
@@ -537,6 +556,92 @@ public class VideoPage extends JPanel {
 
         viewport.setView(relatedStreamsPanel);
         this.add(viewport);
+        fullScreenBtn.addActionListener(e -> {
+            FullScreenApi fullScreenApi = mediaPlayer.fullScreen();
+            fullScreenApi.set(!fullScreenApi.isFullScreen());
+            App app = App.getInstance();
+            if (fullScreenApi.isFullScreen()) {
+                fullScreenBtn.setIcon(IconRes.FULLSCREEN_EXIT_ICON);
+                viewport.setVisible(false);
+                videoInfo.setVisible(false);
+                navigationBar.setVisible(false);
+                videoMenuBtnPanel.setVisible(false);
+                videoTitlePanel.setVisible(false);
+                app.setSearchbarVisible(false);
+            } else {
+                fullScreenBtn.setIcon(IconRes.FULLSCREEN_ICON);
+                viewport.setVisible(true);
+                videoInfo.setVisible(true);
+                navigationBar.setVisible(true);
+                videoMenuBtnPanel.setVisible(true);
+                videoTitlePanel.setVisible(true);
+                app.setSearchbarVisible(true);
+            }
+        });
+        this.setFocusable(true);
+        InputMap inputMap = this.getInputMap(
+            JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
+        );
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), "forward");
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "forward");
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_J, 0), "backward");
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "backward");
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_K, 0), "pause");
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "pause");
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, 0), "fullscreen");
+        inputMap.put(
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+            "fullscreen_exit"
+        );
+        ActionMap actionMap = this.getActionMap();
+        actionMap.put(
+            "forward",
+            new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    mediaPlayer.controls().skipTime(10000);
+                }
+            }
+        );
+        actionMap.put(
+            "backward",
+            new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    mediaPlayer.controls().skipTime(-10000);
+                }
+            }
+        );
+        actionMap.put(
+            "pause",
+            new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    playButton.doClick();
+                }
+            }
+        );
+        actionMap.put(
+            "fullscreen_exit",
+            new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    FullScreenApi fullScreenApi = mediaPlayer.fullScreen();
+                    if (fullScreenApi.isFullScreen()) {
+                        fullScreenBtn.doClick();
+                    }
+                }
+            }
+        );
+        actionMap.put(
+            "fullscreen",
+            new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    fullScreenBtn.doClick();
+                }
+            }
+        );
     }
 
     public void showVideo(String videoUrl) {
@@ -736,6 +841,7 @@ public class VideoPage extends JPanel {
 
     public void stop() {
         mediaPlayer.controls().stop();
+        mediaPlayer.media().reset();
     }
 
     public void playVideo(
@@ -744,6 +850,7 @@ public class VideoPage extends JPanel {
         SubtitlesStream subtitlesStream,
         long currentTime
     ) {
+        this.requestFocus();
         MediaApi mediaApi = mediaPlayer.media();
         mediaApi.prepare(
             videoStream.getContent(),

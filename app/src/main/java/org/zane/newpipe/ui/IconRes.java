@@ -24,6 +24,8 @@ public class IconRes {
     public static FlatSVGIcon LIVE_TV_ICON;
     public static FlatSVGIcon DOWNLOAD_ICON;
     public static FlatSVGIcon PLAYLIST_PLAY_ICON;
+    public static FlatSVGIcon FULLSCREEN_ICON;
+    public static FlatSVGIcon FULLSCREEN_EXIT_ICON;
 
     static {
         try {
@@ -77,6 +79,14 @@ public class IconRes {
             ).derive(20, 20);
             PLAYLIST_PLAY_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_playlist_play.svg")
+            );
+            FULLSCREEN_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream("/icon/ic_fullscreen.svg")
+            );
+            FULLSCREEN_EXIT_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream(
+                    "/icon/ic_fullscreen_exit.svg"
+                )
             );
         } catch (IOException e) {
             e.printStackTrace();

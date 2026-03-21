@@ -22,11 +22,14 @@ import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
 public class App extends JFrame {
 
     private JButton searchButton;
-    private SearchResultPage searchResultPage;
-    private VideoPage videoPage;
     private JTextField searchField;
     private MainViewPort mainViewPort;
-    private ChannelPage channelPage;
+    private JPanel searchbar;
+    private static App app;
+
+    public static App getInstance() {
+        return App.app;
+    }
 
     public App(String searchQuery) {
         this(false);
@@ -39,6 +42,7 @@ public class App extends JFrame {
     }
 
     private App(boolean showDefault) {
+        App.app = this;
         NativeDiscovery nd = new NativeDiscovery();
         if (nd.discover()) {
             VideoUtil.setVlcPath(nd.discoveredPath());
@@ -79,7 +83,7 @@ public class App extends JFrame {
         );
         this.setLayout(new BorderLayout());
 
-        JPanel searchbar = new JPanel(new BorderLayout());
+        searchbar = new JPanel(new BorderLayout());
 
         searchbar.setBackground(IconRes.YOUTUBE_COLOUR);
         this.add(searchbar, BorderLayout.NORTH);
@@ -94,6 +98,7 @@ public class App extends JFrame {
 
         searchbar.add(searchField, BorderLayout.CENTER);
         searchButton = new JButton();
+        searchbar.setFocusable(true);
         searchButton.setOpaque(false);
         searchButton.setBackground(IconRes.YOUTUBE_COLOUR);
         searchButton.setIcon(IconRes.SEARCH_ICON);
@@ -116,6 +121,10 @@ public class App extends JFrame {
 
         searchButton.addActionListener(this::onSearchAction);
         searchField.addActionListener(this::onSearchAction);
+    }
+
+    public void setSearchbarVisible(boolean visible) {
+        searchbar.setVisible(visible);
     }
 
     public void onSearchAction(ActionEvent e) {

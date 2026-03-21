@@ -609,7 +609,18 @@ public class VideoUtil {
                 cellHasFocus
             );
             if (value instanceof SubtitlesStream subtitlesStream) {
-                setText(subtitlesStream.getDisplayLanguageName());
+                Locale locale = subtitlesStream.getLocale();
+                String text;
+                if (locale == null) {
+                    text = subtitlesStream.getDisplayLanguageName();
+                } else {
+                    text = locale.getDisplayLanguage();
+                    String countryName = locale.getCountry();
+                    if (countryName != null && !countryName.isBlank()) {
+                        text += "(" + countryName + ")";
+                    }
+                }
+                setText(text);
             } else if (value == null) {
                 setText("None");
             }
