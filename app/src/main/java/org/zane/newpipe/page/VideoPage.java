@@ -94,6 +94,7 @@ public class VideoPage extends JPanel {
     private StreamExtractor streamExtractor;
     private boolean isLive;
     private int oldWidth;
+    private JButton downloadBtn;
 
     public VideoPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -329,6 +330,8 @@ public class VideoPage extends JPanel {
                 pe.printStackTrace();
             }
         });
+        copyUrlBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        copyUrlBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(copyUrlBtn);
         JButton openBrowserBtn = new JButton(
             "Open in browser",
@@ -346,9 +349,11 @@ public class VideoPage extends JPanel {
                 }
             }
         });
+        openBrowserBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        openBrowserBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(openBrowserBtn);
         JButton openVLCBtn = new JButton(
-            "Open in VLC Player",
+            "Open in VLC Media Player",
             IconRes.VLC_ICON
         );
         openVLCBtn.addActionListener(e -> {
@@ -358,8 +363,10 @@ public class VideoPage extends JPanel {
             })
                 .start();
         });
+        openVLCBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        openVLCBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(openVLCBtn);
-        JButton downloadBtn = new JButton("Donwload", IconRes.DOWNLOAD_ICON);
+        downloadBtn = new JButton("Donwload", IconRes.DOWNLOAD_ICON);
         downloadBtn.addActionListener(e -> {
             mediaPlayer.controls().pause();
             new Thread(() -> {
@@ -367,6 +374,8 @@ public class VideoPage extends JPanel {
             })
                 .start();
         });
+        downloadBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        downloadBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(downloadBtn);
         this.add(videoMenuBtnPanel);
 
@@ -584,6 +593,7 @@ public class VideoPage extends JPanel {
                     isPositionChanged = true;
                     playbackSlider.setValue(0);
                     isPositionChanged = false;
+                    downloadBtn.setEnabled(false);
                     mediaPlayer.media().play(streamExtractor.getHlsUrl());
                 } else {
                     List<VideoStream> videoStreams =
@@ -594,6 +604,7 @@ public class VideoPage extends JPanel {
                         streamExtractor.getSubtitlesDefault();
                     currentVideoStream = videoStreams.get(0);
                     currentAudioStream = null;
+                    downloadBtn.setEnabled(true);
                     for (AudioStream audioStream : audioStreams) {
                         Locale audiosLocale = audioStream.getAudioLocale();
                         if (

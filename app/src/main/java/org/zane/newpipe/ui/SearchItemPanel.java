@@ -3,6 +3,8 @@ package org.zane.newpipe.ui;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -10,8 +12,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.NumberFormat;
+import java.util.concurrent.Flow;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
@@ -38,11 +42,73 @@ public class SearchItemPanel extends JPanel {
             new URI(item.getThumbnails().get(0).getUrl()).toURL()
         );
         //JPanel t = new JPanel(new SpringLayout());
-        JImage thumbnaillabel = new JImage(image);
+        JPanel layeredPane = new JPanel();
+        layeredPane.setLayout(new OverlayLayout(layeredPane));
+
+        //layeredPane.setPreferredSize(new Dimension(200, 100));
+        JImage thumbnaillabel = new JImage(image, this);
         thumbnaillabel.setMaximumSize(new Dimension(200, 200));
+        if (item instanceof StreamInfoItem streamInfoItem) {
+            JLabel videoTypeLabel;
+            switch (streamInfoItem.getStreamType()) {
+                case LIVE_STREAM:
+                case AUDIO_LIVE_STREAM:
+                    videoTypeLabel = new JLabel("LIVE", SwingConstants.RIGHT);
+                    videoTypeLabel.setBackground(new Color(255, 0, 0, 200));
+                    break;
+                default:
+                    videoTypeLabel = new JLabel(
+                        CommonUtil.getTimeString(streamInfoItem.getDuration()),
+                        SwingConstants.RIGHT
+                    );
+                    videoTypeLabel.setBackground(new Color(0, 0, 0, 200));
+                    break;
+            }
+            videoTypeLabel.setBorder(new EmptyBorder(0, 0, 5, 5));
+            videoTypeLabel.setOpaque(true);
+            videoTypeLabel.setAlignmentX(1.0f); // Anchor to Right
+            videoTypeLabel.setAlignmentY(1.0f); // Anchor to Bottom
+            layeredPane.add(videoTypeLabel);
+            thumbnaillabel.setAlignmentX(1.0f);
+            thumbnaillabel.setAlignmentY(1.0f);
+        } else if (item instanceof PlaylistInfoItem playlistInfoItem) {
+            JPanel videoCountLabelPanel = new JPanel(new BorderLayout());
+
+            videoCountLabelPanel.setOpaque(false);
+            JLabel videoCountLabel = new JLabel(
+                CommonUtil.numberToStringUnit(
+                    playlistInfoItem.getStreamCount()
+                ),
+                IconRes.PLAYLIST_PLAY_ICON,
+                SwingConstants.CENTER
+            );
+            videoCountLabel.setBackground(new Color(0, 0, 0, 200));
+            videoCountLabel.setOpaque(true);
+            videoCountLabel.setBorder(new EmptyBorder(0, 10, 0, 10));
+            videoCountLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
+            videoCountLabel.setHorizontalTextPosition(SwingConstants.CENTER);
+            videoCountLabelPanel.setAlignmentX(1.0f);
+            videoCountLabelPanel.setAlignmentY(0.0f);
+            videoCountLabelPanel.add(videoCountLabel, BorderLayout.EAST);
+            layeredPane.add(videoCountLabelPanel);
+            thumbnaillabel.setAlignmentX(1.0f);
+            thumbnaillabel.setAlignmentY(0.0f);
+        }
+
         thumbnaillabel.repaint();
+
+        layeredPane.add(thumbnaillabel);
+        this.addComponentListener(
+            new ComponentAdapter() {
+                public void componentResized(ComponentEvent e) {
+                    layeredPane.updateUI();
+                }
+            }
+        );
         //t.add(thumbnaillabel);
-        SwingUtilities.invokeLater(() -> this.add(thumbnaillabel));
+        SwingUtilities.invokeLater(() -> {
+            this.add(layeredPane);
+        });
         JPanel infoPanel = new JPanel(new GridLayout(3, 1));
         JLabel itemTitle = new JLabel();
         Font currentFont = itemTitle.getFont();
@@ -137,18 +203,11 @@ public class SearchItemPanel extends JPanel {
                 );
                 uploaderLabel2.setForeground(Color.LIGHT_GRAY);
                 infoPanel.add(uploaderLabel2);
-                JLabel videoCount = new JLabel(
-                    CommonUtil.numberToStringUnit(
-                            playlistInfo.getStreamCount()
-                        ) +
-                        " videos"
-                );
                 JMenuItem showChannelDetile2 = new JMenuItem(
                     "Show channel Details",
                     IconRes.LIVE_TV_ICON
                 );
                 showChannelDetile2.setForeground(Color.LIGHT_GRAY);
-                infoPanel.add(videoCount);
                 showChannelDetile2.addActionListener(e ->
                     mainViewPort.nevigate(
                         new NevigateOpation(
@@ -166,7 +225,11 @@ public class SearchItemPanel extends JPanel {
         this.setComponentPopupMenu(popupMenu);
         this.addMouseListener(new PanelClickListener(item));
 
-        SwingUtilities.invokeLater(() -> this.add(infoPanel));
+        SwingUtilities.invokeLater(() -> {
+            this.add(infoPanel);
+            thumbnaillabel.updateUI();
+            layeredPane.updateUI();
+        });
     }
 
     private class PanelClickListener implements MouseListener {

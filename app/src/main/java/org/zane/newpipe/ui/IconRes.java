@@ -23,6 +23,7 @@ public class IconRes {
     public static FlatSVGIcon COPY_ICON;
     public static FlatSVGIcon LIVE_TV_ICON;
     public static FlatSVGIcon DOWNLOAD_ICON;
+    public static FlatSVGIcon PLAYLIST_PLAY_ICON;
 
     static {
         try {
@@ -74,6 +75,9 @@ public class IconRes {
             DOWNLOAD_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_file_download.svg")
             ).derive(20, 20);
+            PLAYLIST_PLAY_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream("/icon/ic_playlist_play.svg")
+            );
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
