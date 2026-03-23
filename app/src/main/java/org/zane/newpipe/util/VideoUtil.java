@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -50,6 +51,16 @@ public class VideoUtil {
             if (VideoUtil.vlcPath == null) {
                 return;
             }
+            Component optionComponent = switch (component) {
+                case null -> {
+                    JFrame frame = new JFrame();
+                    frame.setIconImage(IconRes.LAUNCHER_ICON);
+                    frame.setUndecorated(true);
+                    frame.setVisible(true);
+                    yield frame;
+                }
+                default -> component;
+            };
             String videoTitle = se.getName();
             String uploaderName = se.getUploaderName();
             if (se.getStreamType() == StreamType.LIVE_STREAM) {
@@ -111,7 +122,7 @@ public class VideoUtil {
             SwingUtilities.invokeLater(() -> {
                 if (
                     JOptionPane.showConfirmDialog(
-                        component,
+                        optionComponent,
                         videoContol,
                         "Open in VLC Media Player",
                         JOptionPane.OK_CANCEL_OPTION
@@ -153,17 +164,33 @@ public class VideoUtil {
                             processBuilder.start();
                         } catch (IOException ioe) {
                             ioe.printStackTrace();
+                        } finally {
+                            if (component == null) {
+                                optionComponent.setVisible(false);
+                                System.exit(0);
+                            }
                         }
                     })
                         .start();
+                } else {
+                    if (component == null) {
+                        optionComponent.setVisible(false);
+                        System.exit(0);
+                    }
                 }
             });
         } catch (ExtractionException | IOException err) {
             err.printStackTrace();
+            if (component == null) {
+                throw new RuntimeException(err);
+            }
         }
     }
 
-    public static void downloadVideo(String videoURL) {
+    public static void downloadVideo(
+        String videoURL,
+        boolean isCloseAfterDone
+    ) {
         new Thread(() -> {
             new Thread(() -> {
                 try {
@@ -171,7 +198,7 @@ public class VideoUtil {
                         videoURL
                     );
                     se.fetchPage();
-                    downloadVideo(se);
+                    downloadVideo(se, isCloseAfterDone);
                 } catch (ExtractionException | IOException ee) {
                     ee.printStackTrace();
                 }
@@ -181,7 +208,10 @@ public class VideoUtil {
             .start();
     }
 
-    public static void downloadVideo(StreamExtractor se) {
+    public static void downloadVideo(
+        StreamExtractor se,
+        boolean isCloseAfterDone
+    ) {
         try {
             List<VideoStream> videoStreams = se.getVideoOnlyStreams();
             List<AudioStream> audioStreams = se.getAudioStreams();
@@ -246,6 +276,28 @@ public class VideoUtil {
                 downloadBtn.setEnabled(false);
                 saveFileText.setText("");
             });
+            Object[] options = new Object[] { downloadBtn, "Cancel" };
+            JOptionPane optionPane = new JOptionPane(
+                downloadPanel,
+                JOptionPane.PLAIN_MESSAGE,
+                JOptionPane.OK_CANCEL_OPTION,
+                null,
+                options,
+                options[0]
+            );
+
+            JDialog dialog = optionPane.createDialog("Download video");
+            dialog.setModal(false);
+            dialog.addWindowListener(
+                new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        if (isCloseAfterDone) {
+                            System.exit(0);
+                        }
+                    }
+                }
+            );
             saveFileBtn.addActionListener(e -> {
                 SystemFileChooser fileChooser = new SystemFileChooser();
                 fileChooser.setDialogTitle("Specify a file to save");
@@ -262,9 +314,9 @@ public class VideoUtil {
                 String aCodec = null;
                 if (as != null) {
                     aCodec = as.getCodec();
-                    int dotindex = aCodec.indexOf('.');
-                    if (dotindex > -1) {
-                        aCodec = aCodec.substring(0, dotindex);
+                    int dotIndex = aCodec.indexOf('.');
+                    if (dotIndex > -1) {
+                        aCodec = aCodec.substring(0, dotIndex);
                     }
                 }
                 switch (vCodec) {
@@ -354,9 +406,9 @@ public class VideoUtil {
                         break;
                 }
 
-                String savefilePath = saveFileText.getText();
-                if (savefilePath.isBlank()) {
-                    savefilePath =
+                String saveFilePath = saveFileText.getText();
+                if (saveFilePath.isBlank()) {
+                    saveFilePath =
                         videoTitle.replaceAll("[\\\\/:*?\"<>|]", "") +
                         "." +
                         (
@@ -364,10 +416,10 @@ public class VideoUtil {
                         ).getExtensions()[0];
                 }
 
-                fileChooser.setSelectedFile(new File(savefilePath));
+                fileChooser.setSelectedFile(new File(saveFilePath));
                 fileChooser.setAcceptAllFileFilterUsed(false);
 
-                int userSelection = fileChooser.showSaveDialog(null);
+                int userSelection = fileChooser.showSaveDialog(optionPane);
 
                 if (userSelection == SystemFileChooser.APPROVE_OPTION) {
                     SystemFileChooser.FileNameExtensionFilter filter =
@@ -392,18 +444,7 @@ public class VideoUtil {
             progressBar.setForeground(IconRes.YOUTUBE_COLOUR);
             downloadPanel.add(progressBar);
 
-            Object[] options = new Object[] { downloadBtn, "Cancel" };
-            JOptionPane optionPane = new JOptionPane(
-                downloadPanel,
-                JOptionPane.PLAIN_MESSAGE,
-                JOptionPane.OK_CANCEL_OPTION,
-                null,
-                options,
-                options[0]
-            );
-
-            JDialog dialog = optionPane.createDialog("Download video");
-            dialog.setModal(false);
+            dialog.setIconImage(IconRes.LAUNCHER_ICON);
 
             downloadBtn.addActionListener(e -> {
                 downloadBtn.setEnabled(false);
@@ -419,14 +460,11 @@ public class VideoUtil {
                 String fileExt = fileName.substring(
                     fileName.lastIndexOf('.') + 1
                 );
-                switch (fileExt) {
-                    case "m4a":
-                        fileExt = "mp4";
-                        break;
-                    case "weba":
-                        fileExt = "webm";
-                        break;
-                }
+                fileExt = switch (fileExt) {
+                    case "m4a" -> "mp4";
+                    case "weba" -> "webm";
+                    default -> fileExt;
+                };
                 String sout =
                     "#std{access=file,mux=" +
                     fileExt +
@@ -455,12 +493,11 @@ public class VideoUtil {
 
                             @Override
                             public void finished(MediaPlayer mediaPlayer) {
-                                dialog.setVisible(false);
                                 JOptionPane.showMessageDialog(
-                                    null,
+                                    dialog,
                                     "Download Complated"
                                 );
-                                //mediaPlayer.release();
+                                dialog.setVisible(false);
                             }
                         }
                     );
@@ -488,21 +525,25 @@ public class VideoUtil {
                 if (ss != null) {
                     mediaPlayer.subpictures().setSubTitleUri(ss.getContent());
                 }
-                mediaPlayer.controls().play();
                 dialog.addWindowListener(
                     new WindowAdapter() {
                         @Override
                         public void windowClosing(WindowEvent e) {
                             if (mediaPlayer.status().isPlaying()) {
-                                mediaPlayer.controls().start();
+                                mediaPlayer.controls().stop();
                             }
+                            mediaPlayer.media().reset();
                         }
                     }
                 );
+                mediaPlayer.controls().play();
             });
             dialog.setVisible(true);
         } catch (ExtractionException | IOException e) {
             e.printStackTrace();
+            if (isCloseAfterDone) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

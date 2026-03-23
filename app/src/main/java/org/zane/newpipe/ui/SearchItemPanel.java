@@ -48,51 +48,67 @@ public class SearchItemPanel extends JPanel {
         //layeredPane.setPreferredSize(new Dimension(200, 100));
         JImage thumbnaillabel = new JImage(image, this);
         thumbnaillabel.setMaximumSize(new Dimension(200, 200));
-        if (item instanceof StreamInfoItem streamInfoItem) {
-            JLabel videoTypeLabel;
-            switch (streamInfoItem.getStreamType()) {
-                case LIVE_STREAM:
-                case AUDIO_LIVE_STREAM:
-                    videoTypeLabel = new JLabel("LIVE", SwingConstants.RIGHT);
-                    videoTypeLabel.setBackground(new Color(255, 0, 0, 200));
-                    break;
-                default:
-                    videoTypeLabel = new JLabel(
-                        CommonUtil.getTimeString(streamInfoItem.getDuration()),
-                        SwingConstants.RIGHT
-                    );
-                    videoTypeLabel.setBackground(new Color(0, 0, 0, 200));
-                    break;
-            }
-            videoTypeLabel.setBorder(new EmptyBorder(0, 0, 5, 5));
-            videoTypeLabel.setOpaque(true);
-            videoTypeLabel.setAlignmentX(1.0f); // Anchor to Right
-            videoTypeLabel.setAlignmentY(1.0f); // Anchor to Bottom
-            layeredPane.add(videoTypeLabel);
-            thumbnaillabel.setAlignmentX(1.0f);
-            thumbnaillabel.setAlignmentY(1.0f);
-        } else if (item instanceof PlaylistInfoItem playlistInfoItem) {
-            JPanel videoCountLabelPanel = new JPanel(new BorderLayout());
+        viaItemType: switch (item) {
+            case StreamInfoItem streamInfoItem:
+                JLabel videoTypeLabel;
+                switch (streamInfoItem.getStreamType()) {
+                    case LIVE_STREAM:
+                    case AUDIO_LIVE_STREAM:
+                        videoTypeLabel = new JLabel(
+                            "LIVE",
+                            SwingConstants.RIGHT
+                        );
+                        videoTypeLabel.setBackground(new Color(255, 0, 0, 200));
+                        break;
+                    default:
+                        long videoDuration = streamInfoItem.getDuration();
+                        if (videoDuration < 0) {
+                            break viaItemType;
+                        }
+                        videoTypeLabel = new JLabel(
+                            CommonUtil.getTimeString(
+                                streamInfoItem.getDuration()
+                            ),
+                            SwingConstants.RIGHT
+                        );
+                        videoTypeLabel.setBackground(new Color(0, 0, 0, 200));
+                        break;
+                }
+                videoTypeLabel.setBorder(new EmptyBorder(0, 0, 5, 5));
+                videoTypeLabel.setOpaque(true);
+                videoTypeLabel.setAlignmentX(1.0f); // Anchor to Right
+                videoTypeLabel.setAlignmentY(1.0f); // Anchor to Bottom
+                layeredPane.add(videoTypeLabel);
+                thumbnaillabel.setAlignmentX(1.0f);
+                thumbnaillabel.setAlignmentY(1.0f);
+                break;
+            case PlaylistInfoItem playlistInfoItem:
+                JPanel videoCountLabelPanel = new JPanel(new BorderLayout());
 
-            videoCountLabelPanel.setOpaque(false);
-            JLabel videoCountLabel = new JLabel(
-                CommonUtil.numberToStringUnit(
-                    playlistInfoItem.getStreamCount()
-                ),
-                IconRes.PLAYLIST_PLAY_ICON,
-                SwingConstants.CENTER
-            );
-            videoCountLabel.setBackground(new Color(0, 0, 0, 200));
-            videoCountLabel.setOpaque(true);
-            videoCountLabel.setBorder(new EmptyBorder(0, 10, 0, 10));
-            videoCountLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
-            videoCountLabel.setHorizontalTextPosition(SwingConstants.CENTER);
-            videoCountLabelPanel.setAlignmentX(1.0f);
-            videoCountLabelPanel.setAlignmentY(0.0f);
-            videoCountLabelPanel.add(videoCountLabel, BorderLayout.EAST);
-            layeredPane.add(videoCountLabelPanel);
-            thumbnaillabel.setAlignmentX(1.0f);
-            thumbnaillabel.setAlignmentY(0.0f);
+                videoCountLabelPanel.setOpaque(false);
+                JLabel videoCountLabel = new JLabel(
+                    CommonUtil.numberToStringUnit(
+                        playlistInfoItem.getStreamCount()
+                    ),
+                    IconRes.PLAYLIST_PLAY_ICON,
+                    SwingConstants.CENTER
+                );
+                videoCountLabel.setBackground(new Color(0, 0, 0, 200));
+                videoCountLabel.setOpaque(true);
+                videoCountLabel.setBorder(new EmptyBorder(0, 10, 0, 10));
+                videoCountLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
+                videoCountLabel.setHorizontalTextPosition(
+                    SwingConstants.CENTER
+                );
+                videoCountLabelPanel.setAlignmentX(1.0f);
+                videoCountLabelPanel.setAlignmentY(0.0f);
+                videoCountLabelPanel.add(videoCountLabel, BorderLayout.EAST);
+                layeredPane.add(videoCountLabelPanel);
+                thumbnaillabel.setAlignmentX(1.0f);
+                thumbnaillabel.setAlignmentY(0.0f);
+                break;
+            default:
+                break;
         }
 
         thumbnaillabel.repaint();
@@ -192,7 +208,7 @@ public class SearchItemPanel extends JPanel {
                         IconRes.DOWNLOAD_ICON
                     );
                     downloadMenu.addActionListener(e ->
-                        VideoUtil.downloadVideo(item.getUrl())
+                        VideoUtil.downloadVideo(item.getUrl(), false)
                     );
                     popupMenu.add(downloadMenu);
                 }

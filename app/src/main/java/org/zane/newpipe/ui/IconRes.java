@@ -2,11 +2,14 @@ package org.zane.newpipe.ui;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import javax.imageio.ImageIO;
 
 public class IconRes {
 
     public static Color YOUTUBE_COLOUR = new Color(205, 32, 31);
+    public static BufferedImage LAUNCHER_ICON;
     public static FlatSVGIcon ARROW_BACK_ICON;
     public static FlatSVGIcon ARROW_NEXT_ICON;
     public static FlatSVGIcon ART_TRACK_ICON;
@@ -29,6 +32,9 @@ public class IconRes {
 
     static {
         try {
+            LAUNCHER_ICON = ImageIO.read(
+                IconRes.class.getResourceAsStream("/ic_launcher.png")
+            );
             ARROW_BACK_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_arrow_back.svg")
             );

@@ -10,14 +10,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import org.zane.newpipe.page.ChannelPage;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NevigateOpation;
-import org.zane.newpipe.page.SearchResultPage;
-import org.zane.newpipe.page.VideoPage;
 import org.zane.newpipe.ui.IconRes;
-import org.zane.newpipe.util.VideoUtil;
-import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
 
 public class App extends JFrame {
 
@@ -43,21 +38,10 @@ public class App extends JFrame {
 
     private App(boolean showDefault) {
         App.app = this;
-        NativeDiscovery nd = new NativeDiscovery();
-        if (nd.discover()) {
-            VideoUtil.setVlcPath(nd.discoveredPath());
-        }
+
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setTitle("NewPipe");
-        try {
-            this.setIconImage(
-                ImageIO.read(
-                    this.getClass().getResourceAsStream("/ic_launcher.png")
-                )
-            );
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.setIconImage(IconRes.LAUNCHER_ICON);
         this.setMinimumSize(new Dimension(750, 500));
         this.addWindowListener(
             new java.awt.event.WindowAdapter() {

@@ -110,298 +110,7 @@ public class VideoPage extends JPanel {
         this.mainViewPort = mainViewPort;
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         numberFormat = NumberFormat.getInstance();
-        EmbeddedMediaPlayerComponent mediaPlayerComponent =
-            new EmbeddedMediaPlayerComponent(
-                new MediaPlayerFactory("--avcodec-hw=auto", "--ffmpeg-hw"),
-                null,
-                new AdaptiveFullScreenStrategy(App.getInstance()),
-                null,
-                null
-            );
-        mediaPlayer = mediaPlayerComponent.mediaPlayer();
-        this.addComponentListener(
-            new ComponentAdapter() {
-                @Override
-                public void componentHidden(ComponentEvent e) {
-                    // Code to execute when the JPanel is hidden
-                    //
-                    mediaPlayer.controls().stop();
-                    mediaPlayer.release();
-                }
-
-                @Override
-                public void componentResized(ComponentEvent e) {
-                    Dimension maxSize = new Dimension(
-                        getPreferredSize().width,
-                        Integer.MAX_VALUE
-                    );
-                    videoDescriptionText.setMaximumSize(maxSize);
-                    tagPanel.setMaximumSize(maxSize);
-                    if (oldWidth > maxSize.width) {
-                        videoDescriptionText.updateUI();
-                    }
-                    oldWidth = maxSize.width;
-                }
-            }
-        );
-
-        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
-        mediaPlayer
-            .events()
-            .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
-        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
-        this.add(mediaPlayerComponent);
-        // c.gridy = 1;
-        JPanel playbackSliderRow = new JPanel(new BorderLayout());
-
-        currentTimestampLabel = new JLabel("00:00");
-        playbackSliderRow.add(currentTimestampLabel, BorderLayout.LINE_START);
-        playbackSlider = new JSlider(
-            SwingConstants.HORIZONTAL,
-            0,
-            Integer.MAX_VALUE,
-            0
-        );
-        playbackSlider.setForeground(IconRes.YOUTUBE_COLOUR);
-        playbackSlider.addChangeListener(e -> {
-            if (playbackSlider.getValueIsAdjusting() || isPositionChanged) {
-                return;
-            }
-            System.out.println("change timestamp");
-            mediaPlayer
-                .controls()
-                .setTime((long) (playbackSlider.getValue() * videoLengthDiff));
-        });
-        playbackSliderRow.add(playbackSlider, BorderLayout.CENTER);
-
-        videoLenghtLabel = new JLabel("-:--:--");
-        playbackSliderRow.add(videoLenghtLabel, BorderLayout.LINE_END);
-        this.add(playbackSliderRow);
-
-        // video Contol
-        videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        this.add(videoContol);
-        playButton = new JButton(IconRes.PLAY_ARROW_ICON);
-        playButton.addActionListener(e -> {
-            if (mediaPlayer.status().isPlaying()) {
-                mediaPlayer.controls().pause();
-            } else {
-                mediaPlayer.controls().play();
-            }
-        });
-        videoContol.add(playButton);
-
-        //ComboBox
-        videoModel = new DefaultComboBoxModel<>();
-        videoComboBox = new JComboBox<VideoStream>(videoModel);
-        videoComboBox.setRenderer(new VideoComboBoxRenderer());
-        videoComboBox.addItemListener(e -> {
-            if (
-                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
-            ) {
-                if (e.getItem() instanceof VideoStream videoStream) {
-                    boolean isPlaying = mediaPlayer.status().isPlaying();
-                    final long currentTime = mediaPlayer.status().time();
-                    playVideo(
-                        videoStream,
-                        currentAudioStream,
-                        currentSubtitlesStream,
-                        currentTime
-                    );
-                    if (isPlaying) {
-                        mediaPlayer.controls().play();
-                    }
-                    currentVideoStream = videoStream;
-                }
-            }
-        });
-        videoContol.add(new JLabel("Video:"));
-        videoContol.add(videoComboBox);
-        audioModel = new DefaultComboBoxModel<>();
-        audioComboBox = new JComboBox<AudioStream>(audioModel);
-        audioComboBox.setRenderer(new AudioComboBoxRenderer());
-        audioComboBox.addItemListener(e -> {
-            if (
-                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
-            ) {
-                if (e.getItem() instanceof AudioStream audioStream) {
-                    boolean isPlaying = mediaPlayer.status().isPlaying();
-                    final long currentTime = mediaPlayer.status().time();
-                    playVideo(
-                        currentVideoStream,
-                        audioStream,
-                        currentSubtitlesStream,
-                        currentTime
-                    );
-                    if (isPlaying) {
-                        mediaPlayer.controls().play();
-                    }
-                    currentAudioStream = audioStream;
-                }
-            }
-        });
-        videoContol.add(new JLabel("Audio:"));
-        videoContol.add(audioComboBox);
-        subtitleModel = new DefaultComboBoxModel<SubtitlesStream>();
-        subtitleComboBox = new JComboBox<SubtitlesStream>(subtitleModel);
-        subtitleComboBox.setRenderer(new SubTitleComboBoxRenderer());
-        subtitleComboBox.addItemListener(e -> {
-            if (
-                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
-            ) {
-                boolean isPlaying = mediaPlayer.status().isPlaying();
-                final long currentTime = mediaPlayer.status().time();
-                if (e.getItem() instanceof SubtitlesStream subtitlesStream) {
-                    playVideo(
-                        currentVideoStream,
-                        currentAudioStream,
-                        subtitlesStream,
-                        currentTime
-                    );
-
-                    currentSubtitlesStream = subtitlesStream;
-                } else {
-                    playVideo(
-                        currentVideoStream,
-                        currentAudioStream,
-                        null,
-                        currentTime
-                    );
-                    currentSubtitlesStream = null;
-                }
-                if (isPlaying) {
-                    mediaPlayer.controls().play();
-                }
-            }
-        });
-        videoContol.add(new JLabel("Subtitle:"));
-        videoContol.add(subtitleComboBox);
-        JButton speedBtm = new JButton("1x");
-        speedBtm.addActionListener(e -> {
-            SpeedSelectorPanel s = new SpeedSelectorPanel();
-            JButton resetBtn = new JButton("Reset");
-            resetBtn.addActionListener(e2 -> s.reset());
-            Object[] options = new Object[] { resetBtn, "Ok", "Cancel" };
-            if (
-                JOptionPane.showOptionDialog(
-                    mainViewPort,
-                    s,
-                    "Playback speed option",
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    options,
-                    options[2]
-                ) ==
-                1
-            ) {
-                currentSpeed = s.getSpeed();
-                BigDecimal speedDec = new BigDecimal(currentSpeed).divide(div);
-                speedBtm.setText(df.format(speedDec) + "x");
-                mediaPlayer.controls().setRate(speedDec.floatValue());
-            }
-        });
-        videoContol.add(speedBtm);
-        JButton fullScreenBtn = new JButton(IconRes.FULLSCREEN_ICON);
-
-        videoContol.add(fullScreenBtn);
-
-        JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        videoTitle = new JLabel("", SwingConstants.LEFT);
-        Font boldFont = videoTitle.getFont();
-        boldFont = boldFont.deriveFont(Font.BOLD, boldFont.getSize());
-        videoTitle.setFont(boldFont);
-        videoTitlePanel.add(videoTitle);
-        this.add(videoTitlePanel);
-        JPanel videoInfo = new JPanel(new GridLayout(1, 2));
-        uploaderInfo = new ChannelInfoPanel(mainViewPort);
-        videoInfo.add(uploaderInfo);
-        JPanel likeAndViewPanelPanel = new JPanel(
-            new FlowLayout(FlowLayout.RIGHT)
-        );
-        JPanel likeAndViewPanel = new JPanel();
-
-        likeAndViewPanel.setLayout(
-            new BoxLayout(likeAndViewPanel, BoxLayout.Y_AXIS)
-        );
-        viewCountLabel = new JLabel("", SwingConstants.RIGHT);
-        likeAndViewPanel.add(viewCountLabel);
-        likeCountLabel = new JLabel(
-            "",
-            IconRes.THUMP_UP_ICON,
-            SwingConstants.RIGHT
-        );
-        likeAndViewPanel.add(likeCountLabel);
-        likeAndViewPanelPanel.add(likeAndViewPanel);
-        videoInfo.add(likeAndViewPanelPanel);
-        this.add(videoInfo);
-
-        JPanel videoMenuBtnPanel = new JPanel(new GridLayout(1, 4));
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        JButton copyUrlBtn = new JButton("Copy URL", IconRes.COPY_ICON);
-        copyUrlBtn.addActionListener(e -> {
-            try {
-                clipboard.setContents(
-                    new StringSelection(streamExtractor.getUrl()),
-                    null
-                );
-            } catch (ParsingException pe) {
-                pe.printStackTrace();
-            }
-        });
-        copyUrlBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
-        copyUrlBtn.setHorizontalTextPosition(SwingConstants.CENTER);
-        videoMenuBtnPanel.add(copyUrlBtn);
-        JButton openBrowserBtn = new JButton(
-            "Open in browser",
-            IconRes.LANGUAGE_ICON
-        );
-        openBrowserBtn.addActionListener(e -> {
-            if (Desktop.isDesktopSupported()) {
-                mediaPlayer.controls().pause();
-                try {
-                    Desktop.getDesktop().browse(
-                        URI.create(streamExtractor.getUrl())
-                    );
-                } catch (IOException | ParsingException ioe) {
-                    ioe.printStackTrace();
-                }
-            }
-        });
-        openBrowserBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
-        openBrowserBtn.setHorizontalTextPosition(SwingConstants.CENTER);
-        videoMenuBtnPanel.add(openBrowserBtn);
-        JButton openVLCBtn = new JButton(
-            "Open in VLC Media Player",
-            IconRes.VLC_ICON
-        );
-        openVLCBtn.addActionListener(e -> {
-            mediaPlayer.controls().pause();
-            new Thread(() -> {
-                VideoUtil.openVLC(streamExtractor, mainViewPort);
-            })
-                .start();
-        });
-        openVLCBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
-        openVLCBtn.setHorizontalTextPosition(SwingConstants.CENTER);
-        videoMenuBtnPanel.add(openVLCBtn);
-        downloadBtn = new JButton("Donwload", IconRes.DOWNLOAD_ICON);
-        downloadBtn.addActionListener(e -> {
-            mediaPlayer.controls().pause();
-            new Thread(() -> {
-                VideoUtil.downloadVideo(streamExtractor);
-            })
-                .start();
-        });
-        downloadBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
-        downloadBtn.setHorizontalTextPosition(SwingConstants.CENTER);
-        videoMenuBtnPanel.add(downloadBtn);
-        this.add(videoMenuBtnPanel);
-
-        relatedStreamsPanel = new JPanel();
-        relatedStreamsPanel.setLayout(
-            new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
-        );
         HyperlinkListener hyperlinkListener = e -> {
             try {
                 if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
@@ -487,22 +196,338 @@ public class VideoPage extends JPanel {
                 pe.printStackTrace();
             }
         };
+        EmbeddedMediaPlayerComponent mediaPlayerComponent =
+            new EmbeddedMediaPlayerComponent(
+                new MediaPlayerFactory("--avcodec-hw=auto", "--ffmpeg-hw"),
+                null,
+                new AdaptiveFullScreenStrategy(App.getInstance()),
+                null,
+                null
+            );
+        videoLenghtLabel = new JLabel("-:--:--");
+        currentTimestampLabel = new JLabel("00:00");
+        JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        videoTitle = new JLabel("", SwingConstants.LEFT);
+        JPanel playbackSliderRow = new JPanel(new BorderLayout());
+        playbackSlider = new JSlider(
+            SwingConstants.HORIZONTAL,
+            0,
+            Integer.MAX_VALUE,
+            0
+        );
+        videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        playButton = new JButton(IconRes.PLAY_ARROW_ICON);
+        videoModel = new DefaultComboBoxModel<>();
+        videoComboBox = new JComboBox<VideoStream>(videoModel);
+        audioModel = new DefaultComboBoxModel<>();
+        audioComboBox = new JComboBox<AudioStream>(audioModel);
+        subtitleModel = new DefaultComboBoxModel<SubtitlesStream>();
+        subtitleComboBox = new JComboBox<SubtitlesStream>(subtitleModel);
+        JButton speedBtm = new JButton("1x");
+        JButton fullScreenBtn = new JButton(IconRes.FULLSCREEN_ICON);
+
+        JPanel videoInfo = new JPanel(new GridLayout(1, 2));
+        JPanel likeAndViewPanelPanel = new JPanel(
+            new FlowLayout(FlowLayout.RIGHT)
+        );
+        JPanel likeAndViewPanel = new JPanel();
+
+        JPanel videoMenuBtnPanel = new JPanel(new GridLayout(1, 4));
+        JButton openVLCBtn = new JButton(
+            "Open in VLC Media Player",
+            IconRes.VLC_ICON
+        );
+        JButton copyUrlBtn = new JButton("Copy URL", IconRes.COPY_ICON);
+        JButton openBrowserBtn = new JButton(
+            "Open in browser",
+            IconRes.LANGUAGE_ICON
+        );
+        JPanel navigationBar = new JPanel(new GridLayout(1, 3));
+        JButton relatedStreamsBtn = new JButton(IconRes.ART_TRACK_ICON);
+        JButton commentBtn = new JButton(IconRes.COMMENT_ICON);
+        JViewport viewport = new JViewport();
+        JPanel videoDescriptionPanel = new JPanel();
+        JPanel publishDatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel videoDescriptionTextPanel = new JPanel(
+            new FlowLayout(FlowLayout.LEFT)
+        );
+
+        JPanel descriptionMatadata = new JPanel(new GridLayout(3, 3, 10, 10));
+        JLabel tmpLabel = new JLabel("Category:", SwingConstants.RIGHT);
+
         videoCommentPanel = new CommentPanel(mainViewPort, hyperlinkListener);
+
+        mediaPlayer = mediaPlayerComponent.mediaPlayer();
+        this.addComponentListener(
+            new ComponentAdapter() {
+                @Override
+                public void componentHidden(ComponentEvent e) {
+                    // Code to execute when the JPanel is hidden
+                    //
+                    mediaPlayer.controls().stop();
+                    mediaPlayer.release();
+                }
+
+                @Override
+                public void componentResized(ComponentEvent e) {
+                    Dimension maxSize = new Dimension(
+                        getPreferredSize().width,
+                        Integer.MAX_VALUE
+                    );
+                    videoDescriptionText.setMaximumSize(maxSize);
+                    tagPanel.setMaximumSize(maxSize);
+                    if (oldWidth > maxSize.width) {
+                        videoDescriptionText.updateUI();
+                    }
+                    oldWidth = maxSize.width;
+                }
+            }
+        );
+
+        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
+        mediaPlayer
+            .events()
+            .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
+        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
+        this.add(mediaPlayerComponent);
+        // c.gridy = 1;
+
+        playbackSliderRow.add(currentTimestampLabel, BorderLayout.LINE_START);
+
+        playbackSlider.setForeground(IconRes.YOUTUBE_COLOUR);
+        playbackSlider.addChangeListener(e -> {
+            if (playbackSlider.getValueIsAdjusting() || isPositionChanged) {
+                return;
+            }
+            System.out.println("change timestamp");
+            mediaPlayer
+                .controls()
+                .setTime((long) (playbackSlider.getValue() * videoLengthDiff));
+        });
+        playbackSliderRow.add(playbackSlider, BorderLayout.CENTER);
+
+        playbackSliderRow.add(videoLenghtLabel, BorderLayout.LINE_END);
+        this.add(playbackSliderRow);
+
+        // video Contol
+
+        this.add(videoContol);
+
+        playButton.addActionListener(e -> {
+            if (mediaPlayer.status().isPlaying()) {
+                mediaPlayer.controls().pause();
+            } else {
+                mediaPlayer.controls().play();
+            }
+        });
+        videoContol.add(playButton);
+
+        //ComboBox
+
+        videoComboBox.setRenderer(new VideoComboBoxRenderer());
+        videoComboBox.addItemListener(e -> {
+            if (
+                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
+            ) {
+                if (e.getItem() instanceof VideoStream videoStream) {
+                    boolean isPlaying = mediaPlayer.status().isPlaying();
+                    final long currentTime = mediaPlayer.status().time();
+                    playVideo(
+                        videoStream,
+                        currentAudioStream,
+                        currentSubtitlesStream,
+                        currentTime
+                    );
+                    if (isPlaying) {
+                        mediaPlayer.controls().play();
+                    }
+                    currentVideoStream = videoStream;
+                }
+            }
+        });
+        videoContol.add(new JLabel("Video:"));
+        videoContol.add(videoComboBox);
+
+        audioComboBox.setRenderer(new AudioComboBoxRenderer());
+        audioComboBox.addItemListener(e -> {
+            if (
+                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
+            ) {
+                if (e.getItem() instanceof AudioStream audioStream) {
+                    boolean isPlaying = mediaPlayer.status().isPlaying();
+                    final long currentTime = mediaPlayer.status().time();
+                    playVideo(
+                        currentVideoStream,
+                        audioStream,
+                        currentSubtitlesStream,
+                        currentTime
+                    );
+                    if (isPlaying) {
+                        mediaPlayer.controls().play();
+                    }
+                    currentAudioStream = audioStream;
+                }
+            }
+        });
+        videoContol.add(new JLabel("Audio:"));
+        videoContol.add(audioComboBox);
+
+        subtitleComboBox.setRenderer(new SubTitleComboBoxRenderer());
+        subtitleComboBox.addItemListener(e -> {
+            if (
+                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
+            ) {
+                boolean isPlaying = mediaPlayer.status().isPlaying();
+                final long currentTime = mediaPlayer.status().time();
+                if (e.getItem() instanceof SubtitlesStream subtitlesStream) {
+                    playVideo(
+                        currentVideoStream,
+                        currentAudioStream,
+                        subtitlesStream,
+                        currentTime
+                    );
+
+                    currentSubtitlesStream = subtitlesStream;
+                } else {
+                    playVideo(
+                        currentVideoStream,
+                        currentAudioStream,
+                        null,
+                        currentTime
+                    );
+                    currentSubtitlesStream = null;
+                }
+                if (isPlaying) {
+                    mediaPlayer.controls().play();
+                }
+            }
+        });
+        videoContol.add(new JLabel("Subtitle:"));
+        videoContol.add(subtitleComboBox);
+
+        speedBtm.addActionListener(e -> {
+            SpeedSelectorPanel s = new SpeedSelectorPanel();
+            JButton resetBtn = new JButton("Reset");
+            resetBtn.addActionListener(e2 -> s.reset());
+            Object[] options = new Object[] { resetBtn, "Ok", "Cancel" };
+            if (
+                JOptionPane.showOptionDialog(
+                    mainViewPort,
+                    s,
+                    "Playback speed option",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[2]
+                ) ==
+                1
+            ) {
+                currentSpeed = s.getSpeed();
+                BigDecimal speedDec = new BigDecimal(currentSpeed).divide(div);
+                speedBtm.setText(df.format(speedDec) + "x");
+                mediaPlayer.controls().setRate(speedDec.floatValue());
+            }
+        });
+        videoContol.add(speedBtm);
+
+        videoContol.add(fullScreenBtn);
+
+        Font boldFont = videoTitle.getFont();
+        boldFont = boldFont.deriveFont(Font.BOLD, boldFont.getSize());
+        videoTitle.setFont(boldFont);
+        videoTitlePanel.add(videoTitle);
+        this.add(videoTitlePanel);
+
+        uploaderInfo = new ChannelInfoPanel(mainViewPort);
+        videoInfo.add(uploaderInfo);
+
+        likeAndViewPanel.setLayout(
+            new BoxLayout(likeAndViewPanel, BoxLayout.Y_AXIS)
+        );
+        viewCountLabel = new JLabel("", SwingConstants.RIGHT);
+        likeAndViewPanel.add(viewCountLabel);
+        likeCountLabel = new JLabel(
+            "",
+            IconRes.THUMP_UP_ICON,
+            SwingConstants.RIGHT
+        );
+        likeAndViewPanel.add(likeCountLabel);
+        likeAndViewPanelPanel.add(likeAndViewPanel);
+        videoInfo.add(likeAndViewPanelPanel);
+        this.add(videoInfo);
+
+        copyUrlBtn.addActionListener(e -> {
+            try {
+                clipboard.setContents(
+                    new StringSelection(streamExtractor.getUrl()),
+                    null
+                );
+            } catch (ParsingException pe) {
+                pe.printStackTrace();
+            }
+        });
+        copyUrlBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        copyUrlBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        videoMenuBtnPanel.add(copyUrlBtn);
+
+        openBrowserBtn.addActionListener(e -> {
+            if (Desktop.isDesktopSupported()) {
+                mediaPlayer.controls().pause();
+                try {
+                    Desktop.getDesktop().browse(
+                        URI.create(streamExtractor.getUrl())
+                    );
+                } catch (IOException | ParsingException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+        });
+        openBrowserBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        openBrowserBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        videoMenuBtnPanel.add(openBrowserBtn);
+
+        openVLCBtn.addActionListener(e -> {
+            mediaPlayer.controls().pause();
+            new Thread(() -> {
+                VideoUtil.openVLC(streamExtractor, mainViewPort);
+            })
+                .start();
+        });
+        openVLCBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        openVLCBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        videoMenuBtnPanel.add(openVLCBtn);
+        downloadBtn = new JButton("Donwload", IconRes.DOWNLOAD_ICON);
+        downloadBtn.addActionListener(e -> {
+            mediaPlayer.controls().pause();
+            new Thread(() -> {
+                VideoUtil.downloadVideo(streamExtractor, false);
+            })
+                .start();
+        });
+        downloadBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        downloadBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        videoMenuBtnPanel.add(downloadBtn);
+        this.add(videoMenuBtnPanel);
+
+        relatedStreamsPanel = new JPanel();
+        relatedStreamsPanel.setLayout(
+            new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
+        );
+
         videoCommentPanel.setLayout(
             new BoxLayout(videoCommentPanel, BoxLayout.Y_AXIS)
         );
         videoCommentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JPanel videoDescriptionPanel = new JPanel();
+
         videoDescriptionPanel.setLayout(
             new BoxLayout(videoDescriptionPanel, BoxLayout.Y_AXIS)
         );
-        JPanel publishDatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
         publishDateLabel = new JLabel();
         publishDatePanel.add(publishDateLabel);
         videoDescriptionPanel.add(publishDatePanel);
-        JPanel videoDescriptionTextPanel = new JPanel(
-            new FlowLayout(FlowLayout.LEFT)
-        );
+
         videoDescriptionText = new JHTMLPane();
 
         videoDescriptionText.addHyperlinkListener(hyperlinkListener);
@@ -514,10 +539,10 @@ public class VideoPage extends JPanel {
         videoDescriptionText.setMaximumSize(maxSize);
         videoDescriptionTextPanel.add(videoDescriptionText);
         videoDescriptionPanel.add(videoDescriptionTextPanel);
-        JPanel descriptionMatadata = new JPanel(new GridLayout(3, 3, 10, 10));
-        JLabel tmpLabel = new JLabel("Category:", SwingConstants.RIGHT);
+
         tmpLabel.setFont(boldFont);
         descriptionMatadata.add(tmpLabel);
+
         videoCategoryLabel = new JLabel("", SwingConstants.LEFT);
         descriptionMatadata.add(videoCategoryLabel);
         tmpLabel = new JLabel("License:", SwingConstants.RIGHT);
@@ -534,13 +559,11 @@ public class VideoPage extends JPanel {
         tagPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
         tagPanel.setMaximumSize(maxSize);
         videoDescriptionPanel.add(tagPanel);
-        JPanel navigationBar = new JPanel(new GridLayout(1, 3));
-        JViewport viewport = new JViewport();
-        JButton commentBtn = new JButton(IconRes.COMMENT_ICON);
+
         commentBtn.setToolTipText("View video comment");
         commentBtn.addActionListener(e -> viewport.setView(videoCommentPanel));
         navigationBar.add(commentBtn);
-        JButton relatedStreamsBtn = new JButton(IconRes.ART_TRACK_ICON);
+
         relatedStreamsBtn.setToolTipText("View related video");
         relatedStreamsBtn.addActionListener(e ->
             viewport.setView(relatedStreamsPanel)
