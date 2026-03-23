@@ -198,7 +198,11 @@ public class VideoPage extends JPanel {
         };
         EmbeddedMediaPlayerComponent mediaPlayerComponent =
             new EmbeddedMediaPlayerComponent(
-                new MediaPlayerFactory("--avcodec-hw=auto", "--ffmpeg-hw"),
+                new MediaPlayerFactory(
+                    VideoUtil.nativeDiscovery,
+                    "--avcodec-hw=auto",
+                    "--ffmpeg-hw"
+                ),
                 null,
                 new AdaptiveFullScreenStrategy(App.getInstance()),
                 null,
@@ -778,7 +782,6 @@ public class VideoPage extends JPanel {
                 String likeCountString = CommonUtil.numberToStringUnit(
                     streamExtractor.getLikeCount()
                 );
-                //System.out.println("audi size " + audioStreams.size());
                 String UploadDateString =
                     "Published on " +
                     dtf.format(
@@ -889,7 +892,6 @@ public class VideoPage extends JPanel {
         //         currentAudioStream.getContent()
         //     );
         if (subtitlesStream != null) {
-            //System.out.println(subtitlesStream.getContent());
             mediaPlayer
                 .subpictures()
                 .setSubTitleUri(subtitlesStream.getContent());

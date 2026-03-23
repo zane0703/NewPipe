@@ -56,7 +56,6 @@ public class SearchResultPage extends JPanel {
                     } else {
                         Page prePage = pageStack.pop();
                         itp = se.getPage(prePage);
-                        System.out.println(Arrays.toString(prePage.getBody()));
                         showPage();
                         SwingUtilities.invokeLater(() -> {
                             pageNumLabel.setText(

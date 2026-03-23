@@ -203,7 +203,6 @@ public class ChannelPage extends JPanel {
                     channelExtractor.getName(),
                     channelExtractor.getSubscriberCount()
                 );
-                System.out.println(channelExtractor.getDescription());
                 String channelDist = channelExtractor.getDescription();
                 List<String> tagList = channelExtractor.getTags();
                 SwingUtilities.invokeLater(() -> {

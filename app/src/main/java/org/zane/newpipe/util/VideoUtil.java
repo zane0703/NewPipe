@@ -20,6 +20,8 @@ import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
 import org.zane.newpipe.ui.IconRes;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
+import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
+import uk.co.caprica.vlcj.factory.discovery.strategy.NativeDiscoveryStrategy;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
 
@@ -471,7 +473,9 @@ public class VideoUtil {
                     ",dst=\"" +
                     fileName +
                     "\"}";
-                MediaPlayerFactory factory = new MediaPlayerFactory();
+                MediaPlayerFactory factory = new MediaPlayerFactory(
+                    VideoUtil.nativeDiscovery
+                );
                 MediaPlayer mediaPlayer = factory
                     .mediaPlayers()
                     .newMediaPlayer();
@@ -546,6 +550,26 @@ public class VideoUtil {
             }
         }
     }
+
+    public static final NativeDiscovery nativeDiscovery = new NativeDiscovery(
+        new NativeDiscoveryStrategy() {
+            public boolean supported() {
+                return VideoUtil.vlcPath != null;
+            }
+
+            public String discover() {
+                return VideoUtil.vlcPath;
+            }
+
+            public boolean onFound(String path) {
+                return true;
+            }
+
+            public boolean onSetPluginPath(String path) {
+                return true;
+            }
+        }
+    );
 
     public static class VideoComboBoxRenderer extends DefaultListCellRenderer {
 

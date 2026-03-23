@@ -152,7 +152,6 @@ public class PlayListPage extends JPanel {
                     NumberFormat.getInstance().format(pe.getStreamCount()) +
                         " Videos"
                 );
-                System.out.println(pe.getTimeAgoParser());
                 itp = pe.getInitialPage();
                 showPage();
             } catch (IOException | ExtractionException err) {

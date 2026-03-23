@@ -40,7 +40,6 @@ public class JHTMLPane extends JEditorPane {
         //         viewport.getWidth()
         //     );
         // }
-        System.out.println("jhtml: " + PreferredMaxWidth);
         return new Dimension(PreferredMaxWidth, size.height);
     }
 

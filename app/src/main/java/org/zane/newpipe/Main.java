@@ -2,17 +2,18 @@ package org.zane.newpipe;
 
 import com.formdev.flatlaf.IntelliJTheme;
 import com.sun.jna.NativeLibrary;
-import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.zane.newpipe.util.Downloader;
 import org.zane.newpipe.util.VideoUtil;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.InitializationException;
 import picocli.CommandLine.MissingParameterException;
 import picocli.CommandLine.Model.ArgSpec;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 import uk.co.caprica.vlcj.binding.support.runtime.RuntimeUtil;
@@ -62,16 +63,43 @@ public class Main implements Runnable {
         IntelliJTheme.setup(
             App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
         );
-        NativeDiscovery nd = new NativeDiscovery();
-        if (nd.discover()) {
-            VideoUtil.setVlcPath(nd.discoveredPath());
-        }
+
         if (vlcPath != null && !vlcPath.isBlank()) {
+            vlcPath = vlcPath.trim();
+            NativeLibrary.addSearchPath(
+                RuntimeUtil.getLibVlcLibraryName(),
+                vlcPath
+            );
             NativeLibrary.addSearchPath(
                 RuntimeUtil.getLibVlcCoreLibraryName(),
                 vlcPath
             );
+            try {
+                NativeLibrary.getInstance(RuntimeUtil.getLibVlcLibraryName());
+                VideoUtil.setVlcPath(vlcPath);
+            } catch (UnsatisfiedLinkError e) {
+                ArgSpec querySpec = null;
+                for (ArgSpec argSpec : spec.args()) {
+                    if (argSpec.paramLabel() == "VLC Path") {
+                        querySpec = argSpec;
+                    }
+                }
+                throw new ParameterException(
+                    spec.commandLine(),
+                    "the VLC path provided is invalid.",
+                    querySpec,
+                    vlcPath
+                );
+            }
+        } else {
+            NativeDiscovery nd = new NativeDiscovery();
+            if (nd.discover()) {
+                VideoUtil.setVlcPath(nd.discoveredPath());
+            } else {
+                throw new InitializationException("VLC not found.");
+            }
         }
+
         switch (launchMode) {
             case DEFAULT:
                 SwingUtilities.invokeLater(() -> {
