@@ -18,6 +18,7 @@ import javax.swing.event.HyperlinkListener;
 import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
+import org.schabi.newpipe.extractor.timeago.patterns.vi;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.util.CommonUtil;
@@ -26,14 +27,17 @@ public class CommentItemPanel extends JPanel {
 
     private MainViewPort mainViewPort;
     private JLabel uploaderNameLabel;
+    private JViewport viewport;
 
     public CommentItemPanel(
         MainViewPort mainViewPort,
+        JViewport viewport,
         HyperlinkListener hyperlinkListener,
         CommentsInfoItem cit,
         CommentsExtractor commentsExtractor
     ) {
         this.mainViewPort = mainViewPort;
+        this.viewport = viewport;
         setLayout(new FlowLayout(FlowLayout.LEFT));
         List<Image> avatars = cit.getUploaderAvatars();
         ChannelClickListener ccl = new ChannelClickListener(
@@ -121,11 +125,12 @@ public class CommentItemPanel extends JPanel {
                 );
 
                 JViewport scrollReplayViewPort = scrollReplay.getViewport();
-                scrollReplayViewPort.setPreferredSize(new Dimension(700, 500));
+                scrollReplayViewPort.setPreferredSize(new Dimension(500, 500));
                 new Thread(() -> {
                     try {
                         CommentPanel commentPanel = new CommentPanel(
                             mainViewPort,
+                            scrollReplayViewPort,
                             hyperlinkListener,
                             commentsExtractor,
                             cit.getReplies()
@@ -221,7 +226,7 @@ public class CommentItemPanel extends JPanel {
     @Override
     public Dimension getPreferredSize() {
         Dimension size = super.getPreferredSize();
-        //int maxSize = Math.min(size.width, scrollViewPort.getWidth());
-        return new Dimension(mainViewPort.getWidth(), size.height);
+        //int maxSize = Math.min(size.width, mainViewPort.getWidth());
+        return new Dimension(viewport.getWidth(), size.height);
     }
 }

@@ -1,6 +1,8 @@
 package org.zane.newpipe.ui;
 
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -12,6 +14,7 @@ import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.schabi.newpipe.extractor.timeago.patterns.vi;
 import org.zane.newpipe.page.MainViewPort;
 
 public class CommentPanel extends JPanel {
@@ -27,20 +30,23 @@ public class CommentPanel extends JPanel {
     private Page currentPage;
     private boolean isReplay;
     private HyperlinkListener hyperlinkListener;
+    private JViewport viewport;
 
     public CommentPanel(
         MainViewPort mainViewPort,
+        JViewport viewport,
         HyperlinkListener hyperlinkListener,
         CommentsExtractor ce,
         Page page
     ) {
-        this(mainViewPort, hyperlinkListener);
+        this(mainViewPort, viewport, hyperlinkListener);
         isReplay = true;
         pageNumLabel.setText("1");
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
         currentPage = page;
         this.ce = ce;
+
         new Thread(() -> {
             try {
                 itp = ce.getPage(page);
@@ -56,8 +62,18 @@ public class CommentPanel extends JPanel {
         MainViewPort mainViewPort,
         HyperlinkListener hyperlinkListener
     ) {
+        this(mainViewPort, mainViewPort, hyperlinkListener);
+    }
+
+    public CommentPanel(
+        MainViewPort mainViewPort,
+        JViewport viewport,
+        HyperlinkListener hyperlinkListener
+    ) {
         super(new BorderLayout());
+        this.setBackground(Color.YELLOW);
         this.mainViewPort = mainViewPort;
+        this.viewport = viewport;
         this.hyperlinkListener = hyperlinkListener;
         isReplay = false;
         pageStack = new ArrayDeque<>();
@@ -161,16 +177,18 @@ public class CommentPanel extends JPanel {
         for (CommentsInfoItem cit : clist) {
             CommentItemPanel commentItemPanel = new CommentItemPanel(
                 mainViewPort,
+                viewport,
                 hyperlinkListener,
                 cit,
                 ce
             );
-            SwingUtilities.invokeLater(() ->
-                mainCommentPanel.add(commentItemPanel)
-            );
+            SwingUtilities.invokeLater(() -> {
+                mainCommentPanel.add(commentItemPanel);
+            });
         }
         SwingUtilities.invokeLater(() -> {
             mainCommentPanel.updateUI();
+            this.updateUI();
             nextBtn.setEnabled(itp.hasNextPage());
         });
     }

@@ -60,6 +60,7 @@ public class App extends JFrame {
                     ) {
                         App.this.setVisible(false);
                         App.this.dispose();
+                        System.exit(0);
                     }
                 }
             }

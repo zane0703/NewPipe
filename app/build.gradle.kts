@@ -19,11 +19,7 @@ repositories {
 }
 
 dependencies {
-    // Use JUnit Jupiter for testing.
-    testImplementation(libs.junit.jupiter)
 
-        // This dependency is used by the application.
-    implementation(libs.guava)
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.0")
     implementation("uk.co.caprica:vlcj:4.12.1")
     val flatlafVersion = "3.7.1"
@@ -53,10 +49,11 @@ tasks.withType<ShadowJar> {
     archiveFileName.set("NewPipe.jar")
     manifest {
         attributes("Main-Class" to "org.zane.newpipe.Main")
+        attributes("Enable-Native-Access" to "ALL-UNNAMED")
     }
 }
-
 application {
     // Define the main class for the application.
     mainClass = "org.zane.newpipe.Main"
+
 }

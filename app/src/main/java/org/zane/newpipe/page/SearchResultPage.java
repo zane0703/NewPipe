@@ -4,14 +4,18 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.InfoItem;
+import org.schabi.newpipe.extractor.ListExtractor;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.channel.tabs.ChannelTabExtractor;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.search.SearchExtractor;
+import org.schabi.newpipe.extractor.services.youtube.ItagItem;
 import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.SearchItemPanel;
 import org.zane.newpipe.util.CommonUtil;
@@ -22,11 +26,29 @@ public class SearchResultPage extends JPanel {
     private JPanel resultListPanel;
     private JButton preBtn;
     private JButton nextBtn;
-    private SearchExtractor se;
+    private ListExtractor<InfoItem> se;
     private JLabel pageNumLabel;
     private InfoItemsPage<InfoItem> itp;
     private ArrayDeque<Page> pageStack = new ArrayDeque<>();
     private Page currentPage;
+
+    public SearchResultPage(
+        MainViewPort mainViewPort,
+        ListExtractor<InfoItem> se
+    ) {
+        this(mainViewPort);
+        this.se = se;
+        new Thread(() -> {
+            try {
+                se.fetchPage();
+                itp = se.getInitialPage();
+                showPage();
+            } catch (IOException | ExtractionException err) {
+                err.printStackTrace();
+            }
+        })
+            .start();
+    }
 
     public SearchResultPage(MainViewPort mainViewPort) {
         this.setLayout(new BorderLayout());
@@ -35,7 +57,6 @@ public class SearchResultPage extends JPanel {
         resultListPanel.setLayout(
             new BoxLayout(resultListPanel, BoxLayout.Y_AXIS)
         );
-
         this.add(resultListPanel, BorderLayout.CENTER);
         JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pageNevPanel.setBackground(IconRes.YOUTUBE_COLOUR);
@@ -73,8 +94,10 @@ public class SearchResultPage extends JPanel {
         });
         pageNevPanel.add(preBtn);
         pageNumLabel = new JLabel("1", SwingConstants.CENTER);
+        pageNumLabel.setEnabled(false);
         pageNevPanel.add(pageNumLabel);
         nextBtn = new JButton(IconRes.ARROW_NEXT_ICON);
+        nextBtn.setEnabled(false);
         nextBtn.addActionListener(e -> {
             resultListPanel.removeAll();
             new Thread(() -> {
