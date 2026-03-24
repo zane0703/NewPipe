@@ -2,9 +2,6 @@ package org.zane.newpipe.ui;
 
 import java.awt.Dimension;
 import javax.swing.JEditorPane;
-import javax.swing.JScrollPane;
-import javax.swing.JViewport;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 public class JHTMLPane extends JEditorPane {

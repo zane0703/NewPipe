@@ -10,7 +10,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import javax.imageio.ImageIO;
@@ -19,7 +18,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import org.zane.newpipe.page.MainViewPort;
-import org.zane.newpipe.page.MainViewPort.NevigateOpation;
+import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.util.CommonUtil;
 
 public class ChannelInfoPanel extends JPanel {
@@ -125,8 +124,8 @@ public class ChannelInfoPanel extends JPanel {
         @Override
         public void mouseClicked(MouseEvent e) {
             // Your "onclick" logic goes here
-            mainViewPort.nevigate(
-                new NevigateOpation(MainViewPort.Page.CHANNEL, channelURL)
+            mainViewPort.navigate(
+                new NavigateOption(MainViewPort.Page.CHANNEL, channelURL)
             );
         }
 

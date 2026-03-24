@@ -1,15 +1,12 @@
 package org.zane.newpipe.page;
 
 import java.awt.*;
-import java.awt.Taskbar.Feature;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -36,7 +33,7 @@ import org.schabi.newpipe.extractor.stream.StreamType;
 import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
 import org.zane.newpipe.App;
-import org.zane.newpipe.page.MainViewPort.NevigateOpation;
+import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.CommentPanel;
 import org.zane.newpipe.ui.IconRes;
@@ -49,8 +46,6 @@ import org.zane.newpipe.util.VideoUtil.SubTitleComboBoxRenderer;
 import org.zane.newpipe.util.VideoUtil.VideoComboBoxRenderer;
 import org.zane.newpipe.util.WrapLayout;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
-import uk.co.caprica.vlcj.media.MediaSlavePriority;
-import uk.co.caprica.vlcj.media.MediaSlaveType;
 import uk.co.caprica.vlcj.player.base.MediaApi;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
@@ -138,16 +133,16 @@ public class VideoPage extends JPanel {
                                                     .controls()
                                                     .setTime(newTime * 1000);
                                             } else {
-                                                mainViewPort.nevigate(
-                                                    new NevigateOpation(
+                                                mainViewPort.navigate(
+                                                    new NavigateOption(
                                                         MainViewPort.Page.VIDEO,
                                                         url.toString()
                                                     )
                                                 );
                                             }
                                         } else if (paths[1].charAt(0) == '@') {
-                                            mainViewPort.nevigate(
-                                                new NevigateOpation(
+                                            mainViewPort.navigate(
+                                                new NavigateOption(
                                                     MainViewPort.Page.CHANNEL,
                                                     url.toString()
                                                 )
@@ -158,16 +153,16 @@ public class VideoPage extends JPanel {
                                 case 3:
                                     switch (paths[1].toLowerCase()) {
                                         case "hashtag":
-                                            mainViewPort.nevigate(
-                                                new NevigateOpation(
+                                            mainViewPort.navigate(
+                                                new NavigateOption(
                                                     MainViewPort.Page.SEARCH,
                                                     "#" + paths[2]
                                                 )
                                             );
                                             break;
                                         case "channel":
-                                            mainViewPort.nevigate(
-                                                new NevigateOpation(
+                                            mainViewPort.navigate(
+                                                new NavigateOption(
                                                     MainViewPort.Page.CHANNEL,
                                                     url.toString()
                                                 )
@@ -179,8 +174,8 @@ public class VideoPage extends JPanel {
                             }
                             break;
                         case "youtu.be":
-                            mainViewPort.nevigate(
-                                new NevigateOpation(
+                            mainViewPort.navigate(
+                                new NavigateOption(
                                     MainViewPort.Page.VIDEO,
                                     url.toString()
                                 )
@@ -492,7 +487,9 @@ public class VideoPage extends JPanel {
         videoMenuBtnPanel.add(openBrowserBtn);
 
         openVLCBtn.addActionListener(e -> {
-            mediaPlayer.controls().pause();
+            if (mediaPlayer.status().isPlaying()) {
+                mediaPlayer.controls().pause();
+            }
             new Thread(() -> {
                 VideoUtil.openVLC(streamExtractor, mainViewPort);
             })
@@ -503,7 +500,9 @@ public class VideoPage extends JPanel {
         videoMenuBtnPanel.add(openVLCBtn);
         downloadBtn = new JButton("Donwload", IconRes.DOWNLOAD_ICON);
         downloadBtn.addActionListener(e -> {
-            mediaPlayer.controls().pause();
+            if (mediaPlayer.status().isPlaying()) {
+                mediaPlayer.controls().pause();
+            }
             new Thread(() -> {
                 VideoUtil.downloadVideo(streamExtractor, false);
             })
@@ -812,8 +811,8 @@ public class VideoPage extends JPanel {
                         for (String tagString : tagsString) {
                             JButton tagBtn = new JButton(tagString);
                             tagBtn.addActionListener(e ->
-                                mainViewPort.nevigate(
-                                    new NevigateOpation(
+                                mainViewPort.navigate(
+                                    new NavigateOption(
                                         MainViewPort.Page.SEARCH,
                                         "#" + tagString
                                     )

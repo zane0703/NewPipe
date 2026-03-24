@@ -19,7 +19,7 @@ import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.zane.newpipe.page.MainViewPort;
-import org.zane.newpipe.page.MainViewPort.NevigateOpation;
+import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.util.CommonUtil;
 
 public class CommentItemPanel extends JPanel {
@@ -183,8 +183,8 @@ public class CommentItemPanel extends JPanel {
         @Override
         public void mouseClicked(MouseEvent e) {
             // Your "onclick" logic goes here
-            mainViewPort.nevigate(
-                new NevigateOpation(MainViewPort.Page.CHANNEL, channelURL)
+            mainViewPort.navigate(
+                new NavigateOption(MainViewPort.Page.CHANNEL, channelURL)
             );
         }
 

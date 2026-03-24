@@ -12,8 +12,8 @@ public class MainViewPort extends JViewport {
     private ChannelPage channelPage;
     private SearchResultPage searchResultPage;
     private VideoPage videoPage;
-    private NevigateOpation currentPage;
-    private ArrayDeque<NevigateOpation> nevigateHistory;
+    private NavigateOption currentPage;
+    private ArrayDeque<NavigateOption> nevigateHistory;
     private SetEnabledBtn setBackEnable;
     private SetEnabledBtn setSearchEnable;
     private SetText setSearchText;
@@ -44,31 +44,34 @@ public class MainViewPort extends JViewport {
         }
     }
 
-    public static class NevigateOpation {
+    public static class NavigateOption {
 
         public final Page PAGE;
         public final String QUERY;
 
-        public NevigateOpation(Page page, String query) {
+        public NavigateOption(Page page, String query) {
             this.PAGE = page;
             this.QUERY = query;
         }
     }
 
-    public void nevigate(NevigateOpation nevigateOpation) {
+    public void navigate(NavigateOption navigateOption) {
         boolean isNotFirst = currentPage != null;
         setBackEnable.setEnabled(false);
         if (isNotFirst) {
             switch (currentPage.PAGE) {
                 case VIDEO:
                     videoPage.stop();
+                    break;
+                default:
+                    break;
             }
         }
-        SwitchView(nevigateOpation);
+        SwitchView(navigateOption);
         if (isNotFirst) {
             nevigateHistory.push(currentPage);
         }
-        currentPage = nevigateOpation;
+        currentPage = navigateOption;
         setBackEnable.setEnabled(isNotFirst);
     }
 
@@ -76,36 +79,39 @@ public class MainViewPort extends JViewport {
         switch (currentPage.PAGE) {
             case VIDEO:
                 videoPage.stop();
+                break;
+            default:
+                break;
         }
-        NevigateOpation prePage = nevigateHistory.pop();
+        NavigateOption prePage = nevigateHistory.pop();
         setBackEnable.setEnabled(!nevigateHistory.isEmpty());
         SwitchView(prePage);
         currentPage = prePage;
     }
 
-    private void SwitchView(NevigateOpation nevigateOpation) {
-        switch (nevigateOpation.PAGE) {
+    private void SwitchView(NavigateOption navigateOption) {
+        switch (navigateOption.PAGE) {
             case SEARCH:
                 setSearchEnable.setEnabled(false);
-                searchResultPage.search(nevigateOpation.QUERY, () -> {
+                searchResultPage.search(navigateOption.QUERY, () -> {
                     setSearchEnable.setEnabled(true);
                 });
                 this.setView(searchResultPage);
-                setSearchText.setText(nevigateOpation.QUERY);
+                setSearchText.setText(navigateOption.QUERY);
                 break;
             case VIDEO:
                 this.setView(videoPage);
-                videoPage.showVideo(nevigateOpation.QUERY);
+                videoPage.showVideo(navigateOption.QUERY);
                 //this.pack();
                 break;
             case CHANNEL:
                 this.setView(channelPage);
-                channelPage.fetchChannel(nevigateOpation.QUERY);
+                channelPage.fetchChannel(navigateOption.QUERY);
                 break;
             case PLAYLIST:
                 PlayListPage playListPage = new PlayListPage(this);
                 this.setView(playListPage);
-                playListPage.fatchPlayList(nevigateOpation.QUERY);
+                playListPage.fatchPlayList(navigateOption.QUERY);
         }
     }
 

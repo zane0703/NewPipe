@@ -4,7 +4,6 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.List;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.InfoItem;

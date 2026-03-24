@@ -211,8 +211,8 @@ public class ChannelPage extends JPanel {
                     for (String tag : tagList) {
                         JButton tagBtn = new JButton(tag);
                         tagBtn.addActionListener(e ->
-                            mainViewPort.nevigate(
-                                new MainViewPort.NevigateOpation(
+                            mainViewPort.navigate(
+                                new MainViewPort.NavigateOption(
                                     MainViewPort.Page.SEARCH,
                                     "#" + tag
                                 )

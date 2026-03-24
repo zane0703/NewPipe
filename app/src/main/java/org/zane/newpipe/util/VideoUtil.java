@@ -2,6 +2,7 @@ package org.zane.newpipe.util;
 
 import com.formdev.flatlaf.util.SystemFileChooser;
 import java.awt.*;
+import java.awt.Taskbar;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -9,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -169,7 +169,9 @@ public class VideoUtil {
                         } finally {
                             if (component == null) {
                                 optionComponent.setVisible(false);
-                                System.exit(0);
+                                if (optionComponent instanceof JFrame frame) {
+                                    frame.dispose();
+                                }
                             }
                         }
                     })
@@ -177,7 +179,9 @@ public class VideoUtil {
                 } else {
                     if (component == null) {
                         optionComponent.setVisible(false);
-                        System.exit(0);
+                        if (optionComponent instanceof JFrame frame) {
+                            frame.dispose();
+                        }
                     }
                 }
             });
@@ -290,16 +294,7 @@ public class VideoUtil {
 
             JDialog dialog = optionPane.createDialog("Download video");
             dialog.setModal(false);
-            dialog.addWindowListener(
-                new WindowAdapter() {
-                    @Override
-                    public void windowClosing(WindowEvent e) {
-                        if (isCloseAfterDone) {
-                            System.exit(0);
-                        }
-                    }
-                }
-            );
+            dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             saveFileBtn.addActionListener(e -> {
                 SystemFileChooser fileChooser = new SystemFileChooser();
                 fileChooser.setDialogTitle("Specify a file to save");
@@ -476,6 +471,28 @@ public class VideoUtil {
                 MediaPlayerFactory factory = new MediaPlayerFactory(
                     VideoUtil.nativeDiscovery
                 );
+                Taskbar taskbar[] = new Taskbar[1];
+                if (Taskbar.isTaskbarSupported()) {
+                    Taskbar taskbar2 = Taskbar.getTaskbar();
+                    if (
+                        taskbar2.isSupported(
+                            Taskbar.Feature.PROGRESS_VALUE_WINDOW
+                        )
+                    ) {
+                        if (
+                            taskbar2.isSupported(
+                                Taskbar.Feature.PROGRESS_STATE_WINDOW
+                            )
+                        ) {
+                            // Set the progress state to NORMAL (green)
+                            taskbar2.setWindowProgressState(
+                                dialog,
+                                Taskbar.State.NORMAL
+                            );
+                            taskbar[0] = taskbar2;
+                        }
+                    }
+                }
                 MediaPlayer mediaPlayer = factory
                     .mediaPlayers()
                     .newMediaPlayer();
@@ -488,11 +505,17 @@ public class VideoUtil {
                                 MediaPlayer mediaPlayer,
                                 float newPosition
                             ) {
-                                SwingUtilities.invokeLater(() ->
-                                    progressBar.setValue(
-                                        (int) (newPosition * 100)
-                                    )
-                                );
+                                SwingUtilities.invokeLater(() -> {
+                                    int progressValue = (int) (newPosition *
+                                        100);
+                                    progressBar.setValue(progressValue);
+                                    if (taskbar[0] != null) {
+                                        taskbar[0].setWindowProgressValue(
+                                            dialog,
+                                            progressValue
+                                        );
+                                    }
+                                });
                             }
 
                             @Override
@@ -529,14 +552,29 @@ public class VideoUtil {
                 if (ss != null) {
                     mediaPlayer.subpictures().setSubTitleUri(ss.getContent());
                 }
+                dialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
                 dialog.addWindowListener(
                     new WindowAdapter() {
                         @Override
                         public void windowClosing(WindowEvent e) {
                             if (mediaPlayer.status().isPlaying()) {
-                                mediaPlayer.controls().stop();
+                                if (
+                                    JOptionPane.showConfirmDialog(
+                                        dialog,
+                                        "Are you sure you want to stop downloading",
+                                        "Cancel Download",
+                                        JOptionPane.YES_NO_OPTION
+                                    ) ==
+                                    JOptionPane.YES_OPTION
+                                ) {
+                                    mediaPlayer.controls().stop();
+                                } else {
+                                    return;
+                                }
                             }
                             mediaPlayer.media().reset();
+                            dialog.setVisible(false);
+                            dialog.dispose();
                         }
                     }
                 );

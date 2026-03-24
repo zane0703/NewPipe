@@ -13,7 +13,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
-import org.zane.newpipe.page.MainViewPort;
 
 public class CommonUtil {
 

@@ -17,7 +17,6 @@ import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.playlist.PlaylistExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
-import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.SearchItemPanel;
 

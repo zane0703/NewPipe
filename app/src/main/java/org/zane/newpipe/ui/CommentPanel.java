@@ -12,7 +12,6 @@ import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
-import org.schabi.newpipe.extractor.timeago.patterns.hy;
 import org.zane.newpipe.page.MainViewPort;
 
 public class CommentPanel extends JPanel {

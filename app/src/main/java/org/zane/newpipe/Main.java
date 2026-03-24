@@ -2,6 +2,7 @@ package org.zane.newpipe;
 
 import com.formdev.flatlaf.IntelliJTheme;
 import com.sun.jna.NativeLibrary;
+import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.zane.newpipe.util.Downloader;
@@ -63,7 +64,6 @@ public class Main implements Runnable {
         IntelliJTheme.setup(
             App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
         );
-
         if (vlcPath != null && !vlcPath.isBlank()) {
             vlcPath = vlcPath.trim();
             NativeLibrary.addSearchPath(

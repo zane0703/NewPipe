@@ -11,19 +11,16 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.NumberFormat;
-import java.util.concurrent.Flow;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
-import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
 import org.zane.newpipe.page.MainViewPort;
-import org.zane.newpipe.page.MainViewPort.NevigateOpation;
+import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.util.CommonUtil;
 import org.zane.newpipe.util.VideoUtil;
 
@@ -186,8 +183,8 @@ public class SearchItemPanel extends JPanel {
                     IconRes.LIVE_TV_ICON
                 );
                 showChannelDetile.addActionListener(e ->
-                    mainViewPort.nevigate(
-                        new NevigateOpation(
+                    mainViewPort.navigate(
+                        new NavigateOption(
                             MainViewPort.Page.CHANNEL,
                             streamInfoItem.getUploaderUrl()
                         )
@@ -225,8 +222,8 @@ public class SearchItemPanel extends JPanel {
                 );
                 showChannelDetile2.setForeground(Color.LIGHT_GRAY);
                 showChannelDetile2.addActionListener(e ->
-                    mainViewPort.nevigate(
-                        new NevigateOpation(
+                    mainViewPort.navigate(
+                        new NavigateOption(
                             MainViewPort.Page.CHANNEL,
                             playlistInfo.getUploaderUrl()
                         )
@@ -276,8 +273,8 @@ public class SearchItemPanel extends JPanel {
                 default:
                     return;
             }
-            mainViewPort.nevigate(
-                new NevigateOpation(newPage, infoItem.getUrl())
+            mainViewPort.navigate(
+                new NavigateOption(newPage, infoItem.getUrl())
             );
         }
 

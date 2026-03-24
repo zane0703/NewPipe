@@ -5,13 +5,11 @@ package org.zane.newpipe;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.zane.newpipe.page.MainViewPort;
-import org.zane.newpipe.page.MainViewPort.NevigateOpation;
+import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.ui.IconRes;
 
 public class App extends JFrame {
@@ -41,6 +39,7 @@ public class App extends JFrame {
 
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setTitle("NewPipe");
+
         this.setIconImage(IconRes.LAUNCHER_ICON);
         this.setMinimumSize(new Dimension(750, 500));
         this.addWindowListener(
@@ -60,7 +59,7 @@ public class App extends JFrame {
                         0
                     ) {
                         App.this.setVisible(false);
-                        System.exit(0);
+                        App.this.dispose();
                     }
                 }
             }
@@ -160,6 +159,6 @@ public class App extends JFrame {
         } catch (URISyntaxException err) {
             newPage = MainViewPort.Page.SEARCH;
         }
-        mainViewPort.nevigate(new NevigateOpation(newPage, qurey));
+        mainViewPort.navigate(new NavigateOption(newPage, qurey));
     }
 }
