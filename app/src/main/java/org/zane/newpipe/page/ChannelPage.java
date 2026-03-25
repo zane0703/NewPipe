@@ -29,8 +29,8 @@ public class ChannelPage extends JPanel {
     private JPanel videoFeedListPanel;
     private JHTMLPane channelInfoText;
     private JPanel tagListPanel;
-    private JPanel videoTabPanel;
-    private JViewport channelNevView;
+    private JTabbedPane channelNevView;
+    private JPanel channelDetiledInfoPanel;
 
     public ChannelPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -39,26 +39,37 @@ public class ChannelPage extends JPanel {
         this.add(banner);
         channelInfoPanel = new ChannelInfoPanel();
         this.add(channelInfoPanel);
-        channelNevView = new JViewport();
+        channelNevView = new JTabbedPane() {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension d = super.getPreferredSize();
+                Component c = getSelectedComponent();
+                if (c != null) {
+                    Dimension d2 = c.getPreferredSize();
+                    return new Dimension(d.width, d2.height + 40);
+                }
+                return d;
+            }
+        };
         JPanel videoFeedPanel = new JPanel(new BorderLayout());
         Dimension maxSize = new Dimension(
             getPreferredSize().width,
             Integer.MAX_VALUE
         );
-        JPanel channelInfoPanel = new JPanel();
-        channelInfoPanel.setLayout(
-            new BoxLayout(channelInfoPanel, BoxLayout.Y_AXIS)
+        channelDetiledInfoPanel = new JPanel();
+        channelDetiledInfoPanel.setLayout(
+            new BoxLayout(channelDetiledInfoPanel, BoxLayout.Y_AXIS)
         );
         channelInfoText = new JHTMLPane("text/plain");
         channelInfoText.setMaximumSize(maxSize);
-        channelInfoPanel.add(channelInfoText);
+        channelDetiledInfoPanel.add(channelInfoText);
 
         JLabel tagLabel = new JLabel("Tag", SwingConstants.CENTER);
         Font f = tagLabel.getFont();
         tagLabel.setFont(f.deriveFont(Font.BOLD));
-        channelInfoPanel.add(tagLabel);
+        channelDetiledInfoPanel.add(tagLabel);
         tagListPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
-        channelInfoPanel.add(tagListPanel);
+        channelDetiledInfoPanel.add(tagListPanel);
         tagListPanel.setMaximumSize(maxSize);
         this.addComponentListener(
             new ComponentAdapter() {
@@ -78,16 +89,9 @@ public class ChannelPage extends JPanel {
             new BoxLayout(videoFeedListPanel, BoxLayout.Y_AXIS)
         );
         videoFeedPanel.add(videoFeedListPanel, BorderLayout.CENTER);
-        JPanel channelNevBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        videoTabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        channelNevBar.add(videoTabPanel);
-        JButton infoBtn = new JButton("Info");
-        infoBtn.addActionListener(e ->
-            channelNevView.setView(channelInfoPanel)
-        );
-        channelNevBar.add(infoBtn);
-        this.add(channelNevBar);
-
+        channelNevView.addChangeListener(e -> {
+            channelNevView.revalidate();
+        });
         this.add(channelNevView);
     }
 
@@ -140,8 +144,7 @@ public class ChannelPage extends JPanel {
                         tagListPanel.add(tagBtn);
                     }
                 });
-                boolean isFirstTab = true;
-                videoTabPanel.removeAll();
+                channelNevView.removeAll();
                 for (ListLinkHandler tabLink : channelExtractor.getTabs()) {
                     ChannelTabExtractor cte =
                         ServiceList.YouTube.getChannelTabExtractor(tabLink);
@@ -150,18 +153,9 @@ public class ChannelPage extends JPanel {
                         mainViewPort,
                         cte
                     );
-
-                    JButton tabBtn = new JButton(cte.getName());
-                    tabBtn.addActionListener(e ->
-                        channelNevView.setView(tabViewPanel)
-                    );
-                    videoTabPanel.add(tabBtn);
-
-                    if (isFirstTab) {
-                        channelNevView.setView(tabViewPanel);
-                        isFirstTab = false;
-                    }
+                    channelNevView.addTab(cte.getName(), tabViewPanel);
                 }
+                channelNevView.addTab("Info", channelDetiledInfoPanel);
             } catch (ExtractionException | IOException | URISyntaxException e) {
                 e.printStackTrace();
             }

@@ -4,6 +4,7 @@ import com.formdev.flatlaf.IntelliJTheme;
 import com.sun.jna.NativeLibrary;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.zane.newpipe.util.Downloader;
 import org.zane.newpipe.util.VideoUtil;
@@ -61,6 +62,8 @@ public class Main implements Runnable {
 
     public void run() {
         NewPipe.init(new Downloader());
+        UIManager.put("TabbedPane.tabAreaAlignment", "fill");
+        UIManager.put("TabbedPane.tabWidthMode", "equal");
         IntelliJTheme.setup(
             App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
         );

@@ -21,8 +21,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
+import javax.swing.plaf.basic.BasicSliderUI.ChangeHandler;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -100,6 +103,7 @@ public class VideoPage extends JPanel {
     private boolean isLive;
     private int oldWidth;
     private JButton downloadBtn;
+    private JTabbedPane viewport;
 
     public VideoPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -241,10 +245,18 @@ public class VideoPage extends JPanel {
             "Open in browser",
             IconRes.LANGUAGE_ICON
         );
-        JPanel navigationBar = new JPanel(new GridLayout(1, 3));
-        JButton relatedStreamsBtn = new JButton(IconRes.ART_TRACK_ICON);
-        JButton commentBtn = new JButton(IconRes.COMMENT_ICON);
-        JViewport viewport = new JViewport();
+        viewport = new JTabbedPane() {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension d = super.getPreferredSize();
+                Component c = getSelectedComponent();
+                if (c != null) {
+                    Dimension d2 = c.getPreferredSize();
+                    return new Dimension(d.width, d2.height + 40);
+                }
+                return d;
+            }
+        };
         JPanel videoDescriptionPanel = new JPanel();
         JPanel publishDatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JPanel videoDescriptionTextPanel = new JPanel(
@@ -562,25 +574,11 @@ public class VideoPage extends JPanel {
         tagPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
         tagPanel.setMaximumSize(maxSize);
         videoDescriptionPanel.add(tagPanel);
+        viewport.addChangeListener(e -> viewport.revalidate());
+        viewport.addTab(null, IconRes.COMMENT_ICON, videoCommentPanel);
+        viewport.addTab(null, IconRes.ART_TRACK_ICON, relatedStreamsPanel);
+        viewport.addTab(null, IconRes.DESCRIPTION_ICON, videoDescriptionPanel);
 
-        commentBtn.setToolTipText("View video comment");
-        commentBtn.addActionListener(e -> viewport.setView(videoCommentPanel));
-        navigationBar.add(commentBtn);
-
-        relatedStreamsBtn.setToolTipText("View related video");
-        relatedStreamsBtn.addActionListener(e ->
-            viewport.setView(relatedStreamsPanel)
-        );
-        navigationBar.add(relatedStreamsBtn);
-        JButton descriptionBtn = new JButton(IconRes.DESCRIPTION_ICON);
-        descriptionBtn.setToolTipText("View video description");
-        descriptionBtn.addActionListener(e ->
-            viewport.setView(videoDescriptionPanel)
-        );
-        navigationBar.add(descriptionBtn);
-        this.add(navigationBar);
-
-        viewport.setView(relatedStreamsPanel);
         this.add(viewport);
         fullScreenBtn.addActionListener(e -> {
             FullScreenApi fullScreenApi = mediaPlayer.fullScreen();
@@ -590,7 +588,6 @@ public class VideoPage extends JPanel {
                 fullScreenBtn.setIcon(IconRes.FULLSCREEN_EXIT_ICON);
                 viewport.setVisible(false);
                 videoInfo.setVisible(false);
-                navigationBar.setVisible(false);
                 videoMenuBtnPanel.setVisible(false);
                 videoTitlePanel.setVisible(false);
                 app.setSearchbarVisible(false);
@@ -598,7 +595,6 @@ public class VideoPage extends JPanel {
                 fullScreenBtn.setIcon(IconRes.FULLSCREEN_ICON);
                 viewport.setVisible(true);
                 videoInfo.setVisible(true);
-                navigationBar.setVisible(true);
                 videoMenuBtnPanel.setVisible(true);
                 videoTitlePanel.setVisible(true);
                 app.setSearchbarVisible(true);
@@ -731,24 +727,14 @@ public class VideoPage extends JPanel {
                         streamExtractor.getVideoOnlyStreams();
                     List<AudioStream> audioStreams =
                         streamExtractor.getAudioStreams();
+
+                    audioStreams.sort(VideoUtil.SORT_AUDIO);
                     List<SubtitlesStream> subtitlesStreams =
                         streamExtractor.getSubtitlesDefault();
                     currentVideoStream = videoStreams.get(0);
                     currentAudioStream = null;
                     downloadBtn.setEnabled(true);
-                    for (AudioStream audioStream : audioStreams) {
-                        Locale audiosLocale = audioStream.getAudioLocale();
-                        if (
-                            audiosLocale != null &&
-                            audiosLocale.getLanguage() == "en"
-                        ) {
-                            currentAudioStream = audioStream;
-                            break;
-                        }
-                    }
-                    if (currentAudioStream == null) {
-                        currentAudioStream = audioStreams.get(0);
-                    }
+                    currentAudioStream = audioStreams.get(0);
 
                     currentSubtitlesStream = null;
 

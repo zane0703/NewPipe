@@ -40,7 +40,6 @@ public class SearchResultPage extends JPanel {
         this.se = se;
         new Thread(() -> {
             try {
-                se.fetchPage();
                 itp = se.getInitialPage();
                 showPage();
             } catch (IOException | ExtractionException err) {

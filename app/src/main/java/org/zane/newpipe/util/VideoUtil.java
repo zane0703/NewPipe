@@ -8,6 +8,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.*;
@@ -85,6 +86,7 @@ public class VideoUtil {
             }
             List<VideoStream> videoStreams = se.getVideoOnlyStreams();
             List<AudioStream> audioStreams = se.getAudioStreams();
+            audioStreams.sort(SORT_AUDIO);
             List<SubtitlesStream> subtitlesStreams = se.getSubtitlesDefault();
             JPanel videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
             DefaultComboBoxModel<VideoStream> videoModel =
@@ -221,6 +223,7 @@ public class VideoUtil {
         try {
             List<VideoStream> videoStreams = se.getVideoOnlyStreams();
             List<AudioStream> audioStreams = se.getAudioStreams();
+            audioStreams.sort(SORT_AUDIO);
             String videoTitle = se.getName();
             List<SubtitlesStream> subtitlesStreams = se.getSubtitlesDefault();
             JPanel downloadPanel = new JPanel(new GridLayout(3, 1));
@@ -646,6 +649,19 @@ public class VideoUtil {
             return this;
         }
     }
+
+    public static final Comparator<AudioStream> SORT_AUDIO = (a1, a2) -> {
+        Locale l1 = a1.getAudioLocale();
+        Locale l2 = a2.getAudioLocale();
+        boolean b1 = l1 != null && l1.getLanguage().equals("en");
+        boolean b2 = l2 != null && l2.getLanguage().equals("en");
+        if (b1 == b2) {
+            return 0;
+        } else if (b1) {
+            return -1;
+        }
+        return 1;
+    };
 
     public static class AudioComboBoxRenderer extends DefaultListCellRenderer {
 

@@ -71,7 +71,6 @@ public class CommentPanel extends JPanel {
         HyperlinkListener hyperlinkListener
     ) {
         super(new BorderLayout());
-        this.setBackground(Color.YELLOW);
         this.mainViewPort = mainViewPort;
         this.viewport = viewport;
         this.hyperlinkListener = hyperlinkListener;
