@@ -1,5 +1,7 @@
 # NewPipe Desktop
-
+<p align="center">
+  <img src="app/src/main/resources/ic_launcher.png" />
+</p>
 An unofficial desktop port of the NewPipe Android application, built for Windows, macOS, and Linux using Java.
 
 # Project Overview
