@@ -45,6 +45,13 @@ Unix(Linux, Mac)
 3. ***Locate the Executable:*** Once the build is successful, your executable JAR will be located at:
 <mark>app/build/libs/app-all.jar</mark>
 
+# FAQ
+- There already Freetube why develop a desktop port of NewPipe?
+  - I hate electron
+- Is this a fork?
+  - No, because Java desktop and android framework are completely different but the backend engine is based on NewPipe Extractor
+- Do you look at NewPipe source code to develop this port?
+  - Nope, the difference in framework API is too much that it easily to write from scratch but the UI design is are inspired from the original NewPipe
 # Disclaimer
 
 This is an unofficial fan-made project. It is not affiliated with, authorized, maintained, sponsored, or endorsed by the original NewPipe developers.
