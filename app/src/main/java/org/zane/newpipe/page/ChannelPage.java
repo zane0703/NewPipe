@@ -109,7 +109,7 @@ public class ChannelPage extends JPanel {
                 if (banners.isEmpty()) {
                     imageb = ImageIO.read(
                         getClass().getResourceAsStream(
-                            "/placeholder_channel_banner.png"
+                            "/placeholder_channel_banner.webp"
                         )
                     );
                 } else {
@@ -161,6 +161,11 @@ public class ChannelPage extends JPanel {
             }
         })
             .start();
+    }
+
+    public void clear() {
+        channelNevView.removeAll();
+        System.gc();
     }
 
     @Override

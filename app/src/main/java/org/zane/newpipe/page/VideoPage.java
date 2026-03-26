@@ -199,8 +199,7 @@ public class VideoPage extends JPanel {
             new EmbeddedMediaPlayerComponent(
                 new MediaPlayerFactory(
                     VideoUtil.nativeDiscovery,
-                    "--avcodec-hw=auto",
-                    "--ffmpeg-hw"
+                    "--avcodec-hw=auto"
                 ),
                 null,
                 new AdaptiveFullScreenStrategy(App.getInstance()),
@@ -502,10 +501,9 @@ public class VideoPage extends JPanel {
             if (mediaPlayer.status().isPlaying()) {
                 mediaPlayer.controls().pause();
             }
-            new Thread(() -> {
-                VideoUtil.openVLC(streamExtractor, mainViewPort);
-            })
-                .start();
+            new Thread(() ->
+                VideoUtil.openVLC(streamExtractor, mainViewPort)
+            ).start();
         });
         openVLCBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
         openVLCBtn.setHorizontalTextPosition(SwingConstants.CENTER);
@@ -515,10 +513,9 @@ public class VideoPage extends JPanel {
             if (mediaPlayer.status().isPlaying()) {
                 mediaPlayer.controls().pause();
             }
-            new Thread(() -> {
-                VideoUtil.downloadVideo(streamExtractor, false);
-            })
-                .start();
+            new Thread(() ->
+                VideoUtil.downloadVideo(streamExtractor, false)
+            ).start();
         });
         downloadBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
         downloadBtn.setHorizontalTextPosition(SwingConstants.CENTER);
@@ -853,6 +850,9 @@ public class VideoPage extends JPanel {
     public void stop() {
         mediaPlayer.controls().stop();
         mediaPlayer.media().reset();
+        videoCommentPanel.clear();
+        relatedStreamsPanel.removeAll();
+        System.gc();
     }
 
     public void playVideo(

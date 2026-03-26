@@ -176,4 +176,9 @@ public class SearchResultPage extends JPanel {
             }
         }
     }
+
+    public void clearResult() {
+        resultListPanel.removeAll();
+        System.gc();
+    }
 }

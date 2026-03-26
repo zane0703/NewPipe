@@ -182,4 +182,9 @@ public class PlayListPage extends JPanel {
             err.printStackTrace();
         }
     }
+
+    public void clear() {
+        resultListPanel.removeAll();
+        System.gc();
+    }
 }

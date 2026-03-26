@@ -33,7 +33,7 @@ public class IconRes {
     static {
         try {
             LAUNCHER_ICON = ImageIO.read(
-                IconRes.class.getResourceAsStream("/ic_launcher.png")
+                IconRes.class.getResourceAsStream("/ic_launcher.webp")
             );
             ARROW_BACK_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_arrow_back.svg")

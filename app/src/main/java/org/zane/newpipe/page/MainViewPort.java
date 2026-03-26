@@ -63,6 +63,9 @@ public class MainViewPort extends JViewport {
                 case VIDEO:
                     videoPage.stop();
                     break;
+                case SEARCH:
+                    searchResultPage.clearResult();
+                    break;
                 default:
                     break;
             }
@@ -79,6 +82,12 @@ public class MainViewPort extends JViewport {
         switch (currentPage.PAGE) {
             case VIDEO:
                 videoPage.stop();
+                break;
+            case SEARCH:
+                searchResultPage.clearResult();
+                break;
+            case CHANNEL:
+                channelPage.clear();
                 break;
             default:
                 break;

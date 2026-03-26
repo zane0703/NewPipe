@@ -2,6 +2,8 @@ package org.zane.newpipe;
 
 import com.formdev.flatlaf.IntelliJTheme;
 import com.sun.jna.NativeLibrary;
+import java.util.Arrays;
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;

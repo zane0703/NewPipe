@@ -36,6 +36,7 @@ dependencies {
     implementation( "com.formdev:flatlaf:${flatlafVersion}:windows-arm64@dll" )
     implementation( "com.formdev:flatlaf-extras:${flatlafVersion}" )
     implementation("info.picocli:picocli:4.7.7")
+    implementation("org.sejda.imageio:webp-imageio:0.1.6")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

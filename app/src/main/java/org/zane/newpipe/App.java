@@ -5,9 +5,18 @@ package org.zane.newpipe;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import javax.swing.*;
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.schabi.newpipe.extractor.suggestion.SuggestionExtractor;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.ui.IconRes;
@@ -19,6 +28,8 @@ public class App extends JFrame {
     private MainViewPort mainViewPort;
     private JPanel searchbar;
     private static App app;
+    private boolean isSuggestionMenuFocus = false;
+    private JPopupMenu suggestionMenu;
 
     public static App getInstance() {
         return App.app;
@@ -79,8 +90,97 @@ public class App extends JFrame {
         backBtn.addActionListener(e -> mainViewPort.back());
         searchbar.add(backBtn, BorderLayout.LINE_START);
         searchField = new JTextField(10);
+        suggestionMenu = new JPopupMenu();
 
         searchbar.add(searchField, BorderLayout.CENTER);
+        SuggestionExtractor suggestionExtractor =
+            ServiceList.YouTube.getSuggestionExtractor();
+        searchField.add(suggestionMenu);
+        searchField.setComponentPopupMenu(suggestionMenu);
+
+        searchField.addFocusListener(
+            new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent fe) {
+                    if (
+                        !suggestionMenu.isVisible() &&
+                        suggestionMenu.getComponentCount() > 0
+                    ) {
+                        Rectangle bounds = searchField.getBounds();
+                        // Show the popup at (x, y + height) relative to the text field
+                        suggestionMenu.setFocusable(false);
+                        suggestionMenu.show(searchField, 0, bounds.height);
+                        suggestionMenu.setFocusable(true);
+                        //searchField.requestFocusInWindow();
+                    }
+                }
+
+                @Override
+                public void focusLost(FocusEvent fe) {
+                    if (fe.isTemporary()) return;
+                    suggestionMenu.setVisible(false);
+                }
+            }
+        );
+        searchField.addKeyListener(
+            new KeyAdapter() {
+                private boolean isSetText = false;
+
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                        Component[] c = suggestionMenu.getComponents();
+                        if (c.length > 0) {
+                            c[0].requestFocus();
+                        }
+                    }
+                }
+
+                @Override
+                public void keyTyped(KeyEvent e) {
+                    if (
+                        isSetText && e.getKeyCode() == KeyEvent.VK_ENTER
+                    ) return;
+                    new Thread(() -> {
+                        try {
+                            List<String> suggestionList =
+                                suggestionExtractor.suggestionList(
+                                    searchField.getText()
+                                );
+                            SwingUtilities.invokeLater(() -> {
+                                suggestionMenu.removeAll();
+                                for (String suggestion : suggestionList) {
+                                    JMenuItem suggestionMenuItem =
+                                        new JMenuItem(suggestion);
+                                    suggestionMenuItem.addActionListener(ee -> {
+                                        suggestionMenu.setVisible(false);
+                                        isSetText = true;
+                                        searchField.setText(suggestion);
+                                        isSetText = false;
+                                    });
+                                    suggestionMenu.add(suggestionMenuItem);
+                                }
+                                suggestionMenu.revalidate();
+                                if (!suggestionMenu.isVisible()) {
+                                    Rectangle bounds = searchField.getBounds();
+                                    // Show the popup at (x, y + height) relative to the text field
+                                    suggestionMenu.setFocusable(false);
+                                    suggestionMenu.show(
+                                        searchField,
+                                        0,
+                                        bounds.height
+                                    );
+                                    suggestionMenu.setFocusable(true);
+                                }
+                            });
+                        } catch (ExtractionException | IOException ee) {
+                            ee.printStackTrace();
+                        }
+                    })
+                        .start();
+                }
+            }
+        );
         searchButton = new JButton();
         searchbar.setFocusable(true);
         searchButton.setOpaque(false);
@@ -113,6 +213,8 @@ public class App extends JFrame {
 
     public void onSearchAction(ActionEvent e) {
         MainViewPort.Page newPage;
+
+        mainViewPort.requestFocus();
         String qurey = searchField.getText().trim();
         try {
             URI uri = new URI(qurey);

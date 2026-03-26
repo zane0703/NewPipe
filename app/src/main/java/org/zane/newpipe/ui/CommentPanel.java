@@ -191,4 +191,8 @@ public class CommentPanel extends JPanel {
             nextBtn.setEnabled(itp.hasNextPage());
         });
     }
+
+    public void clear() {
+        mainCommentPanel.removeAll();
+    }
 }
