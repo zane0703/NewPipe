@@ -1,8 +1,6 @@
 package org.zane.newpipe.ui;
 
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -14,7 +12,6 @@ import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
-import org.schabi.newpipe.extractor.timeago.patterns.vi;
 import org.zane.newpipe.page.MainViewPort;
 
 public class CommentPanel extends JPanel {

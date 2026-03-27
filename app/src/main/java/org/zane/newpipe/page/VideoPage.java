@@ -740,7 +740,7 @@ public class VideoPage extends JPanel {
                         streamExtractor.getVideoOnlyStreams();
                     List<AudioStream> audioStreams =
                         streamExtractor.getAudioStreams();
-
+                    System.out.println(videoStreams.getClass());
                     audioStreams.sort(VideoUtil.SORT_AUDIO);
                     List<SubtitlesStream> subtitlesStreams =
                         streamExtractor.getSubtitlesDefault();

@@ -102,17 +102,17 @@ public class App extends JFrame {
             new FocusAdapter() {
                 @Override
                 public void focusGained(FocusEvent fe) {
-                    if (
-                        !suggestionMenu.isVisible() &&
-                        suggestionMenu.getComponentCount() > 0
-                    ) {
-                        Rectangle bounds = searchField.getBounds();
-                        // Show the popup at (x, y + height) relative to the text field
-                        suggestionMenu.setFocusable(false);
-                        suggestionMenu.show(searchField, 0, bounds.height);
-                        suggestionMenu.setFocusable(true);
-                        //searchField.requestFocusInWindow();
-                    }
+                    // if (
+                    //     !suggestionMenu.isVisible() &&
+                    //     suggestionMenu.getComponentCount() > 0
+                    // ) {
+                    //     Rectangle bounds = searchField.getBounds();
+                    //     // Show the popup at (x, y + height) relative to the text field
+                    //     suggestionMenu.setFocusable(false);
+                    //     suggestionMenu.show(searchField, 0, bounds.height);
+                    //     suggestionMenu.setFocusable(true);
+                    //     //searchField.requestFocusInWindow();
+                    // }
                 }
 
                 @Override
@@ -138,9 +138,7 @@ public class App extends JFrame {
 
                 @Override
                 public void keyTyped(KeyEvent e) {
-                    if (
-                        isSetText && e.getKeyCode() == KeyEvent.VK_ENTER
-                    ) return;
+                    if (isSetText || e.getKeyChar() == '\n') return;
                     new Thread(() -> {
                         try {
                             List<String> suggestionList =
@@ -230,8 +228,6 @@ public class App extends JFrame {
     public void onSearchAction(ActionEvent e) {
         MainViewPort.Page newPage;
 
-        mainViewPort.requestFocus();
-        suggestionMenu.setVisible(false);
         String qurey = searchField.getText().trim();
         try {
             URI uri = new URI(qurey);
@@ -280,5 +276,9 @@ public class App extends JFrame {
             newPage = MainViewPort.Page.SEARCH;
         }
         mainViewPort.navigate(new NavigateOption(newPage, qurey));
+        SwingUtilities.invokeLater(() -> {
+            mainViewPort.requestFocus();
+            suggestionMenu.setVisible(false);
+        });
     }
 }

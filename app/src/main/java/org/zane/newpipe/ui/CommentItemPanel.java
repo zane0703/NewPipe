@@ -18,7 +18,6 @@ import javax.swing.event.HyperlinkListener;
 import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.comments.CommentsExtractor;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
-import org.schabi.newpipe.extractor.timeago.patterns.vi;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.util.CommonUtil;
