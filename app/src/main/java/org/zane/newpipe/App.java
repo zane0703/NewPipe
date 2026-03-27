@@ -202,7 +202,23 @@ public class App extends JFrame {
         mainContent.setViewport(mainViewPort);
         //mainContent.setMinimumSize(new Dimension(1000, 500));
         this.add(mainContent, BorderLayout.CENTER);
-
+        this.getRootPane()
+            .getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, ActionEvent.ALT_MASK),
+                "back"
+            );
+        this.getRootPane()
+            .getActionMap()
+            .put(
+                "back",
+                new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        backBtn.doClick();
+                    }
+                }
+            );
         searchButton.addActionListener(this::onSearchAction);
         searchField.addActionListener(this::onSearchAction);
     }
@@ -215,6 +231,7 @@ public class App extends JFrame {
         MainViewPort.Page newPage;
 
         mainViewPort.requestFocus();
+        suggestionMenu.setVisible(false);
         String qurey = searchField.getText().trim();
         try {
             URI uri = new URI(qurey);

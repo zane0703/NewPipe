@@ -104,6 +104,7 @@ public class VideoPage extends JPanel {
     private int oldWidth;
     private JButton downloadBtn;
     private JTabbedPane viewport;
+    private int currentSpeedStep = 25;
 
     public VideoPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -244,6 +245,7 @@ public class VideoPage extends JPanel {
             "Open in browser",
             IconRes.LANGUAGE_ICON
         );
+        downloadBtn = new JButton("Download", IconRes.DOWNLOAD_ICON);
         viewport = new JTabbedPane() {
             @Override
             public Dimension getPreferredSize() {
@@ -268,6 +270,20 @@ public class VideoPage extends JPanel {
         videoCommentPanel = new CommentPanel(mainViewPort, hyperlinkListener);
 
         mediaPlayer = mediaPlayerComponent.mediaPlayer();
+        copyUrlBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        openVLCBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        openBrowserBtn.setCursor(
+            Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        );
+        downloadBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        playButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        fullScreenBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        speedBtm.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        playbackSlider.setCursor(
+            Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        );
+        viewport.addMouseMotionListener(CommonUtil.TABBED_CURSOR);
+
         this.addComponentListener(
             new ComponentAdapter() {
                 @Override
@@ -429,7 +445,7 @@ public class VideoPage extends JPanel {
                     JOptionPane.PLAIN_MESSAGE,
                     null,
                     options,
-                    options[2]
+                    options[1]
                 ) ==
                 1
             ) {
@@ -508,7 +524,7 @@ public class VideoPage extends JPanel {
         openVLCBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
         openVLCBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(openVLCBtn);
-        downloadBtn = new JButton("Donwload", IconRes.DOWNLOAD_ICON);
+
         downloadBtn.addActionListener(e -> {
             if (mediaPlayer.status().isPlaying()) {
                 mediaPlayer.controls().pause();
@@ -793,6 +809,9 @@ public class VideoPage extends JPanel {
                         tagPanel.removeAll();
                         for (String tagString : tagsString) {
                             JButton tagBtn = new JButton(tagString);
+                            tagBtn.setCursor(
+                                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                            );
                             tagBtn.addActionListener(e ->
                                 mainViewPort.navigate(
                                     new NavigateOption(
@@ -947,37 +966,136 @@ public class VideoPage extends JPanel {
 
         private int speed;
         private JSlider slider;
+        private JToggleButton step1;
+        private JToggleButton step5;
+        private JToggleButton step10;
+        private JToggleButton step25;
+        private JToggleButton step100;
 
         public SpeedSelectorPanel() {
-            setLayout(new BorderLayout());
+            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+            JPanel mainSpeedPanel = new JPanel(new BorderLayout());
             speed = currentSpeed;
-            JLabel speedLanel = new JLabel(
+            JLabel speedLabel = new JLabel(
                 df.format(new BigDecimal(currentSpeed).divide(div)) + "x",
                 SwingConstants.CENTER
             );
             JPanel speedLabelPanel = new JPanel(new BorderLayout());
-            speedLabelPanel.add(new JLabel("0.1x"), BorderLayout.LINE_START);
-            speedLabelPanel.add(speedLanel, BorderLayout.CENTER);
-            speedLabelPanel.add(new JLabel("10x"), BorderLayout.LINE_END);
+            speedLabelPanel.add(new JLabel("0.1x"), BorderLayout.WEST);
+            speedLabelPanel.add(speedLabel, BorderLayout.CENTER);
+            speedLabelPanel.add(new JLabel("10x"), BorderLayout.EAST);
             JPanel subPanel = new JPanel();
             subPanel.setLayout(new BoxLayout(subPanel, BoxLayout.Y_AXIS));
-            JButton subBtn = new JButton("-25%");
+            JButton subBtn = new JButton("+" + currentSpeedStep + "%");
             slider = new JSlider(10, 1000, currentSpeed);
-            JButton addBtn = new JButton("+25%");
-            this.add(subBtn, BorderLayout.LINE_START);
+
+            JButton addBtn = new JButton("+" + currentSpeedStep + "%");
+
+            mainSpeedPanel.add(subBtn, BorderLayout.WEST);
             subPanel.add(speedLabelPanel);
             subPanel.add(slider);
-            this.add(addBtn, BorderLayout.LINE_END);
-            subBtn.addActionListener(e -> slider.setValue(speed - 25));
-            addBtn.addActionListener(e -> slider.setValue(speed + 25));
+            mainSpeedPanel.add(addBtn, BorderLayout.EAST);
+            slider.setForeground(IconRes.YOUTUBE_COLOUR);
+            slider.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            subBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            addBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            subBtn.addActionListener(e ->
+                slider.setValue(speed - currentSpeedStep)
+            );
+            addBtn.addActionListener(e ->
+                slider.setValue(speed + currentSpeedStep)
+            );
             slider.addChangeListener(e -> {
                 speed = slider.getValue();
-                speedLanel.setText(
+                speedLabel.setText(
                     df.format(new BigDecimal(speed).divide(div)) + "x"
                 );
             });
 
-            this.add(subPanel);
+            mainSpeedPanel.add(subPanel, BorderLayout.CENTER);
+            this.add(mainSpeedPanel);
+
+            JPanel speedStepPanel = new JPanel(new GridLayout(1, 6));
+            ButtonGroup stepGroup = new ButtonGroup();
+            step1 = new JToggleButton("1%");
+            step5 = new JToggleButton("5%");
+            step10 = new JToggleButton("10%");
+            step25 = new JToggleButton("25%");
+            step100 = new JToggleButton("100%");
+            step1.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            step5.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            step10.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            step25.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            step100.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            toggleStep(currentSpeedStep, true);
+            step1.addChangeListener(e -> {
+                if (step1.isSelected()) {
+                    currentSpeedStep = 1;
+                    subBtn.setText("-1%");
+                    addBtn.setText("+1%");
+                }
+            });
+            step5.addChangeListener(e -> {
+                if (step5.isSelected()) {
+                    currentSpeedStep = 5;
+                    subBtn.setText("-5%");
+                    addBtn.setText("+5%");
+                }
+            });
+            step10.addChangeListener(e -> {
+                if (step10.isSelected()) {
+                    currentSpeedStep = 10;
+                    subBtn.setText("-10%");
+                    addBtn.setText("+10%");
+                }
+            });
+            step25.addChangeListener(e -> {
+                if (step25.isSelected()) {
+                    currentSpeedStep = 25;
+                    subBtn.setText("-25%");
+                    addBtn.setText("+25%");
+                }
+            });
+            step100.addChangeListener(e -> {
+                if (step100.isSelected()) {
+                    currentSpeedStep = 100;
+                    subBtn.setText("-100%");
+                    addBtn.setText("+100%");
+                }
+            });
+            toggleStep(currentSpeedStep, true);
+            speedStepPanel.add(new JLabel("Step:"));
+            speedStepPanel.add(step1);
+            speedStepPanel.add(step5);
+            speedStepPanel.add(step10);
+            speedStepPanel.add(step25);
+            speedStepPanel.add(step100);
+            stepGroup.add(step1);
+            stepGroup.add(step5);
+            stepGroup.add(step10);
+            stepGroup.add(step25);
+            stepGroup.add(step100);
+            this.add(speedStepPanel);
+        }
+
+        private void toggleStep(int step, boolean selected) {
+            switch (step) {
+                case 1:
+                    step1.setSelected(selected);
+                    break;
+                case 5:
+                    step5.setSelected(selected);
+                    break;
+                case 10:
+                    step10.setSelected(selected);
+                    break;
+                case 25:
+                    step25.setSelected(selected);
+                    break;
+                case 100:
+                    step100.setSelected(selected);
+                    break;
+            }
         }
 
         public void reset() {

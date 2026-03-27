@@ -1,6 +1,9 @@
 package org.zane.newpipe.util;
 
 import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.time.Duration;
@@ -10,6 +13,7 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JOptionPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
@@ -118,6 +122,29 @@ public class CommonUtil {
         }
         return map;
     }
+
+    public static final MouseAdapter TABBED_CURSOR = new MouseAdapter() {
+        private int oldIndex = -1;
+
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            if (e.getSource() instanceof JTabbedPane tp) {
+                int currentIndex = tp.indexAtLocation(e.getX(), e.getY());
+                if (currentIndex != oldIndex) {
+                    oldIndex = currentIndex;
+                    if (currentIndex != -1) {
+                        // Cursor is over a tab, set to HAND_CURSOR
+                        tp.setCursor(
+                            Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                        );
+                    } else {
+                        // Cursor is not over a tab, set to default cursor
+                        tp.setCursor(Cursor.getDefaultCursor());
+                    }
+                }
+            }
+        }
+    };
 
     public static boolean retryPrompt(Container container, String itemName) {
         Object[] options = { "Retry", "cancel" };

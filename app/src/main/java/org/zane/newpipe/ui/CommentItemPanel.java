@@ -112,8 +112,9 @@ public class CommentItemPanel extends JPanel {
         int replyCount = cit.getReplyCount();
         if (replyCount > 0) {
             JPanel replayPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-            JButton replayBtm = new JButton(replyCount + " replies");
-            replayBtm.addActionListener(e -> {
+            JButton replayBtn = new JButton(replyCount + " replies");
+            replayBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            replayBtn.addActionListener(e -> {
                 JPanel replayListPanel = new JPanel();
                 replayListPanel.setLayout(
                     new BoxLayout(replayListPanel, BoxLayout.Y_AXIS)
@@ -151,7 +152,7 @@ public class CommentItemPanel extends JPanel {
                 })
                     .start();
             });
-            replayPanel.add(replayBtm);
+            replayPanel.add(replayBtn);
             commentInfoPanel.add(replayPanel);
         }
 

@@ -84,6 +84,7 @@ public class CommentPanel extends JPanel {
         JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pageNevPanel.setBackground(IconRes.YOUTUBE_COLOUR);
         preBtn = new JButton(IconRes.ARROW_BACK_ICON);
+        preBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         preBtn.addActionListener(e -> {
             mainCommentPanel.removeAll();
             new Thread(() -> {
@@ -121,6 +122,7 @@ public class CommentPanel extends JPanel {
         pageNumLabel = new JLabel("1", SwingConstants.CENTER);
         pageNevPanel.add(pageNumLabel);
         nextBtn = new JButton(IconRes.ARROW_NEXT_ICON);
+        nextBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         nextBtn.addActionListener(e -> {
             mainCommentPanel.removeAll();
             new Thread(() -> {

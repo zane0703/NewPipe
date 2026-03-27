@@ -19,6 +19,7 @@ import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.JHTMLPane;
 import org.zane.newpipe.ui.JImage;
+import org.zane.newpipe.util.CommonUtil;
 import org.zane.newpipe.util.WrapLayout;
 
 public class ChannelPage extends JPanel {
@@ -92,6 +93,7 @@ public class ChannelPage extends JPanel {
         channelNevView.addChangeListener(e -> {
             channelNevView.revalidate();
         });
+        channelNevView.addMouseMotionListener(CommonUtil.TABBED_CURSOR);
         this.add(channelNevView);
     }
 
@@ -140,6 +142,9 @@ public class ChannelPage extends JPanel {
                                     "#" + tag
                                 )
                             )
+                        );
+                        tagBtn.setCursor(
+                            Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
                         );
                         tagListPanel.add(tagBtn);
                     }
