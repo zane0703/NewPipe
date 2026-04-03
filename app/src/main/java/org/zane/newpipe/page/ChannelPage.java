@@ -35,11 +35,8 @@ public class ChannelPage extends JPanel {
 
     public ChannelPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         banner = new JImage();
-        this.add(banner);
         channelInfoPanel = new ChannelInfoPanel();
-        this.add(channelInfoPanel);
         channelNevView = new JTabbedPane() {
             @Override
             public Dimension getPreferredSize() {
@@ -52,50 +49,53 @@ public class ChannelPage extends JPanel {
                 return d;
             }
         };
-        JPanel videoFeedPanel = new JPanel(new BorderLayout());
+        channelDetiledInfoPanel = new JPanel();
+        JLabel tagLabel = new JLabel("Tag", SwingConstants.CENTER);
+        tagListPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
+        videoFeedListPanel = new JPanel();
+        channelInfoText = new JHTMLPane("text/plain");
+
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        channelDetiledInfoPanel.setLayout(
+            new BoxLayout(channelDetiledInfoPanel, BoxLayout.Y_AXIS)
+        );
+        videoFeedListPanel.setLayout(
+            new BoxLayout(videoFeedListPanel, BoxLayout.Y_AXIS)
+        );
+
         Dimension maxSize = new Dimension(
             getPreferredSize().width,
             Integer.MAX_VALUE
         );
-        channelDetiledInfoPanel = new JPanel();
-        channelDetiledInfoPanel.setLayout(
-            new BoxLayout(channelDetiledInfoPanel, BoxLayout.Y_AXIS)
-        );
-        channelInfoText = new JHTMLPane("text/plain");
         channelInfoText.setMaximumSize(maxSize);
-        channelDetiledInfoPanel.add(channelInfoText);
+        tagListPanel.setMaximumSize(maxSize);
 
-        JLabel tagLabel = new JLabel("Tag", SwingConstants.CENTER);
         Font f = tagLabel.getFont();
         tagLabel.setFont(f.deriveFont(Font.BOLD));
-        channelDetiledInfoPanel.add(tagLabel);
-        tagListPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
-        channelDetiledInfoPanel.add(tagListPanel);
-        tagListPanel.setMaximumSize(maxSize);
-        this.addComponentListener(
-            new ComponentAdapter() {
-                @Override
-                public void componentResized(ComponentEvent e) {
-                    Dimension maxSize = new Dimension(
-                        getPreferredSize().width,
-                        Integer.MAX_VALUE
-                    );
-                    channelInfoText.setMaximumSize(maxSize);
-                    tagListPanel.setMaximumSize(maxSize);
-                }
-            }
-        );
-        videoFeedListPanel = new JPanel();
-        videoFeedListPanel.setLayout(
-            new BoxLayout(videoFeedListPanel, BoxLayout.Y_AXIS)
-        );
-        videoFeedPanel.add(videoFeedListPanel, BorderLayout.CENTER);
-        channelNevView.addChangeListener(e -> {
-            channelNevView.revalidate();
-        });
+
+        this.addComponentListener(componentAdapter);
+        channelNevView.addChangeListener(e -> channelNevView.revalidate());
         channelNevView.addMouseMotionListener(CommonUtil.TABBED_CURSOR);
+
+        this.add(banner);
+        this.add(channelInfoPanel);
+        channelDetiledInfoPanel.add(channelInfoText);
+        channelDetiledInfoPanel.add(tagLabel);
+        channelDetiledInfoPanel.add(tagListPanel);
         this.add(channelNevView);
     }
+
+    private ComponentAdapter componentAdapter = new ComponentAdapter() {
+        @Override
+        public void componentResized(ComponentEvent e) {
+            Dimension maxSize = new Dimension(
+                getPreferredSize().width,
+                Integer.MAX_VALUE
+            );
+            channelInfoText.setMaximumSize(maxSize);
+            tagListPanel.setMaximumSize(maxSize);
+        }
+    };
 
     public void fetchChannel(String channelURL) {
         videoFeedListPanel.removeAll();

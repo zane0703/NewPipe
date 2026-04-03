@@ -36,16 +36,16 @@ public class App extends JFrame {
     }
 
     public App(String searchQuery) {
-        this(false);
+        this(false, false);
         searchField.setText(searchQuery);
         searchButton.doClick();
     }
 
-    public App() {
-        this(true);
+    public App(boolean isAutoPlay) {
+        this(true, isAutoPlay);
     }
 
-    private App(boolean showDefault) {
+    private App(boolean showDefault, boolean isAutoPlay) {
         App.app = this;
 
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -191,7 +191,8 @@ public class App extends JFrame {
             backBtn::setEnabled,
             searchButton::setEnabled,
             searchField::setText,
-            showDefault
+            showDefault,
+            isAutoPlay
         );
         JScrollPane mainContent = new JScrollPane(
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,

@@ -1,6 +1,7 @@
 package org.zane.newpipe.page;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
@@ -36,95 +37,107 @@ public class PlayListPage extends JPanel {
     private JLabel channelName;
 
     public PlayListPage(MainViewPort mainViewPort) {
-        this.setLayout(new BorderLayout());
         this.mainViewPort = mainViewPort;
         resultListPanel = new JPanel();
+        JPanel playlistHeader = new JPanel(new GridLayout(2, 1));
+        playListTitleLabel = new JLabel("", SwingConstants.LEFT);
+        channelName = new JLabel("", SwingConstants.LEFT);
+        JPanel playListSubInfoPanel = new JPanel(new GridLayout(1, 2));
+        JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        preBtn = new JButton(IconRes.ARROW_BACK_ICON);
+        pageNumLabel = new JLabel("1", SwingConstants.CENTER);
+        nextBtn = new JButton(IconRes.ARROW_NEXT_ICON);
+        playListSubInfo = new JLabel("", SwingConstants.RIGHT);
+
+        //set layout
+        this.setLayout(new BorderLayout());
         resultListPanel.setLayout(
             new BoxLayout(resultListPanel, BoxLayout.Y_AXIS)
         );
-        JPanel playlistHeader = new JPanel(new GridLayout(2, 1));
-        playListTitleLabel = new JLabel("", SwingConstants.LEFT);
+
         Font f = playListTitleLabel.getFont();
         playListTitleLabel.setFont(f.deriveFont(Font.BOLD));
+
+        pageNevPanel.setBackground(IconRes.YOUTUBE_COLOUR);
+
+        preBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        nextBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        preBtn.addActionListener(this::onPreBtnClicked);
+        nextBtn.addActionListener(this::onNextBtnClicked);
+
         playlistHeader.add(playListTitleLabel);
-        JPanel playListSubInfoPanel = new JPanel(new GridLayout(1, 2));
-        channelName = new JLabel("", SwingConstants.LEFT);
         playListSubInfoPanel.add(channelName);
-        playListSubInfo = new JLabel("", SwingConstants.RIGHT);
         playListSubInfoPanel.add(playListSubInfo);
         playlistHeader.add(playListSubInfoPanel);
         this.add(playlistHeader, BorderLayout.NORTH);
+
         this.add(resultListPanel, BorderLayout.CENTER);
-        JPanel pageNevPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        pageNevPanel.setBackground(IconRes.YOUTUBE_COLOUR);
-        preBtn = new JButton(IconRes.ARROW_BACK_ICON);
-        preBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        preBtn.addActionListener(e -> {
-            resultListPanel.removeAll();
-            new Thread(() -> {
-                try {
-                    if (pageStack.isEmpty()) {
-                        itp = pe.getInitialPage();
-                        showPage();
-                        SwingUtilities.invokeLater(() -> {
-                            pageNumLabel.setText("1");
-                            preBtn.setEnabled(false);
-                        });
-                        currentPage = null;
-                    } else {
-                        Page prePage = pageStack.pop();
-                        itp = pe.getPage(prePage);
-                        showPage();
-                        SwingUtilities.invokeLater(() -> {
-                            pageNumLabel.setText(
-                                Integer.toString(pageStack.size() + 2)
-                            );
-                        });
-                        currentPage = prePage;
-                    }
 
-                    mainViewPort.setViewPosition(new Point(0, 0));
-                } catch (ExtractionException | IOException err) {
-                    err.printStackTrace();
-                }
-            })
-                .start();
-        });
         pageNevPanel.add(preBtn);
-        pageNumLabel = new JLabel("1", SwingConstants.CENTER);
         pageNevPanel.add(pageNumLabel);
-        nextBtn = new JButton(IconRes.ARROW_NEXT_ICON);
-        nextBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        nextBtn.addActionListener(e -> {
-            resultListPanel.removeAll();
-            new Thread(() -> {
-                try {
-                    Page nextPage = itp.getNextPage();
-                    itp = pe.getPage(nextPage);
-                    mainViewPort.setViewPosition(new Point(0, 0));
-                    showPage();
-                    if (currentPage != null) {
-                        pageStack.push(currentPage);
-                    }
-                    SwingUtilities.invokeLater(() -> {
-                        pageNumLabel.setText(
-                            Integer.toString(pageStack.size() + 2)
-                        );
-                        preBtn.setEnabled(true);
-                    });
-                    currentPage = nextPage;
-                } catch (ExtractionException | IOException err) {
-                    err.printStackTrace();
-                }
-            })
-                .start();
-        });
         pageNevPanel.add(nextBtn);
-
         this.add(pageNevPanel, BorderLayout.SOUTH);
     }
 
-    public void fatchPlayList(String playListUrl) {
+    private void onPreBtnClicked(ActionEvent e) {
+        resultListPanel.removeAll();
+        new Thread(this::onPreBtnClicked).start();
+    }
+
+    private void onPreBtnClicked() {
+        try {
+            if (pageStack.isEmpty()) {
+                itp = pe.getInitialPage();
+                showPage();
+                SwingUtilities.invokeLater(() -> {
+                    pageNumLabel.setText("1");
+                    preBtn.setEnabled(false);
+                });
+                currentPage = null;
+            } else {
+                Page prePage = pageStack.pop();
+                itp = pe.getPage(prePage);
+                showPage();
+                SwingUtilities.invokeLater(() -> {
+                    pageNumLabel.setText(
+                        Integer.toString(pageStack.size() + 2)
+                    );
+                });
+                currentPage = prePage;
+            }
+
+            mainViewPort.setViewPosition(new Point(0, 0));
+        } catch (ExtractionException | IOException err) {
+            err.printStackTrace();
+        }
+    }
+
+    private void onNextBtnClicked(ActionEvent e) {
+        resultListPanel.removeAll();
+        new Thread(this::onNextBtnClicked).start();
+    }
+
+    private void onNextBtnClicked() {
+        try {
+            Page nextPage = itp.getNextPage();
+            itp = pe.getPage(nextPage);
+            mainViewPort.setViewPosition(new Point(0, 0));
+            showPage();
+            if (currentPage != null) {
+                pageStack.push(currentPage);
+            }
+            SwingUtilities.invokeLater(() -> {
+                pageNumLabel.setText(Integer.toString(pageStack.size() + 2));
+                preBtn.setEnabled(true);
+            });
+            currentPage = nextPage;
+        } catch (ExtractionException | IOException err) {
+            err.printStackTrace();
+        }
+    }
+
+    public void fetchPlayList(String playListUrl) {
         resultListPanel.removeAll();
         pageStack.clear();
         pageNumLabel.setText("1");

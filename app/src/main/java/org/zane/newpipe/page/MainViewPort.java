@@ -22,14 +22,15 @@ public class MainViewPort extends JViewport {
         SetEnabledBtn setBackEnable,
         SetEnabledBtn setSearchEnable,
         SetText setSearchText,
-        boolean showDefault
+        boolean showDefault,
+        boolean isAutoPlay
     ) {
         this.setBackEnable = setBackEnable;
         this.setSearchEnable = setSearchEnable;
         this.setSearchText = setSearchText;
         channelPage = new ChannelPage(this);
         searchResultPage = new SearchResultPage(this);
-        videoPage = new VideoPage(this);
+        videoPage = new VideoPage(this, isAutoPlay);
         nevigateHistory = new ArrayDeque<>();
         if (showDefault) {
             JPanel defultPage = new JPanel(new BorderLayout());
@@ -120,7 +121,7 @@ public class MainViewPort extends JViewport {
             case PLAYLIST:
                 PlayListPage playListPage = new PlayListPage(this);
                 this.setView(playListPage);
-                playListPage.fatchPlayList(navigateOption.QUERY);
+                playListPage.fetchPlayList(navigateOption.QUERY);
         }
     }
 

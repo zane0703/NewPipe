@@ -18,14 +18,10 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
-import javax.swing.plaf.basic.BasicSliderUI.ChangeHandler;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -105,97 +101,21 @@ public class VideoPage extends JPanel {
     private JButton downloadBtn;
     private JTabbedPane viewport;
     private int currentSpeedStep = 25;
+    private boolean isAutoPlay;
+    private JButton speedBtn;
+    private JButton fullScreenBtn;
+    private JPanel videoInfo;
+    private JPanel videoMenuBtnPanel;
+    private JPanel videoTitlePanel;
+    private Clipboard clipboard =
+        Toolkit.getDefaultToolkit().getSystemClipboard();
 
-    public VideoPage(MainViewPort mainViewPort) {
+    public VideoPage(MainViewPort mainViewPort, boolean isAutoPlay) {
         this.mainViewPort = mainViewPort;
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        numberFormat = NumberFormat.getInstance();
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        HyperlinkListener hyperlinkListener = e -> {
-            try {
-                if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                    URL url = e.getURL();
-                    switch (url.getHost().toLowerCase()) {
-                        case "www.youtube.com":
-                        case "youtube.com":
-                        case "m.youtube.com":
-                            String[] paths = url.getPath().split("/");
-                            switch (paths.length) {
-                                case 2:
-                                    if (paths[1].equalsIgnoreCase("watch")) {
-                                        Map<String, String> query =
-                                            CommonUtil.getQueryMap(
-                                                url.getQuery()
-                                            );
-                                        String v = query.get("v");
-                                        if (v != null) {
-                                            if (v.equals(videoId)) {
-                                                String t = query.get("t");
-                                                long newTime = Long.parseLong(
-                                                    t
-                                                );
-                                                mediaPlayer
-                                                    .controls()
-                                                    .setTime(newTime * 1000);
-                                            } else {
-                                                mainViewPort.navigate(
-                                                    new NavigateOption(
-                                                        MainViewPort.Page.VIDEO,
-                                                        url.toString()
-                                                    )
-                                                );
-                                            }
-                                        } else if (paths[1].charAt(0) == '@') {
-                                            mainViewPort.navigate(
-                                                new NavigateOption(
-                                                    MainViewPort.Page.CHANNEL,
-                                                    url.toString()
-                                                )
-                                            );
-                                        }
-                                    }
-                                    break;
-                                case 3:
-                                    switch (paths[1].toLowerCase()) {
-                                        case "hashtag":
-                                            mainViewPort.navigate(
-                                                new NavigateOption(
-                                                    MainViewPort.Page.SEARCH,
-                                                    "#" + paths[2]
-                                                )
-                                            );
-                                            break;
-                                        case "channel":
-                                            mainViewPort.navigate(
-                                                new NavigateOption(
-                                                    MainViewPort.Page.CHANNEL,
-                                                    url.toString()
-                                                )
-                                            );
-                                            break;
-                                    }
+        this.isAutoPlay = isAutoPlay;
 
-                                    break;
-                            }
-                            break;
-                        case "youtu.be":
-                            mainViewPort.navigate(
-                                new NavigateOption(
-                                    MainViewPort.Page.VIDEO,
-                                    url.toString()
-                                )
-                            );
-                            break;
-                        default:
-                            if (Desktop.isDesktopSupported()) {
-                                Desktop.getDesktop().browse(url.toURI());
-                            }
-                    }
-                }
-            } catch (ParseException | IOException | URISyntaxException pe) {
-                pe.printStackTrace();
-            }
-        };
+        numberFormat = NumberFormat.getInstance();
+
         EmbeddedMediaPlayerComponent mediaPlayerComponent =
             new EmbeddedMediaPlayerComponent(
                 new MediaPlayerFactory(
@@ -209,7 +129,7 @@ public class VideoPage extends JPanel {
             );
         videoLenghtLabel = new JLabel("-:--:--");
         currentTimestampLabel = new JLabel("00:00");
-        JPanel videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         videoTitle = new JLabel("", SwingConstants.LEFT);
         JPanel playbackSliderRow = new JPanel(new BorderLayout());
         playbackSlider = new JSlider(
@@ -220,22 +140,28 @@ public class VideoPage extends JPanel {
         );
         videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
         playButton = new JButton(IconRes.PLAY_ARROW_ICON);
-        videoModel = new DefaultComboBoxModel<>();
-        videoComboBox = new JComboBox<VideoStream>(videoModel);
-        audioModel = new DefaultComboBoxModel<>();
-        audioComboBox = new JComboBox<AudioStream>(audioModel);
+        videoModel = new DefaultComboBoxModel<VideoStream>();
+        audioModel = new DefaultComboBoxModel<AudioStream>();
         subtitleModel = new DefaultComboBoxModel<SubtitlesStream>();
+        videoComboBox = new JComboBox<VideoStream>(videoModel);
+        audioComboBox = new JComboBox<AudioStream>(audioModel);
         subtitleComboBox = new JComboBox<SubtitlesStream>(subtitleModel);
-        JButton speedBtm = new JButton("1x");
-        JButton fullScreenBtn = new JButton(IconRes.FULLSCREEN_ICON);
-
-        JPanel videoInfo = new JPanel(new GridLayout(1, 2));
+        speedBtn = new JButton("1x");
+        fullScreenBtn = new JButton(IconRes.FULLSCREEN_ICON);
+        videoInfo = new JPanel(new GridLayout(1, 2));
+        uploaderInfo = new ChannelInfoPanel(mainViewPort);
+        viewCountLabel = new JLabel("", SwingConstants.RIGHT);
+        likeCountLabel = new JLabel(
+            "",
+            IconRes.THUMP_UP_ICON,
+            SwingConstants.RIGHT
+        );
         JPanel likeAndViewPanelPanel = new JPanel(
             new FlowLayout(FlowLayout.RIGHT)
         );
         JPanel likeAndViewPanel = new JPanel();
 
-        JPanel videoMenuBtnPanel = new JPanel(new GridLayout(1, 4));
+        videoMenuBtnPanel = new JPanel(new GridLayout(1, 4));
         JButton openVLCBtn = new JButton(
             "Open in VLC Media Player",
             IconRes.VLC_ICON
@@ -263,13 +189,46 @@ public class VideoPage extends JPanel {
         JPanel videoDescriptionTextPanel = new JPanel(
             new FlowLayout(FlowLayout.LEFT)
         );
+        publishDateLabel = new JLabel();
+        videoDescriptionText = new JHTMLPane();
+        JPanel descriptionMetadata = new JPanel(new GridLayout(3, 3, 10, 10));
+        licenseLabel = new JLabel("", SwingConstants.LEFT);
+        privacyLabel = new JLabel("", SwingConstants.LEFT);
+        videoCategoryLabel = new JLabel("", SwingConstants.LEFT);
+        tagPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
 
-        JPanel descriptionMatadata = new JPanel(new GridLayout(3, 3, 10, 10));
-        JLabel tmpLabel = new JLabel("Category:", SwingConstants.RIGHT);
-
-        videoCommentPanel = new CommentPanel(mainViewPort, hyperlinkListener);
-
+        videoCommentPanel = new CommentPanel(
+            mainViewPort,
+            this::onHyperlinkPressed
+        );
+        relatedStreamsPanel = new JPanel();
         mediaPlayer = mediaPlayerComponent.mediaPlayer();
+
+        //set layout
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        likeAndViewPanel.setLayout(
+            new BoxLayout(likeAndViewPanel, BoxLayout.Y_AXIS)
+        );
+        relatedStreamsPanel.setLayout(
+            new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
+        );
+        videoCommentPanel.setLayout(
+            new BoxLayout(videoCommentPanel, BoxLayout.Y_AXIS)
+        );
+        videoDescriptionPanel.setLayout(
+            new BoxLayout(videoDescriptionPanel, BoxLayout.Y_AXIS)
+        );
+
+        videoCommentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        Dimension maxSize = new Dimension(
+            getPreferredSize().width,
+            Integer.MAX_VALUE
+        );
+        oldWidth = maxSize.width;
+        videoDescriptionText.setMaximumSize(maxSize);
+        tagPanel.setMaximumSize(maxSize);
+
+        //set cursor
         copyUrlBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         openVLCBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         openBrowserBtn.setCursor(
@@ -278,345 +237,133 @@ public class VideoPage extends JPanel {
         downloadBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         playButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         fullScreenBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        speedBtm.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        speedBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         playbackSlider.setCursor(
             Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         );
         viewport.addMouseMotionListener(CommonUtil.TABBED_CURSOR);
 
-        this.addComponentListener(
-            new ComponentAdapter() {
-                @Override
-                public void componentHidden(ComponentEvent e) {
-                    // Code to execute when the JPanel is hidden
-                    //
-                    mediaPlayer.controls().stop();
-                    mediaPlayer.release();
-                }
-
-                @Override
-                public void componentResized(ComponentEvent e) {
-                    Dimension maxSize = new Dimension(
-                        getPreferredSize().width,
-                        Integer.MAX_VALUE
-                    );
-                    videoDescriptionText.setMaximumSize(maxSize);
-                    tagPanel.setMaximumSize(maxSize);
-                    if (oldWidth > maxSize.width) {
-                        videoDescriptionText.updateUI();
-                    }
-                    oldWidth = maxSize.width;
-                }
-            }
-        );
-
-        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
-        mediaPlayer
-            .events()
-            .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
-        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
-        this.add(mediaPlayerComponent);
-        // c.gridy = 1;
-
-        playbackSliderRow.add(currentTimestampLabel, BorderLayout.LINE_START);
-
-        playbackSlider.setForeground(IconRes.YOUTUBE_COLOUR);
-        playbackSlider.addChangeListener(e -> {
-            if (playbackSlider.getValueIsAdjusting() || isPositionChanged) {
-                return;
-            }
-            System.out.println("change timestamp");
-            mediaPlayer
-                .controls()
-                .setTime((long) (playbackSlider.getValue() * videoLengthDiff));
-        });
-        playbackSliderRow.add(playbackSlider, BorderLayout.CENTER);
-
-        playbackSliderRow.add(videoLenghtLabel, BorderLayout.LINE_END);
-        this.add(playbackSliderRow);
-
-        // video Contol
-
-        this.add(videoContol);
-
-        playButton.addActionListener(e -> {
-            if (mediaPlayer.status().isPlaying()) {
-                mediaPlayer.controls().pause();
-            } else {
-                mediaPlayer.controls().play();
-            }
-        });
-        videoContol.add(playButton);
-
-        //ComboBox
-
+        //combox Renderer
         videoComboBox.setRenderer(new VideoComboBoxRenderer());
-        videoComboBox.addItemListener(e -> {
-            if (
-                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
-            ) {
-                if (e.getItem() instanceof VideoStream videoStream) {
-                    boolean isPlaying = mediaPlayer.status().isPlaying();
-                    final long currentTime = mediaPlayer.status().time();
-                    playVideo(
-                        videoStream,
-                        currentAudioStream,
-                        currentSubtitlesStream,
-                        currentTime
-                    );
-                    if (isPlaying) {
-                        mediaPlayer.controls().play();
-                    }
-                    currentVideoStream = videoStream;
-                }
-            }
-        });
-        videoContol.add(new JLabel("Video:"));
-        videoContol.add(videoComboBox);
-
         audioComboBox.setRenderer(new AudioComboBoxRenderer());
-        audioComboBox.addItemListener(e -> {
-            if (
-                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
-            ) {
-                if (e.getItem() instanceof AudioStream audioStream) {
-                    boolean isPlaying = mediaPlayer.status().isPlaying();
-                    final long currentTime = mediaPlayer.status().time();
-                    playVideo(
-                        currentVideoStream,
-                        audioStream,
-                        currentSubtitlesStream,
-                        currentTime
-                    );
-                    if (isPlaying) {
-                        mediaPlayer.controls().play();
-                    }
-                    currentAudioStream = audioStream;
-                }
-            }
-        });
-        videoContol.add(new JLabel("Audio:"));
-        videoContol.add(audioComboBox);
-
         subtitleComboBox.setRenderer(new SubTitleComboBoxRenderer());
-        subtitleComboBox.addItemListener(e -> {
-            if (
-                e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent
-            ) {
-                boolean isPlaying = mediaPlayer.status().isPlaying();
-                final long currentTime = mediaPlayer.status().time();
-                if (e.getItem() instanceof SubtitlesStream subtitlesStream) {
-                    playVideo(
-                        currentVideoStream,
-                        currentAudioStream,
-                        subtitlesStream,
-                        currentTime
-                    );
 
-                    currentSubtitlesStream = subtitlesStream;
-                } else {
-                    playVideo(
-                        currentVideoStream,
-                        currentAudioStream,
-                        null,
-                        currentTime
-                    );
-                    currentSubtitlesStream = null;
-                }
-                if (isPlaying) {
-                    mediaPlayer.controls().play();
-                }
-            }
-        });
-        videoContol.add(new JLabel("Subtitle:"));
-        videoContol.add(subtitleComboBox);
+        //set too; tip
+        playButton.setToolTipText("Play");
+        fullScreenBtn.setToolTipText("Enter FullScreen");
+        speedBtn.setToolTipText("Set Playback Speed");
 
-        speedBtm.addActionListener(e -> {
-            SpeedSelectorPanel s = new SpeedSelectorPanel();
-            JButton resetBtn = new JButton("Reset");
-            resetBtn.addActionListener(e2 -> s.reset());
-            Object[] options = new Object[] { resetBtn, "Ok", "Cancel" };
-            if (
-                JOptionPane.showOptionDialog(
-                    mainViewPort,
-                    s,
-                    "Playback speed option",
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    options,
-                    options[1]
-                ) ==
-                1
-            ) {
-                currentSpeed = s.getSpeed();
-                BigDecimal speedDec = new BigDecimal(currentSpeed).divide(div);
-                speedBtm.setText(df.format(speedDec) + "x");
-                mediaPlayer.controls().setRate(speedDec.floatValue());
-            }
-        });
-        videoContol.add(speedBtm);
+        //set colour
+        playbackSlider.setForeground(IconRes.YOUTUBE_COLOUR);
 
-        videoContol.add(fullScreenBtn);
+        //btn icon Position
+        copyUrlBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        openBrowserBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        openVLCBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        downloadBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
+        copyUrlBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        openBrowserBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        openVLCBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+        downloadBtn.setHorizontalTextPosition(SwingConstants.CENTER);
 
+        //set font
         Font boldFont = videoTitle.getFont();
         boldFont = boldFont.deriveFont(Font.BOLD, boldFont.getSize());
         videoTitle.setFont(boldFont);
+        //set event
+        this.addComponentListener(componentAdapter);
+        playbackSlider.addChangeListener(this::onPlaybackSliderChanged);
+        playButton.addActionListener(this::onPlayBtnPressed);
+        videoComboBox.addItemListener(this::onVideoComboBoxChanged);
+        audioComboBox.addItemListener(this::onAudioComboBoxChanged);
+        subtitleComboBox.addItemListener(this::onSubtitleComboBoxChanged);
+        speedBtn.addActionListener(this::onSpeedBtnPressed);
+        copyUrlBtn.addActionListener(this::onCopyBtnPressed);
+        openBrowserBtn.addActionListener(this::onOpenBrowserBtnPressed);
+        openVLCBtn.addActionListener(this::onOpenVLCBtnPressed);
+        downloadBtn.addActionListener(this::onDownloadBtnPressed);
+        fullScreenBtn.addActionListener(this::onFullScreenBtnPressed);
+        videoDescriptionText.addHyperlinkListener(this::onHyperlinkPressed);
+        viewport.addChangeListener(e -> viewport.revalidate());
+        mediaPlayer
+            .events()
+            .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
+
+        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
+
+        //add component
+        this.add(mediaPlayerComponent);
+
+        playbackSliderRow.add(currentTimestampLabel, BorderLayout.LINE_START);
+        playbackSliderRow.add(playbackSlider, BorderLayout.CENTER);
+        playbackSliderRow.add(videoLenghtLabel, BorderLayout.LINE_END);
+        this.add(playbackSliderRow);
+
+        videoContol.add(playButton);
+        videoContol.add(new JLabel("Video:"));
+        videoContol.add(videoComboBox);
+        videoContol.add(new JLabel("Audio:"));
+        videoContol.add(audioComboBox);
+        videoContol.add(new JLabel("Subtitle:"));
+        videoContol.add(subtitleComboBox);
+        videoContol.add(speedBtn);
+        videoContol.add(fullScreenBtn);
+        this.add(videoContol);
+
         videoTitlePanel.add(videoTitle);
         this.add(videoTitlePanel);
 
-        uploaderInfo = new ChannelInfoPanel(mainViewPort);
         videoInfo.add(uploaderInfo);
 
-        likeAndViewPanel.setLayout(
-            new BoxLayout(likeAndViewPanel, BoxLayout.Y_AXIS)
-        );
-        viewCountLabel = new JLabel("", SwingConstants.RIGHT);
         likeAndViewPanel.add(viewCountLabel);
-        likeCountLabel = new JLabel(
-            "",
-            IconRes.THUMP_UP_ICON,
-            SwingConstants.RIGHT
-        );
+
         likeAndViewPanel.add(likeCountLabel);
         likeAndViewPanelPanel.add(likeAndViewPanel);
         videoInfo.add(likeAndViewPanelPanel);
         this.add(videoInfo);
 
-        copyUrlBtn.addActionListener(e -> {
-            try {
-                clipboard.setContents(
-                    new StringSelection(streamExtractor.getUrl()),
-                    null
-                );
-            } catch (ParsingException pe) {
-                pe.printStackTrace();
-            }
-        });
-        copyUrlBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
-        copyUrlBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(copyUrlBtn);
-
-        openBrowserBtn.addActionListener(e -> {
-            if (Desktop.isDesktopSupported()) {
-                mediaPlayer.controls().pause();
-                try {
-                    Desktop.getDesktop().browse(
-                        URI.create(streamExtractor.getUrl())
-                    );
-                } catch (IOException | ParsingException ioe) {
-                    ioe.printStackTrace();
-                }
-            }
-        });
-        openBrowserBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
-        openBrowserBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(openBrowserBtn);
-
-        openVLCBtn.addActionListener(e -> {
-            if (mediaPlayer.status().isPlaying()) {
-                mediaPlayer.controls().pause();
-            }
-            new Thread(() ->
-                VideoUtil.openVLC(streamExtractor, mainViewPort)
-            ).start();
-        });
-        openVLCBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
-        openVLCBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(openVLCBtn);
-
-        downloadBtn.addActionListener(e -> {
-            if (mediaPlayer.status().isPlaying()) {
-                mediaPlayer.controls().pause();
-            }
-            new Thread(() ->
-                VideoUtil.downloadVideo(streamExtractor, false)
-            ).start();
-        });
-        downloadBtn.setVerticalTextPosition(SwingConstants.BOTTOM);
-        downloadBtn.setHorizontalTextPosition(SwingConstants.CENTER);
         videoMenuBtnPanel.add(downloadBtn);
         this.add(videoMenuBtnPanel);
 
-        relatedStreamsPanel = new JPanel();
-        relatedStreamsPanel.setLayout(
-            new BoxLayout(relatedStreamsPanel, BoxLayout.Y_AXIS)
-        );
-
-        videoCommentPanel.setLayout(
-            new BoxLayout(videoCommentPanel, BoxLayout.Y_AXIS)
-        );
-        videoCommentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        videoDescriptionPanel.setLayout(
-            new BoxLayout(videoDescriptionPanel, BoxLayout.Y_AXIS)
-        );
-
-        publishDateLabel = new JLabel();
         publishDatePanel.add(publishDateLabel);
         videoDescriptionPanel.add(publishDatePanel);
 
-        videoDescriptionText = new JHTMLPane();
-
-        videoDescriptionText.addHyperlinkListener(hyperlinkListener);
-        Dimension maxSize = new Dimension(
-            getPreferredSize().width,
-            Integer.MAX_VALUE
-        );
-        oldWidth = maxSize.width;
-        videoDescriptionText.setMaximumSize(maxSize);
         videoDescriptionTextPanel.add(videoDescriptionText);
         videoDescriptionPanel.add(videoDescriptionTextPanel);
 
+        JLabel tmpLabel = new JLabel("Category:", SwingConstants.RIGHT);
         tmpLabel.setFont(boldFont);
-        descriptionMatadata.add(tmpLabel);
+        descriptionMetadata.add(tmpLabel);
+        descriptionMetadata.add(videoCategoryLabel);
 
-        videoCategoryLabel = new JLabel("", SwingConstants.LEFT);
-        descriptionMatadata.add(videoCategoryLabel);
         tmpLabel = new JLabel("License:", SwingConstants.RIGHT);
         tmpLabel.setFont(boldFont);
-        descriptionMatadata.add(tmpLabel);
-        licenseLabel = new JLabel("", SwingConstants.LEFT);
-        descriptionMatadata.add(licenseLabel);
+        descriptionMetadata.add(tmpLabel);
+        descriptionMetadata.add(licenseLabel);
+
         tmpLabel = new JLabel("Privacy:", SwingConstants.RIGHT);
         tmpLabel.setFont(boldFont);
-        descriptionMatadata.add(tmpLabel);
-        privacyLabel = new JLabel("", SwingConstants.LEFT);
-        descriptionMatadata.add(privacyLabel);
-        videoDescriptionPanel.add(descriptionMatadata);
-        tagPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
-        tagPanel.setMaximumSize(maxSize);
+        descriptionMetadata.add(tmpLabel);
+        descriptionMetadata.add(privacyLabel);
+
+        videoDescriptionPanel.add(descriptionMetadata);
         videoDescriptionPanel.add(tagPanel);
-        viewport.addChangeListener(e -> viewport.revalidate());
+
         viewport.addTab(null, IconRes.COMMENT_ICON, videoCommentPanel);
         viewport.addTab(null, IconRes.ART_TRACK_ICON, relatedStreamsPanel);
         viewport.addTab(null, IconRes.DESCRIPTION_ICON, videoDescriptionPanel);
 
         this.add(viewport);
-        fullScreenBtn.addActionListener(e -> {
-            FullScreenApi fullScreenApi = mediaPlayer.fullScreen();
-            fullScreenApi.set(!fullScreenApi.isFullScreen());
-            App app = App.getInstance();
-            if (fullScreenApi.isFullScreen()) {
-                fullScreenBtn.setIcon(IconRes.FULLSCREEN_EXIT_ICON);
-                viewport.setVisible(false);
-                videoInfo.setVisible(false);
-                videoMenuBtnPanel.setVisible(false);
-                videoTitlePanel.setVisible(false);
-                app.setSearchbarVisible(false);
-            } else {
-                fullScreenBtn.setIcon(IconRes.FULLSCREEN_ICON);
-                viewport.setVisible(true);
-                videoInfo.setVisible(true);
-                videoMenuBtnPanel.setVisible(true);
-                videoTitlePanel.setVisible(true);
-                app.setSearchbarVisible(true);
-            }
-        });
+
         this.setFocusable(true);
+        //keymap
         InputMap inputMap = this.getInputMap(
             JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
         );
+
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), "forward");
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "forward");
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_J, 0), "backward");
@@ -663,7 +410,7 @@ public class VideoPage extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     FullScreenApi fullScreenApi = mediaPlayer.fullScreen();
                     if (fullScreenApi.isFullScreen()) {
-                        fullScreenBtn.doClick();
+                        onSpeedBtnPressed(null);
                     }
                 }
             }
@@ -673,10 +420,285 @@ public class VideoPage extends JPanel {
             new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    fullScreenBtn.doClick();
+                    onSpeedBtnPressed(null);
                 }
             }
         );
+    }
+
+    private ComponentAdapter componentAdapter = new ComponentAdapter() {
+        @Override
+        public void componentHidden(ComponentEvent e) {
+            // Code to execute when the JPanel is hidden
+            //
+            mediaPlayer.controls().stop();
+            mediaPlayer.release();
+        }
+
+        @Override
+        public void componentResized(ComponentEvent e) {
+            Dimension maxSize = new Dimension(
+                getPreferredSize().width,
+                Integer.MAX_VALUE
+            );
+            videoDescriptionText.setMaximumSize(maxSize);
+            tagPanel.setMaximumSize(maxSize);
+            if (oldWidth > maxSize.width) {
+                videoDescriptionText.updateUI();
+            }
+            oldWidth = maxSize.width;
+        }
+    };
+
+    private void onHyperlinkPressed(HyperlinkEvent e) {
+        try {
+            if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                URL url = e.getURL();
+                switch (url.getHost().toLowerCase()) {
+                    case "www.youtube.com":
+                    case "youtube.com":
+                    case "m.youtube.com":
+                        String[] paths = url.getPath().split("/");
+                        switch (paths.length) {
+                            case 2:
+                                if (paths[1].equalsIgnoreCase("watch")) {
+                                    Map<String, String> query =
+                                        CommonUtil.getQueryMap(url.getQuery());
+                                    String v = query.get("v");
+                                    if (v != null) {
+                                        if (v.equals(videoId)) {
+                                            String t = query.get("t");
+                                            long newTime = Long.parseLong(t);
+                                            mediaPlayer
+                                                .controls()
+                                                .setTime(newTime * 1000);
+                                        } else {
+                                            mainViewPort.navigate(
+                                                new NavigateOption(
+                                                    MainViewPort.Page.VIDEO,
+                                                    url.toString()
+                                                )
+                                            );
+                                        }
+                                    } else if (paths[1].charAt(0) == '@') {
+                                        mainViewPort.navigate(
+                                            new NavigateOption(
+                                                MainViewPort.Page.CHANNEL,
+                                                url.toString()
+                                            )
+                                        );
+                                    }
+                                }
+                                break;
+                            case 3:
+                                switch (paths[1].toLowerCase()) {
+                                    case "hashtag":
+                                        mainViewPort.navigate(
+                                            new NavigateOption(
+                                                MainViewPort.Page.SEARCH,
+                                                "#" + paths[2]
+                                            )
+                                        );
+                                        break;
+                                    case "channel":
+                                        mainViewPort.navigate(
+                                            new NavigateOption(
+                                                MainViewPort.Page.CHANNEL,
+                                                url.toString()
+                                            )
+                                        );
+                                        break;
+                                }
+
+                                break;
+                        }
+                        break;
+                    case "youtu.be":
+                        mainViewPort.navigate(
+                            new NavigateOption(
+                                MainViewPort.Page.VIDEO,
+                                url.toString()
+                            )
+                        );
+                        break;
+                    default:
+                        if (Desktop.isDesktopSupported()) {
+                            Desktop.getDesktop().browse(url.toURI());
+                        }
+                }
+            }
+        } catch (ParseException | IOException | URISyntaxException pe) {
+            pe.printStackTrace();
+        }
+    }
+
+    private void onPlaybackSliderChanged(ChangeEvent e) {
+        if (playbackSlider.getValueIsAdjusting() || isPositionChanged) {
+            return;
+        }
+        mediaPlayer
+            .controls()
+            .setTime((long) (playbackSlider.getValue() * videoLengthDiff));
+    }
+
+    private void onSpeedBtnPressed(ActionEvent e) {
+        SpeedSelectorPanel s = new SpeedSelectorPanel();
+        JButton resetBtn = new JButton("Reset");
+        resetBtn.addActionListener(e2 -> s.reset());
+        Object[] options = new Object[] { resetBtn, "Ok", "Cancel" };
+        if (
+            JOptionPane.showOptionDialog(
+                mainViewPort,
+                s,
+                "Playback speed option",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options[1]
+            ) ==
+            1
+        ) {
+            currentSpeed = s.getSpeed();
+            BigDecimal speedDec = new BigDecimal(currentSpeed).divide(div);
+            speedBtn.setText(df.format(speedDec) + "x");
+            mediaPlayer.controls().setRate(speedDec.floatValue());
+        }
+    }
+
+    private void onFullScreenBtnPressed(ActionEvent e) {
+        FullScreenApi fullScreenApi = mediaPlayer.fullScreen();
+        fullScreenApi.set(!fullScreenApi.isFullScreen());
+        App app = App.getInstance();
+        if (fullScreenApi.isFullScreen()) {
+            fullScreenBtn.setIcon(IconRes.FULLSCREEN_EXIT_ICON);
+            fullScreenBtn.setToolTipText("Exit FullScreen");
+            viewport.setVisible(false);
+            videoInfo.setVisible(false);
+            videoMenuBtnPanel.setVisible(false);
+            videoTitlePanel.setVisible(false);
+            app.setSearchbarVisible(false);
+        } else {
+            fullScreenBtn.setIcon(IconRes.FULLSCREEN_ICON);
+            fullScreenBtn.setToolTipText("Enter FullScreen");
+            viewport.setVisible(true);
+            videoInfo.setVisible(true);
+            videoMenuBtnPanel.setVisible(true);
+            videoTitlePanel.setVisible(true);
+            app.setSearchbarVisible(true);
+        }
+    }
+
+    private void onPlayBtnPressed(ActionEvent e) {
+        if (mediaPlayer.status().isPlaying()) {
+            mediaPlayer.controls().pause();
+        } else {
+            mediaPlayer.controls().play();
+        }
+    }
+
+    private void onVideoComboBoxChanged(ItemEvent e) {
+        if (e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent) {
+            if (e.getItem() instanceof VideoStream videoStream) {
+                boolean isPlaying = mediaPlayer.status().isPlaying();
+                final long currentTime = mediaPlayer.status().time();
+                playVideo(
+                    videoStream,
+                    currentAudioStream,
+                    currentSubtitlesStream,
+                    currentTime
+                );
+                if (isPlaying) {
+                    mediaPlayer.controls().play();
+                }
+                currentVideoStream = videoStream;
+            }
+        }
+    }
+
+    private void onAudioComboBoxChanged(ItemEvent e) {
+        if (e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent) {
+            if (e.getItem() instanceof AudioStream audioStream) {
+                boolean isPlaying = mediaPlayer.status().isPlaying();
+                final long currentTime = mediaPlayer.status().time();
+                playVideo(
+                    currentVideoStream,
+                    audioStream,
+                    currentSubtitlesStream,
+                    currentTime
+                );
+                if (isPlaying) {
+                    mediaPlayer.controls().play();
+                }
+                currentAudioStream = audioStream;
+            }
+        }
+    }
+
+    private void onSubtitleComboBoxChanged(ItemEvent e) {
+        if (e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent) {
+            boolean isPlaying = mediaPlayer.status().isPlaying();
+            final long currentTime = mediaPlayer.status().time();
+            if (e.getItem() instanceof SubtitlesStream subtitlesStream) {
+                playVideo(
+                    currentVideoStream,
+                    currentAudioStream,
+                    subtitlesStream,
+                    currentTime
+                );
+
+                currentSubtitlesStream = subtitlesStream;
+            } else {
+                playVideo(
+                    currentVideoStream,
+                    currentAudioStream,
+                    null,
+                    currentTime
+                );
+                currentSubtitlesStream = null;
+            }
+            if (isPlaying) {
+                mediaPlayer.controls().play();
+            }
+        }
+    }
+
+    private void onCopyBtnPressed(ActionEvent e) {
+        try {
+            clipboard.setContents(
+                new StringSelection(streamExtractor.getUrl()),
+                null
+            );
+        } catch (ParsingException pe) {
+            pe.printStackTrace();
+        }
+    }
+
+    private void onOpenBrowserBtnPressed(ActionEvent e) {
+        if (Desktop.isDesktopSupported()) mediaPlayer.controls().pause();
+        try {
+            Desktop.getDesktop().browse(URI.create(streamExtractor.getUrl()));
+        } catch (IOException | ParsingException ioe) {
+            ioe.printStackTrace();
+        }
+    }
+
+    private void onOpenVLCBtnPressed(ActionEvent e) {
+        if (mediaPlayer.status().isPlaying()) {
+            mediaPlayer.controls().pause();
+        }
+        new Thread(() ->
+            VideoUtil.openVLC(streamExtractor, mainViewPort)
+        ).start();
+    }
+
+    private void onDownloadBtnPressed(ActionEvent e) {
+        if (mediaPlayer.status().isPlaying()) {
+            mediaPlayer.controls().pause();
+        }
+        new Thread(() ->
+            VideoUtil.downloadVideo(streamExtractor, false)
+        ).start();
     }
 
     public void showVideo(String videoUrl) {
@@ -734,7 +756,7 @@ public class VideoPage extends JPanel {
                     playbackSlider.setValue(0);
                     isPositionChanged = false;
                     downloadBtn.setEnabled(false);
-                    mediaPlayer.media().play(streamExtractor.getHlsUrl());
+                    mediaPlayer.media().prepare(streamExtractor.getHlsUrl());
                 } else {
                     List<VideoStream> videoStreams =
                         streamExtractor.getVideoOnlyStreams();
@@ -848,7 +870,9 @@ public class VideoPage extends JPanel {
                             startTime[0]
                         );
                     }
-                    mediaPlayer.controls().play();
+                    if (isAutoPlay) {
+                        mediaPlayer.controls().play();
+                    }
                 });
 
                 videoCommentPanel.fetchComment(videoUrl);
@@ -888,13 +912,6 @@ public class VideoPage extends JPanel {
             ":input-slave=" + currentAudioStream.getContent()
         );
 
-        // mediaApi
-        //     .slaves()
-        //     .add(
-        //         MediaSlaveType.AUDIO,
-        //         MediaSlavePriority.HIGH,
-        //         currentAudioStream.getContent()
-        //     );
         if (subtitlesStream != null) {
             mediaPlayer
                 .subpictures()
@@ -910,21 +927,25 @@ public class VideoPage extends JPanel {
         @Override
         public void playing(MediaPlayer mediaPlayer) {
             playButton.setIcon(IconRes.PAUSE_ICON);
+            playButton.setToolTipText("Pause");
         }
 
         @Override
         public void paused(MediaPlayer mediaPlayer) {
             playButton.setIcon(IconRes.PLAY_ARROW_ICON);
+            playButton.setToolTipText("Play");
         }
 
         @Override
         public void stopped(MediaPlayer mediaPlayer) {
             playButton.setIcon(IconRes.PLAY_ARROW_ICON);
+            playButton.setToolTipText("Play");
         }
 
         @Override
         public void finished(MediaPlayer mediaPlayer) {
             playButton.setIcon(IconRes.PLAY_ARROW_ICON);
+            playButton.setToolTipText("Play");
         }
 
         @Override

@@ -2,9 +2,9 @@ package org.zane.newpipe;
 
 import com.formdev.flatlaf.IntelliJTheme;
 import com.sun.jna.NativeLibrary;
-import java.util.Arrays;
-import javax.imageio.ImageIO;
-import javax.swing.JFrame;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import org.schabi.newpipe.extractor.NewPipe;
@@ -51,6 +51,19 @@ public class Main implements Runnable {
     )
     String vlcPath;
 
+    @Option(
+        names = { "-t", "--theme" },
+        description = "custom theme file JSON based on IntelliJ Theme",
+        paramLabel = "theme.json"
+    )
+    File theme;
+
+    @Option(
+        names = { "-n", "--no-auto-play" },
+        description = "stop auto playing"
+    )
+    boolean isNoAutoPlay;
+
     @Parameters(
         arity = "0..1",
         index = "0",
@@ -66,9 +79,32 @@ public class Main implements Runnable {
         NewPipe.init(new Downloader());
         UIManager.put("TabbedPane.tabAreaAlignment", "fill");
         UIManager.put("TabbedPane.tabWidthMode", "equal");
-        IntelliJTheme.setup(
-            App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
-        );
+        System.setProperty("java.net.preferIPv6Addresses", "true");
+        if (theme == null) {
+            IntelliJTheme.setup(
+                App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
+            );
+        } else {
+            try {
+                IntelliJTheme.setup(new FileInputStream(theme));
+            } catch (FileNotFoundException e) {
+                ArgSpec querySpec = null;
+                for (ArgSpec argSpec : spec.args()) {
+                    if (argSpec.paramLabel().equals("theme.json")) {
+                        querySpec = argSpec;
+                        break;
+                    }
+                }
+                throw new ParameterException(
+                    spec.commandLine(),
+                    "custom theme file not found",
+                    e,
+                    querySpec,
+                    theme.toString()
+                );
+            }
+        }
+
         if (vlcPath != null && !vlcPath.isBlank()) {
             vlcPath = vlcPath.trim();
             NativeLibrary.addSearchPath(
@@ -85,8 +121,9 @@ public class Main implements Runnable {
             } catch (UnsatisfiedLinkError e) {
                 ArgSpec querySpec = null;
                 for (ArgSpec argSpec : spec.args()) {
-                    if (argSpec.paramLabel() == "VLC Path") {
+                    if (argSpec.paramLabel().equals("VLC Path")) {
                         querySpec = argSpec;
+                        break;
                     }
                 }
                 throw new ParameterException(
@@ -110,7 +147,7 @@ public class Main implements Runnable {
                 SwingUtilities.invokeLater(() -> {
                     App app;
                     if (query == null || query.isBlank()) {
-                        app = new App();
+                        app = new App(!isNoAutoPlay);
                     } else {
                         app = new App(query);
                     }
@@ -121,8 +158,9 @@ public class Main implements Runnable {
                 if (query == null || query.isBlank()) {
                     ArgSpec querySpec = null;
                     for (ArgSpec argSpec : spec.args()) {
-                        if (argSpec.paramLabel() == "Query") {
+                        if (argSpec.paramLabel().equals("Query")) {
                             querySpec = argSpec;
+                            break;
                         }
                     }
                     throw new MissingParameterException(
@@ -137,8 +175,9 @@ public class Main implements Runnable {
                 if (query == null || query.isBlank()) {
                     ArgSpec querySpec = null;
                     for (ArgSpec argSpec : spec.args()) {
-                        if (argSpec.paramLabel() == "Query") {
+                        if (argSpec.paramLabel().equals("Query")) {
                             querySpec = argSpec;
+                            break;
                         }
                     }
                     throw new MissingParameterException(

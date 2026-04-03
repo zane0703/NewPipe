@@ -45,8 +45,19 @@ Unix(Linux, Mac)
 3. ***Locate the Executable:*** Once the build is successful, your executable JAR will be located at:
 <mark>app/build/libs/app-all.jar</mark>
 
+# CLI
+this application support  command line argument and flag for example you to launch a specific YouTube video immediately, use the following command:
+```sh
+java -jar newpipe.jar https://www.youtube.com/watch?v=dQw4w9WgXcQ
+```
+
+To view a full list of supported arguments, configuration flags, and available options, use the help command:
+```sh
+java -jar newpipe.jar -h
+```
+
 # FAQ
-- There already Freetube why develop a desktop port of NewPipe?
+- There already FreeTube why develop a desktop port of NewPipe?
   - I hate electron
 - Is this a fork?
   - No, because Java desktop and android framework are completely different but the backend engine is based on NewPipe Extractor
