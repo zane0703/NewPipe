@@ -6,7 +6,7 @@ An unofficial desktop port of the NewPipe Android application, built for Windows
 
 # Project Overview
 
-This project is a desktop implementation of the NewPipemobile experience. It is important to note that this is not a direct UI port. Because Android’s UI framework and Java Swing are fundamentally different APIs, the interface has been rebuilt from the ground up for a desktop-native experience.
+This project is a desktop implementation of the NewPipe mobile experience. It is important to note that this is not a direct UI port. Because Android’s UI framework and Java Swing are fundamentally different APIs, the interface has been rebuilt from the ground up for a desktop-native experience.
 
 ## How it Works
 
