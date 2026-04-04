@@ -80,6 +80,7 @@ public class Main implements Runnable {
         UIManager.put("TabbedPane.tabAreaAlignment", "fill");
         UIManager.put("TabbedPane.tabWidthMode", "equal");
         System.setProperty("java.net.preferIPv6Addresses", "true");
+        System.setProperty("java.net.preferIPv4Stack", "false");
         if (theme == null) {
             IntelliJTheme.setup(
                 App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
@@ -192,6 +193,7 @@ public class Main implements Runnable {
     }
 
     public static void main(String[] args) {
+        System.setProperty("picocli.ansi", "true");
         CommandLine cl = new CommandLine(new Main());
         cl.setCaseInsensitiveEnumValuesAllowed(true);
         int exitCode = cl.execute(args);

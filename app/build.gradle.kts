@@ -22,6 +22,9 @@ dependencies {
 
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.0")
     implementation("uk.co.caprica:vlcj:4.12.1")
+    implementation("org.eclipse.jetty:jetty-client:12.1.8")
+    implementation("org.eclipse.jetty.http3:jetty-http3-client:12.1.8")
+    implementation("org.eclipse.jetty.quic:jetty-quic-quiche-client:12.1.8")
     val flatlafVersion = "3.7.1"
     implementation( "com.formdev:flatlaf:${flatlafVersion}" )
     implementation( "com.formdev:flatlaf:${flatlafVersion}:linux-x86_64@so" )
@@ -37,6 +40,8 @@ dependencies {
     implementation( "com.formdev:flatlaf-extras:${flatlafVersion}" )
     implementation("info.picocli:picocli:4.7.7")
     implementation("org.sejda.imageio:webp-imageio:0.1.6")
+
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
