@@ -8,7 +8,9 @@ import java.awt.TrayIcon;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import org.schabi.newpipe.extractor.NewPipe;
@@ -116,12 +118,16 @@ public class Main implements Runnable {
         if (SystemTray.isSupported()) {
             try {
                 TrayIcon trayIcon2 = new TrayIcon(
-                    IconRes.LAUNCHER_ICON,
+                    ImageIO.read(
+                        IconRes.class.getResourceAsStream(
+                            "/ic_launcher_small.webp"
+                        )
+                    ),
                     "NewPipe"
                 );
                 SystemTray.getSystemTray().add(trayIcon2);
                 trayIcon.set(trayIcon2);
-            } catch (AWTException e) {
+            } catch (AWTException | IOException e) {
                 trayIcon.set(null);
             }
         }

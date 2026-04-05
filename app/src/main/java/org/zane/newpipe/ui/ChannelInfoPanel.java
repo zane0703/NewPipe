@@ -48,7 +48,7 @@ public class ChannelInfoPanel extends JPanel {
         String channelName,
         String channelAvatarURL,
         String channelURL,
-        long channelSubcraberCount,
+        long channelSubscriberCount,
         MainViewPort mainViewPort
     ) {
         super(new FlowLayout(FlowLayout.LEFT));
@@ -57,7 +57,7 @@ public class ChannelInfoPanel extends JPanel {
         channelAvatar = new JImage();
         channelNameLabel = new JLabel(channelName, SwingConstants.LEFT);
         channelSubCountLabel = new JLabel(
-            CommonUtil.numberToStringUnit(channelSubcraberCount) +
+            CommonUtil.numberToStringUnit(channelSubscriberCount) +
                 " subscribers",
             SwingConstants.LEFT
         );
