@@ -5,6 +5,8 @@ package org.zane.newpipe;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
@@ -29,25 +31,25 @@ public class App extends JFrame {
     private JPanel searchbar;
     private static App app;
     private boolean isSuggestionMenuFocus = false;
-    private JPopupMenu suggestionMenu;
+    private MyPopupMenu suggestionMenu;
+    private TrayIcon trayIcon;
 
-    public static App getInstance() {
-        return App.app;
+    public TrayIcon getTrayIcon() {
+        return trayIcon;
     }
 
-    public App(String searchQuery) {
-        this(false, false);
+    public App(String searchQuery, TrayIcon trayIcon) {
+        this(false, false, trayIcon);
         searchField.setText(searchQuery);
         searchButton.doClick();
     }
 
-    public App(boolean isAutoPlay) {
-        this(true, isAutoPlay);
+    public App(boolean isAutoPlay, TrayIcon trayIcon) {
+        this(true, isAutoPlay, trayIcon);
     }
 
-    private App(boolean showDefault, boolean isAutoPlay) {
-        App.app = this;
-
+    private App(boolean showDefault, boolean isAutoPlay, TrayIcon trayIcon) {
+        this.trayIcon = trayIcon;
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setTitle("NewPipe");
 
@@ -90,7 +92,10 @@ public class App extends JFrame {
         backBtn.addActionListener(e -> mainViewPort.back());
         searchbar.add(backBtn, BorderLayout.LINE_START);
         searchField = new JTextField(10);
-        suggestionMenu = new JPopupMenu();
+        suggestionMenu = new MyPopupMenu();
+
+        suggestionMenu.setWidth(searchField.getWidth());
+        searchField.addComponentListener(searchFieldComponentListener);
 
         searchbar.add(searchField, BorderLayout.CENTER);
         SuggestionExtractor suggestionExtractor =
@@ -192,7 +197,8 @@ public class App extends JFrame {
             searchButton::setEnabled,
             searchField::setText,
             showDefault,
-            isAutoPlay
+            isAutoPlay,
+            this
         );
         JScrollPane mainContent = new JScrollPane(
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
@@ -222,23 +228,29 @@ public class App extends JFrame {
         searchField.addActionListener(this::onSearchAction);
     }
 
-    public void setSearchbarVisible(boolean visible) {
+    public void setSearchBarVisible(boolean visible) {
         searchbar.setVisible(visible);
     }
+
+    ComponentListener searchFieldComponentListener = new ComponentAdapter() {
+        public void componentResized(java.awt.event.ComponentEvent e) {
+            suggestionMenu.setWidth(searchField.getWidth());
+        }
+    };
 
     public void onSearchAction(ActionEvent e) {
         MainViewPort.Page newPage;
 
-        String qurey = searchField.getText().trim();
+        String query = searchField.getText().trim();
         try {
-            URI uri = new URI(qurey);
+            URI uri = new URI(query);
             String host = uri.getHost();
             String path = uri.getPath();
             if (host == null) {
-                throw new URISyntaxException(qurey, "no Host");
+                throw new URISyntaxException(query, "no Host");
             }
             if (path == null) {
-                throw new URISyntaxException(qurey, "no Path");
+                throw new URISyntaxException(query, "no Path");
             }
             switch (host.toLowerCase()) {
                 case "youtube.com":
@@ -252,7 +264,7 @@ public class App extends JFrame {
                                 break;
                             case "hashtag":
                                 newPage = MainViewPort.Page.SEARCH;
-                                qurey = "#" + qurey;
+                                query = "#" + query;
                                 break;
                             default:
                                 if (paths[1].charAt(0) == '@') {
@@ -276,10 +288,26 @@ public class App extends JFrame {
         } catch (URISyntaxException err) {
             newPage = MainViewPort.Page.SEARCH;
         }
-        mainViewPort.navigate(new NavigateOption(newPage, qurey));
+        mainViewPort.navigate(new NavigateOption(newPage, query));
         SwingUtilities.invokeLater(() -> {
             mainViewPort.requestFocus();
             suggestionMenu.setVisible(false);
         });
+    }
+
+    public static class MyPopupMenu extends JPopupMenu {
+
+        private int width = 0;
+
+        public void setWidth(int width) {
+            this.width = width;
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension preferredSize = super.getPreferredSize();
+            System.out.println(width);
+            return new Dimension(this.width, preferredSize.height);
+        }
     }
 }

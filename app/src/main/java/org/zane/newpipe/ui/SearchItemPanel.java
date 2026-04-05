@@ -15,6 +15,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import org.schabi.newpipe.extractor.InfoItem;
+import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
@@ -205,7 +206,11 @@ public class SearchItemPanel extends JPanel {
                         IconRes.DOWNLOAD_ICON
                     );
                     downloadMenu.addActionListener(e ->
-                        VideoUtil.downloadVideo(item.getUrl(), false)
+                        VideoUtil.downloadVideo(
+                            item.getUrl(),
+                            false,
+                            mainViewPort.getApp().getTrayIcon()
+                        )
                     );
                     popupMenu.add(downloadMenu);
                 }
@@ -230,6 +235,16 @@ public class SearchItemPanel extends JPanel {
                     )
                 );
                 popupMenu.add(showChannelDetile2);
+                break;
+            case ChannelInfoItem ChannelInfoItem:
+                JLabel channelSubCountLabel = new JLabel(
+                    CommonUtil.numberToStringUnit(
+                            ChannelInfoItem.getSubscriberCount()
+                        ) +
+                        " Subscribers"
+                );
+                channelSubCountLabel.setForeground(Color.LIGHT_GRAY);
+                infoPanel.add(channelSubCountLabel);
                 break;
             default:
                 break;

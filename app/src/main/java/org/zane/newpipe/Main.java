@@ -2,12 +2,17 @@ package org.zane.newpipe;
 
 import com.formdev.flatlaf.IntelliJTheme;
 import com.sun.jna.NativeLibrary;
+import java.awt.AWTException;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import org.schabi.newpipe.extractor.NewPipe;
+import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.util.Downloader;
 import org.zane.newpipe.util.VideoUtil;
 import picocli.CommandLine;
@@ -79,8 +84,8 @@ public class Main implements Runnable {
         NewPipe.init(new Downloader());
         UIManager.put("TabbedPane.tabAreaAlignment", "fill");
         UIManager.put("TabbedPane.tabWidthMode", "equal");
-        System.setProperty("java.net.preferIPv6Addresses", "true");
-        System.setProperty("java.net.preferIPv4Stack", "false");
+
+        System.setProperty("flatlaf.useWindowDecorations", "false");
         if (theme == null) {
             IntelliJTheme.setup(
                 App.class.getResourceAsStream("/Darcula_Pitch_Black.theme.json")
@@ -103,6 +108,21 @@ public class Main implements Runnable {
                     querySpec,
                     theme.toString()
                 );
+            }
+        }
+
+        AtomicReference<TrayIcon> trayIcon = new AtomicReference<>(null);
+
+        if (SystemTray.isSupported()) {
+            try {
+                TrayIcon trayIcon2 = new TrayIcon(
+                    IconRes.LAUNCHER_ICON,
+                    "NewPipe"
+                );
+                SystemTray.getSystemTray().add(trayIcon2);
+                trayIcon.set(trayIcon2);
+            } catch (AWTException e) {
+                trayIcon.set(null);
             }
         }
 
@@ -148,9 +168,9 @@ public class Main implements Runnable {
                 SwingUtilities.invokeLater(() -> {
                     App app;
                     if (query == null || query.isBlank()) {
-                        app = new App(!isNoAutoPlay);
+                        app = new App(!isNoAutoPlay, trayIcon.get());
                     } else {
-                        app = new App(query);
+                        app = new App(query, trayIcon.get());
                     }
                     app.setVisible(true);
                 });
@@ -170,7 +190,7 @@ public class Main implements Runnable {
                         "Video URL are required for download mode."
                     );
                 }
-                VideoUtil.downloadVideo(query, true);
+                VideoUtil.downloadVideo(query, true, trayIcon.get());
                 break;
             case VLC:
                 if (query == null || query.isBlank()) {
@@ -193,6 +213,8 @@ public class Main implements Runnable {
     }
 
     public static void main(String[] args) {
+        System.setProperty("java.net.preferIPv6Addresses", "true");
+        System.setProperty("java.net.preferIPv4Stack", "false");
         System.setProperty("picocli.ansi", "true");
         CommandLine cl = new CommandLine(new Main());
         cl.setCaseInsensitiveEnumValuesAllowed(true);

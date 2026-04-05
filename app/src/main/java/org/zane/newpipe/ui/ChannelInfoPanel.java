@@ -53,28 +53,34 @@ public class ChannelInfoPanel extends JPanel {
     ) {
         super(new FlowLayout(FlowLayout.LEFT));
         this.channelURL = channelURL;
-        if (mainViewPort != null) {
-            this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            this.addMouseListener(new PanelClickListener(mainViewPort));
-        }
         JPanel uploaderSubInfo = new JPanel(new GridLayout(2, 1));
-        uploaderSubInfo.setOpaque(false);
         channelAvatar = new JImage();
-        channelAvatar.setMaximumSize(new Dimension(50, 50));
-        if (channelAvatarURL != null) {
-            setChanelAvatar(channelAvatarURL);
-        }
         channelNameLabel = new JLabel(channelName, SwingConstants.LEFT);
-        Font currentFont = channelNameLabel.getFont();
-        channelNameLabel.setFont(
-            currentFont.deriveFont(Font.BOLD, currentFont.getSize())
-        );
         channelSubCountLabel = new JLabel(
             CommonUtil.numberToStringUnit(channelSubcraberCount) +
                 " subscribers",
             SwingConstants.LEFT
         );
+
+        if (mainViewPort != null) {
+            this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            this.addMouseListener(new PanelClickListener(mainViewPort));
+        }
+
+        uploaderSubInfo.setOpaque(false);
+
+        channelAvatar.setMaximumSize(new Dimension(50, 50));
+        if (channelAvatarURL != null) {
+            setChanelAvatar(channelAvatarURL);
+        }
+
+        Font currentFont = channelNameLabel.getFont();
+        channelNameLabel.setFont(
+            currentFont.deriveFont(Font.BOLD, currentFont.getSize())
+        );
+
         channelSubCountLabel.setForeground(Color.LIGHT_GRAY);
+
         this.add(channelAvatar);
         uploaderSubInfo.add(channelNameLabel);
         uploaderSubInfo.add(channelSubCountLabel);

@@ -1,6 +1,7 @@
 package org.zane.newpipe.page;
 
 import java.awt.*;
+import java.awt.TrayIcon.MessageType;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -17,6 +18,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.swing.*;
@@ -48,6 +50,7 @@ import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaApi;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
+import uk.co.caprica.vlcj.player.base.VideoApi;
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 import uk.co.caprica.vlcj.player.embedded.FullScreenApi;
@@ -109,10 +112,12 @@ public class VideoPage extends JPanel {
     private JPanel videoTitlePanel;
     private Clipboard clipboard =
         Toolkit.getDefaultToolkit().getSystemClipboard();
+    private TrayIcon trayIcon;
 
     public VideoPage(MainViewPort mainViewPort, boolean isAutoPlay) {
         this.mainViewPort = mainViewPort;
         this.isAutoPlay = isAutoPlay;
+        this.trayIcon = mainViewPort.getApp().getTrayIcon();
 
         numberFormat = NumberFormat.getInstance();
 
@@ -123,10 +128,31 @@ public class VideoPage extends JPanel {
                     "--avcodec-hw=auto"
                 ),
                 null,
-                new AdaptiveFullScreenStrategy(App.getInstance()),
+                new AdaptiveFullScreenStrategy(mainViewPort.getApp()),
                 null,
                 null
-            );
+            ) {
+                private int screenHeight =
+                    Toolkit.getDefaultToolkit().getScreenSize().height - 20;
+
+                @Override
+                public Dimension getPreferredSize() {
+                    Dimension videoDimension = this.mediaPlayer()
+                        .video()
+                        .videoDimension();
+                    int width = VideoPage.this.getWidth();
+                    int height;
+                    if (videoDimension == null) {
+                        height = 0;
+                    } else {
+                        height = (int) (width *
+                            ((double) videoDimension.height /
+                                (double) videoDimension.width));
+                        height = Math.min(height, screenHeight);
+                    }
+                    return new Dimension(width, height);
+                }
+            };
         videoLenghtLabel = new JLabel("-:--:--");
         currentTimestampLabel = new JLabel("00:00");
         videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -227,6 +253,7 @@ public class VideoPage extends JPanel {
         oldWidth = maxSize.width;
         videoDescriptionText.setMaximumSize(maxSize);
         tagPanel.setMaximumSize(maxSize);
+        //mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
 
         //set cursor
         copyUrlBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -288,8 +315,6 @@ public class VideoPage extends JPanel {
         mediaPlayer
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
-
-        mediaPlayerComponent.setPreferredSize(new Dimension(500, 500));
 
         //add component
         this.add(mediaPlayerComponent);
@@ -399,7 +424,7 @@ public class VideoPage extends JPanel {
             new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    playButton.doClick();
+                    onPlayBtnPressed(null);
                 }
             }
         );
@@ -410,7 +435,7 @@ public class VideoPage extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     FullScreenApi fullScreenApi = mediaPlayer.fullScreen();
                     if (fullScreenApi.isFullScreen()) {
-                        onSpeedBtnPressed(null);
+                        onFullScreenBtnPressed(null);
                     }
                 }
             }
@@ -420,7 +445,7 @@ public class VideoPage extends JPanel {
             new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    onSpeedBtnPressed(null);
+                    onFullScreenBtnPressed(null);
                 }
             }
         );
@@ -569,7 +594,7 @@ public class VideoPage extends JPanel {
     private void onFullScreenBtnPressed(ActionEvent e) {
         FullScreenApi fullScreenApi = mediaPlayer.fullScreen();
         fullScreenApi.set(!fullScreenApi.isFullScreen());
-        App app = App.getInstance();
+        App app = mainViewPort.getApp();
         if (fullScreenApi.isFullScreen()) {
             fullScreenBtn.setIcon(IconRes.FULLSCREEN_EXIT_ICON);
             fullScreenBtn.setToolTipText("Exit FullScreen");
@@ -577,7 +602,7 @@ public class VideoPage extends JPanel {
             videoInfo.setVisible(false);
             videoMenuBtnPanel.setVisible(false);
             videoTitlePanel.setVisible(false);
-            app.setSearchbarVisible(false);
+            app.setSearchBarVisible(false);
         } else {
             fullScreenBtn.setIcon(IconRes.FULLSCREEN_ICON);
             fullScreenBtn.setToolTipText("Enter FullScreen");
@@ -585,7 +610,7 @@ public class VideoPage extends JPanel {
             videoInfo.setVisible(true);
             videoMenuBtnPanel.setVisible(true);
             videoTitlePanel.setVisible(true);
-            app.setSearchbarVisible(true);
+            app.setSearchBarVisible(true);
         }
     }
 
@@ -598,39 +623,123 @@ public class VideoPage extends JPanel {
     }
 
     private void onVideoComboBoxChanged(ItemEvent e) {
-        if (e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent) {
-            if (e.getItem() instanceof VideoStream videoStream) {
-                boolean isPlaying = mediaPlayer.status().isPlaying();
-                final long currentTime = mediaPlayer.status().time();
-                playVideo(
-                    videoStream,
-                    currentAudioStream,
-                    currentSubtitlesStream,
-                    currentTime
-                );
-                if (isPlaying) {
-                    mediaPlayer.controls().play();
-                }
-                currentVideoStream = videoStream;
+        if (isEnableComboxEvent) {
+            boolean isPlaying;
+            long currentTime;
+            switch (e.getStateChange()) {
+                case ItemEvent.SELECTED:
+                    if (e.getItem() instanceof VideoStream videoStream) {
+                        isPlaying = mediaPlayer.status().isPlaying();
+                        currentTime = mediaPlayer.status().time();
+                        playVideo(
+                            videoStream,
+                            currentAudioStream,
+                            currentSubtitlesStream,
+                            currentTime
+                        );
+
+                        currentVideoStream = videoStream;
+                    } else {
+                        return;
+                    }
+                    break;
+                case ItemEvent.DESELECTED:
+                    if (currentAudioStream == null) {
+                        if (trayIcon == null) {
+                            JOptionPane.showMessageDialog(
+                                mainViewPort,
+                                "Must have either video and Audio",
+                                "Changing Video",
+                                JOptionPane.ERROR
+                            );
+                        } else {
+                            trayIcon.displayMessage(
+                                "Must have either video and Audio",
+                                "",
+                                MessageType.ERROR
+                            );
+                        }
+                        isEnableComboxEvent = false;
+                        videoModel.setSelectedItem(currentVideoStream);
+                        isEnableComboxEvent = true;
+                        return;
+                    }
+                    isPlaying = mediaPlayer.status().isPlaying();
+                    currentTime = mediaPlayer.status().time();
+                    playVideo(
+                        null,
+                        currentAudioStream,
+                        currentSubtitlesStream,
+                        currentTime
+                    );
+                    currentVideoStream = null;
+                    break;
+                default:
+                    return;
+            }
+            if (isPlaying) {
+                mediaPlayer.controls().play();
             }
         }
     }
 
     private void onAudioComboBoxChanged(ItemEvent e) {
-        if (e.getStateChange() == ItemEvent.SELECTED && isEnableComboxEvent) {
-            if (e.getItem() instanceof AudioStream audioStream) {
-                boolean isPlaying = mediaPlayer.status().isPlaying();
-                final long currentTime = mediaPlayer.status().time();
-                playVideo(
-                    currentVideoStream,
-                    audioStream,
-                    currentSubtitlesStream,
-                    currentTime
-                );
-                if (isPlaying) {
-                    mediaPlayer.controls().play();
-                }
-                currentAudioStream = audioStream;
+        if (isEnableComboxEvent) {
+            boolean isPlaying;
+            long currentTime;
+            switch (e.getStateChange()) {
+                case ItemEvent.SELECTED:
+                    if (e.getItem() instanceof AudioStream audioStream) {
+                        isPlaying = mediaPlayer.status().isPlaying();
+                        currentTime = mediaPlayer.status().time();
+                        playVideo(
+                            currentVideoStream,
+                            audioStream,
+                            currentSubtitlesStream,
+                            currentTime
+                        );
+
+                        currentAudioStream = audioStream;
+                    } else {
+                        return;
+                    }
+                    break;
+                case ItemEvent.DESELECTED:
+                    if (currentVideoStream == null) {
+                        if (trayIcon == null) {
+                            JOptionPane.showMessageDialog(
+                                mainViewPort,
+                                "Must have either video and Audio",
+                                "Changing Audio",
+                                JOptionPane.ERROR
+                            );
+                        } else {
+                            trayIcon.displayMessage(
+                                "Must have either video and Audio",
+                                "",
+                                MessageType.ERROR
+                            );
+                        }
+                        isEnableComboxEvent = false;
+                        audioModel.setSelectedItem(currentAudioStream);
+                        isEnableComboxEvent = true;
+                        return;
+                    }
+                    isPlaying = mediaPlayer.status().isPlaying();
+                    currentTime = mediaPlayer.status().time();
+                    playVideo(
+                        currentVideoStream,
+                        null,
+                        currentSubtitlesStream,
+                        currentTime
+                    );
+                    currentAudioStream = null;
+                    break;
+                default:
+                    return;
+            }
+            if (isPlaying) {
+                mediaPlayer.controls().play();
             }
         }
     }
@@ -697,7 +806,7 @@ public class VideoPage extends JPanel {
             mediaPlayer.controls().pause();
         }
         new Thread(() ->
-            VideoUtil.downloadVideo(streamExtractor, false)
+            VideoUtil.downloadVideo(streamExtractor, false, this.trayIcon)
         ).start();
     }
 
@@ -772,7 +881,8 @@ public class VideoPage extends JPanel {
                     currentAudioStream = audioStreams.get(0);
 
                     currentSubtitlesStream = null;
-
+                    videoModel.addElement(null);
+                    audioModel.addElement(null);
                     videoModel.addAll(videoStreams);
                     audioModel.addAll(audioStreams);
                     videoComboBox.setEnabled(true);
@@ -906,12 +1016,23 @@ public class VideoPage extends JPanel {
     ) {
         this.requestFocus();
         MediaApi mediaApi = mediaPlayer.media();
-        mediaApi.prepare(
-            videoStream.getContent(),
+        String mrl;
+        String[] options = new String[] {
             String.format(":start-time=%.3f", currentTime / 1000.0),
-            ":input-slave=" + currentAudioStream.getContent()
-        );
+        };
 
+        if (videoStream == null) {
+            mrl = audioStream.getContent();
+        } else {
+            mrl = videoStream.getContent();
+            if (audioStream != null) {
+                options = new String[] {
+                    options[0],
+                    ":input-slave=" + currentAudioStream.getContent(),
+                };
+            }
+        }
+        mediaApi.prepare(mrl, options);
         if (subtitlesStream != null) {
             mediaPlayer
                 .subpictures()

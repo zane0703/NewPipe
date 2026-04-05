@@ -3,6 +3,7 @@ package org.zane.newpipe.util;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import java.awt.*;
 import java.awt.Taskbar;
+import java.awt.TrayIcon.MessageType;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -197,28 +198,27 @@ public class VideoUtil {
 
     public static void downloadVideo(
         String videoURL,
-        boolean isCloseAfterDone
+        boolean isCloseAfterDone,
+        TrayIcon trayIcon
     ) {
         new Thread(() -> {
-            new Thread(() -> {
-                try {
-                    StreamExtractor se = ServiceList.YouTube.getStreamExtractor(
-                        videoURL
-                    );
-                    se.fetchPage();
-                    downloadVideo(se, isCloseAfterDone);
-                } catch (ExtractionException | IOException ee) {
-                    ee.printStackTrace();
-                }
-            })
-                .start();
+            try {
+                StreamExtractor se = ServiceList.YouTube.getStreamExtractor(
+                    videoURL
+                );
+                se.fetchPage();
+                downloadVideo(se, isCloseAfterDone, trayIcon);
+            } catch (ExtractionException | IOException ee) {
+                ee.printStackTrace();
+            }
         })
             .start();
     }
 
     public static void downloadVideo(
         StreamExtractor se,
-        boolean isCloseAfterDone
+        boolean isCloseAfterDone,
+        TrayIcon trayIcon
     ) {
         try {
             List<VideoStream> videoStreams = se.getVideoOnlyStreams();
@@ -523,10 +523,18 @@ public class VideoUtil {
 
                             @Override
                             public void finished(MediaPlayer mediaPlayer) {
-                                JOptionPane.showMessageDialog(
-                                    dialog,
-                                    "Download Complated"
-                                );
+                                if (trayIcon == null) {
+                                    JOptionPane.showMessageDialog(
+                                        dialog,
+                                        "Download Completed"
+                                    );
+                                } else {
+                                    trayIcon.displayMessage(
+                                        "NewPipe Download",
+                                        "Download Completed",
+                                        MessageType.INFO
+                                    );
+                                }
                                 dialog.setVisible(false);
                             }
                         }

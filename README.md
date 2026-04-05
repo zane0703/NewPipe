@@ -27,18 +27,18 @@ You can download the latest pre-built versions of the application from the Relea
 
 # Build Guide
 1. ***Clone the Repository:***
-```sh
+```bash
 git clone https://github.com/zane0703/NewPipe
 cd NewPipe
 ```
 
 2. ***Build the Shadow JAR:*** Run the following command in your terminal to create an executable "fat" JAR containing all dependencies:<br/>
-Windows
+- Windows:
 ```bat
 .\gradlew.bat shadowJar
 ```
-Unix(Linux, Mac)
-```sh
+- Unix(Linux, Mac):
+```bash
 ./gradlew shadowJar
 ```
 
@@ -47,13 +47,13 @@ Unix(Linux, Mac)
 
 # CLI
 this application support  command line argument and flag for example you to launch a specific YouTube video immediately, use the following command:
-```sh
-java -jar newpipe.jar https://www.youtube.com/watch?v=dQw4w9WgXcQ
+```bash 
+java -jar NewPipe.jar https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```
 
 To view a full list of supported arguments, configuration flags, and available options, use the help command:
-```sh
-java -jar newpipe.jar -h
+```bash 
+java -jar NewPipe.jar -h
 ```
 
 # FAQ

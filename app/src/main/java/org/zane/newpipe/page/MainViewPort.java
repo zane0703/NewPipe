@@ -6,6 +6,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JViewport;
 import javax.swing.SwingConstants;
+import org.zane.newpipe.App;
 
 public class MainViewPort extends JViewport {
 
@@ -17,14 +18,21 @@ public class MainViewPort extends JViewport {
     private SetEnabledBtn setBackEnable;
     private SetEnabledBtn setSearchEnable;
     private SetText setSearchText;
+    private App app;
+
+    public App getApp() {
+        return app;
+    }
 
     public MainViewPort(
         SetEnabledBtn setBackEnable,
         SetEnabledBtn setSearchEnable,
         SetText setSearchText,
         boolean showDefault,
-        boolean isAutoPlay
+        boolean isAutoPlay,
+        App app
     ) {
+        this.app = app;
         this.setBackEnable = setBackEnable;
         this.setSearchEnable = setSearchEnable;
         this.setSearchText = setSearchText;
