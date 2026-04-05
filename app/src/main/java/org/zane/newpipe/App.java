@@ -133,17 +133,27 @@ public class App extends JFrame {
 
                 @Override
                 public void keyPressed(KeyEvent e) {
-                    if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-                        Component[] c = suggestionMenu.getComponents();
-                        if (c.length > 0) {
-                            c[0].requestFocus();
-                        }
+                    switch (e.getKeyCode()) {
+                        case KeyEvent.VK_DOWN:
+                            Component[] c = suggestionMenu.getComponents();
+                            if (c.length > 0) {
+                                c[0].requestFocus();
+                            }
+                            break;
+                        case KeyEvent.VK_ESCAPE:
+                            suggestionMenu.setVisible(false);
+                            mainViewPort.requestFocus();
+                            break;
                     }
                 }
 
                 @Override
                 public void keyTyped(KeyEvent e) {
-                    if (isSetText || e.getKeyChar() == '\n') return;
+                    if (
+                        isSetText ||
+                        e.getKeyChar() == '\n' ||
+                        e.getKeyChar() == 27
+                    ) return;
                     new Thread(() -> {
                         try {
                             List<String> suggestionList =
@@ -306,7 +316,6 @@ public class App extends JFrame {
         @Override
         public Dimension getPreferredSize() {
             Dimension preferredSize = super.getPreferredSize();
-            System.out.println(width);
             return new Dimension(this.width, preferredSize.height);
         }
     }
