@@ -31,7 +31,7 @@ import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
 @Command(
     name = "NewPipe Desktop",
     mixinStandardHelpOptions = true,
-    version = "NewPipe Desktop v0.3"
+    version = "NewPipe Desktop v0.4"
 )
 public class Main implements Runnable {
 
