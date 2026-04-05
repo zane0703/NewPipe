@@ -16,6 +16,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import javax.swing.*;
+import org.eclipse.jetty.quic.quiche.jna.bool;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.suggestion.SuggestionExtractor;
@@ -105,24 +106,28 @@ public class App extends JFrame {
 
         searchField.addFocusListener(
             new FocusAdapter() {
+                boolean isTemporary;
+
                 @Override
                 public void focusGained(FocusEvent fe) {
-                    // if (
-                    //     !suggestionMenu.isVisible() &&
-                    //     suggestionMenu.getComponentCount() > 0
-                    // ) {
-                    //     Rectangle bounds = searchField.getBounds();
-                    //     // Show the popup at (x, y + height) relative to the text field
-                    //     suggestionMenu.setFocusable(false);
-                    //     suggestionMenu.show(searchField, 0, bounds.height);
-                    //     suggestionMenu.setFocusable(true);
-                    //     //searchField.requestFocusInWindow();
-                    // }
+                    if (
+                        !suggestionMenu.isVisible() &&
+                        suggestionMenu.getComponentCount() > 0 &&
+                        !this.isTemporary
+                    ) {
+                        Rectangle bounds = searchField.getBounds();
+                        // Show the popup at (x, y + height) relative to the text field
+                        suggestionMenu.setFocusable(false);
+                        suggestionMenu.show(searchField, 0, bounds.height);
+                        suggestionMenu.setFocusable(true);
+                        //searchField.requestFocusInWindow();
+                    }
                 }
 
                 @Override
                 public void focusLost(FocusEvent fe) {
-                    if (fe.isTemporary()) return;
+                    this.isTemporary = fe.isTemporary();
+                    if (this.isTemporary) return;
                     suggestionMenu.setVisible(false);
                 }
             }
@@ -162,28 +167,38 @@ public class App extends JFrame {
                                 );
                             SwingUtilities.invokeLater(() -> {
                                 suggestionMenu.removeAll();
-                                for (String suggestion : suggestionList) {
-                                    JMenuItem suggestionMenuItem =
-                                        new JMenuItem(suggestion);
-                                    suggestionMenuItem.addActionListener(ee -> {
-                                        suggestionMenu.setVisible(false);
-                                        isSetText = true;
-                                        searchField.setText(suggestion);
-                                        isSetText = false;
-                                    });
-                                    suggestionMenu.add(suggestionMenuItem);
-                                }
-                                suggestionMenu.revalidate();
-                                if (!suggestionMenu.isVisible()) {
-                                    Rectangle bounds = searchField.getBounds();
-                                    // Show the popup at (x, y + height) relative to the text field
-                                    suggestionMenu.setFocusable(false);
-                                    suggestionMenu.show(
-                                        searchField,
-                                        0,
-                                        bounds.height
-                                    );
-                                    suggestionMenu.setFocusable(true);
+                                if (suggestionList.size() > 0) {
+                                    for (String suggestion : suggestionList) {
+                                        JMenuItem suggestionMenuItem =
+                                            new JMenuItem(suggestion);
+                                        suggestionMenuItem.addActionListener(
+                                            ee -> {
+                                                suggestionMenu.setVisible(
+                                                    false
+                                                );
+                                                isSetText = true;
+                                                searchField.setText(suggestion);
+                                                isSetText = false;
+                                            }
+                                        );
+                                        suggestionMenu.add(suggestionMenuItem);
+                                    }
+
+                                    if (!suggestionMenu.isVisible()) {
+                                        Rectangle bounds =
+                                            searchField.getBounds();
+                                        // Show the popup at (x, y + height) relative to the text field
+                                        suggestionMenu.setFocusable(false);
+                                        suggestionMenu.show(
+                                            searchField,
+                                            0,
+                                            bounds.height
+                                        );
+                                        suggestionMenu.setFocusable(true);
+                                    }
+                                    suggestionMenu.revalidate();
+                                } else {
+                                    suggestionMenu.setVisible(false);
                                 }
                             });
                         } catch (ExtractionException | IOException ee) {
