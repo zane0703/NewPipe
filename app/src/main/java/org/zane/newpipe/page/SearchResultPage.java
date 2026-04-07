@@ -37,15 +37,14 @@ public class SearchResultPage extends JPanel {
         this.se = se;
         nextBtn.setEnabled(false);
         preBtn.setEnabled(false);
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 itp = se.getInitialPage();
                 showPage();
             } catch (IOException | ExtractionException err) {
                 err.printStackTrace();
             }
-        })
-            .start();
+        });
     }
 
     public SearchResultPage(MainViewPort mainViewPort) {
@@ -81,7 +80,7 @@ public class SearchResultPage extends JPanel {
         resultListPanel.removeAll();
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
-        new Thread(this::onPreBtnPressed).start();
+        Thread.startVirtualThread(this::onPreBtnPressed);
     }
 
     public void onPreBtnPressed() {
@@ -116,7 +115,7 @@ public class SearchResultPage extends JPanel {
         resultListPanel.removeAll();
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
-        new Thread(this::onNextBtnPressed).start();
+        Thread.startVirtualThread(this::onNextBtnPressed);
     }
 
     private void onNextBtnPressed() {
@@ -145,7 +144,7 @@ public class SearchResultPage extends JPanel {
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
         currentPage = null;
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 se = ServiceList.YouTube.getSearchExtractor(query);
                 se.fetchPage();
@@ -159,8 +158,7 @@ public class SearchResultPage extends JPanel {
             } finally {
                 finaly.run();
             }
-        })
-            .start();
+        });
     }
 
     private void showPage() {

@@ -82,7 +82,7 @@ public class PlayListPage extends JPanel {
 
     private void onPreBtnClicked(ActionEvent e) {
         resultListPanel.removeAll();
-        new Thread(this::onPreBtnClicked).start();
+        Thread.startVirtualThread(this::onPreBtnClicked);
     }
 
     private void onPreBtnClicked() {
@@ -115,7 +115,7 @@ public class PlayListPage extends JPanel {
 
     private void onNextBtnClicked(ActionEvent e) {
         resultListPanel.removeAll();
-        new Thread(this::onNextBtnClicked).start();
+        Thread.startVirtualThread(this::onNextBtnClicked);
     }
 
     private void onNextBtnClicked() {
@@ -144,7 +144,7 @@ public class PlayListPage extends JPanel {
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
         currentPage = null;
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 pe = ServiceList.YouTube.getPlaylistExtractor(playListUrl);
                 pe.fetchPage();
@@ -171,8 +171,7 @@ public class PlayListPage extends JPanel {
             } catch (IOException | ExtractionException err) {
                 err.printStackTrace();
             }
-        })
-            .start();
+        });
     }
 
     private void showPage() {

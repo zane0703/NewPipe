@@ -36,7 +36,7 @@ public class VideoUtil {
     }
 
     public static void openVLC(String videoURL, Component component) {
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 StreamExtractor se = ServiceList.YouTube.getStreamExtractor(
                     videoURL
@@ -46,8 +46,7 @@ public class VideoUtil {
             } catch (ExtractionException | IOException ee) {
                 ee.printStackTrace();
             }
-        })
-            .start();
+        });
     }
 
     public static void openVLC(StreamExtractor se, Component component) {
@@ -69,7 +68,7 @@ public class VideoUtil {
             String uploaderName = se.getUploaderName();
             if (se.getStreamType() == StreamType.LIVE_STREAM) {
                 String hlsUrl = se.getHlsUrl();
-                new Thread(() -> {
+                Thread.startVirtualThread(() -> {
                     ProcessBuilder builder = new ProcessBuilder(
                         VideoUtil.vlcPath + "/vlc",
                         "--meta-title=" + videoTitle,
@@ -81,8 +80,7 @@ public class VideoUtil {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                })
-                    .start();
+                });
                 return;
             }
             List<VideoStream> videoStreams = se.getVideoOnlyStreams();
@@ -134,7 +132,7 @@ public class VideoUtil {
                     ) ==
                     JOptionPane.OK_OPTION
                 ) {
-                    new Thread(() -> {
+                    Thread.startVirtualThread(() -> {
                         VideoStream vs =
                             (VideoStream) videoComboBox.getSelectedItem();
                         AudioStream as =
@@ -177,8 +175,7 @@ public class VideoUtil {
                                 }
                             }
                         }
-                    })
-                        .start();
+                    });
                 } else {
                     if (component == null) {
                         optionComponent.setVisible(false);
@@ -201,7 +198,7 @@ public class VideoUtil {
         boolean isCloseAfterDone,
         TrayIcon trayIcon
     ) {
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 StreamExtractor se = ServiceList.YouTube.getStreamExtractor(
                     videoURL
@@ -211,8 +208,7 @@ public class VideoUtil {
             } catch (ExtractionException | IOException ee) {
                 ee.printStackTrace();
             }
-        })
-            .start();
+        });
     }
 
     public static void downloadVideo(
@@ -694,21 +690,21 @@ public class VideoUtil {
                 if (dotIndex > -1) {
                     codec = codec.subSequence(0, dotIndex).toString();
                 }
-                String text =
-                    codec +
-                    " " +
-                    CommonUtil.numberToStringUnit(audioStream.getBitrate()) +
-                    "bps";
-
+                StringBuilder text = new StringBuilder(codec)
+                    .append(' ')
+                    .append(
+                        CommonUtil.numberToStringUnit(audioStream.getBitrate())
+                    )
+                    .append("bps");
                 Locale locale = audioStream.getAudioLocale();
                 if (locale != null) {
-                    text += " " + locale.getDisplayLanguage();
+                    text.append(' ').append(locale.getDisplayLanguage());
                     String countryString = locale.getCountry();
                     if (countryString != null && !countryString.isBlank()) {
-                        text += "(" + locale.getCountry() + ")";
+                        text.append('(').append(countryString).append(')');
                     }
                 }
-                setText(text);
+                setText(text.toString());
             } else if (value == null) {
                 setText("None");
             }
@@ -741,11 +737,14 @@ public class VideoUtil {
                 if (locale == null) {
                     text = subtitlesStream.getDisplayLanguageName();
                 } else {
-                    text = locale.getDisplayLanguage();
+                    StringBuilder sb = new StringBuilder(
+                        locale.getDisplayLanguage()
+                    );
                     String countryName = locale.getCountry();
                     if (countryName != null && !countryName.isBlank()) {
-                        text += "(" + countryName + ")";
+                        sb.append('(').append(countryName).append(')');
                     }
+                    text = sb.toString();
                 }
                 setText(text);
             } else if (value == null) {

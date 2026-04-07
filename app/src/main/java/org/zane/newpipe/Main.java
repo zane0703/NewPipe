@@ -118,16 +118,14 @@ public class Main implements Runnable {
         if (SystemTray.isSupported()) {
             try {
                 TrayIcon trayIcon2 = new TrayIcon(
-                    ImageIO.read(
-                        IconRes.class.getResourceAsStream(
-                            "/ic_launcher_small.webp"
-                        )
-                    ),
+                    IconRes.LAUNCHER_ICON,
                     "NewPipe"
                 );
+
+                trayIcon2.setImageAutoSize(true);
                 SystemTray.getSystemTray().add(trayIcon2);
                 trayIcon.set(trayIcon2);
-            } catch (AWTException | IOException e) {
+            } catch (AWTException e) {
                 trayIcon.set(null);
             }
         }

@@ -796,22 +796,22 @@ public class VideoPage extends JPanel {
         if (mediaPlayer.status().isPlaying()) {
             mediaPlayer.controls().pause();
         }
-        new Thread(() ->
+        Thread.startVirtualThread(() ->
             VideoUtil.openVLC(streamExtractor, mainViewPort)
-        ).start();
+        );
     }
 
     private void onDownloadBtnPressed(ActionEvent e) {
         if (mediaPlayer.status().isPlaying()) {
             mediaPlayer.controls().pause();
         }
-        new Thread(() ->
+        Thread.startVirtualThread(() ->
             VideoUtil.downloadVideo(streamExtractor, false, this.trayIcon)
-        ).start();
+        );
     }
 
     public void showVideo(String videoUrl) {
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 long[] startTime = { 0 };
                 streamExtractor = ServiceList.YouTube.getStreamExtractor(
@@ -996,8 +996,7 @@ public class VideoPage extends JPanel {
                     showVideo(videoUrl);
                 }
             }
-        })
-            .start();
+        });
     }
 
     public void stop() {

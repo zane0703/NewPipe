@@ -44,15 +44,14 @@ public class CommentPanel extends JPanel {
         currentPage = page;
         this.ce = ce;
 
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 itp = ce.getPage(page);
                 showPage();
             } catch (IOException | ExtractionException err) {
                 err.printStackTrace();
             }
-        })
-            .start();
+        });
     }
 
     public CommentPanel(
@@ -84,7 +83,7 @@ public class CommentPanel extends JPanel {
         preBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         preBtn.addActionListener(e -> {
             mainCommentPanel.removeAll();
-            new Thread(() -> {
+            Thread.startVirtualThread(() -> {
                 try {
                     if (pageStack.isEmpty()) {
                         itp = ce.getInitialPage();
@@ -112,8 +111,7 @@ public class CommentPanel extends JPanel {
                 } catch (ExtractionException | IOException err) {
                     err.printStackTrace();
                 }
-            })
-                .start();
+            });
         });
         pageNevPanel.add(preBtn);
         pageNumLabel = new JLabel("1", SwingConstants.CENTER);
@@ -122,7 +120,7 @@ public class CommentPanel extends JPanel {
         nextBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         nextBtn.addActionListener(e -> {
             mainCommentPanel.removeAll();
-            new Thread(() -> {
+            Thread.startVirtualThread(() -> {
                 try {
                     Page nextPage = itp.getNextPage();
                     itp = ce.getPage(nextPage);
@@ -143,8 +141,7 @@ public class CommentPanel extends JPanel {
                 } catch (ExtractionException | IOException err) {
                     err.printStackTrace();
                 }
-            })
-                .start();
+            });
         });
         pageNevPanel.add(nextBtn);
         this.add(pageNevPanel, BorderLayout.SOUTH);
@@ -157,7 +154,7 @@ public class CommentPanel extends JPanel {
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
         currentPage = null;
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 ce = ServiceList.YouTube.getCommentsExtractor(videoURL);
                 ce.fetchPage();
@@ -166,8 +163,7 @@ public class CommentPanel extends JPanel {
             } catch (IOException | ExtractionException err) {
                 err.printStackTrace();
             }
-        })
-            .start();
+        });
     }
 
     private void showPage() {

@@ -99,7 +99,7 @@ public class ChannelPage extends JPanel {
 
     public void fetchChannel(String channelURL) {
         videoFeedListPanel.removeAll();
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 ChannelExtractor channelExtractor =
                     ServiceList.YouTube.getChannelExtractor(channelURL);
@@ -164,8 +164,7 @@ public class ChannelPage extends JPanel {
             } catch (ExtractionException | IOException | URISyntaxException e) {
                 e.printStackTrace();
             }
-        })
-            .start();
+        });
     }
 
     public void clear() {

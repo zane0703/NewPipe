@@ -159,7 +159,7 @@ public class App extends JFrame {
                         e.getKeyChar() == '\n' ||
                         e.getKeyChar() == 27
                     ) return;
-                    new Thread(() -> {
+                    Thread.startVirtualThread(() -> {
                         try {
                             List<String> suggestionList =
                                 suggestionExtractor.suggestionList(
@@ -204,8 +204,7 @@ public class App extends JFrame {
                         } catch (ExtractionException | IOException ee) {
                             ee.printStackTrace();
                         }
-                    })
-                        .start();
+                    });
                 }
             }
         );

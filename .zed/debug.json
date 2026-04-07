@@ -1,0 +1,17 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+  {
+    "label": "Gradle: Run App",
+    "adapter": "Java",
+    "request": "launch",
+    "mainClass": "org.zane.newpipe.Main",
+    "build": {
+      "command": "./gradlew",
+      "args": ["classes"],
+    },
+    "vmArgs": "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005",
+  },
+]

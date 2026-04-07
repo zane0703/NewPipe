@@ -126,7 +126,7 @@ public class CommentItemPanel extends JPanel {
 
                 JViewport scrollReplayViewPort = scrollReplay.getViewport();
                 scrollReplayViewPort.setPreferredSize(new Dimension(500, 500));
-                new Thread(() -> {
+                Thread.startVirtualThread(() -> {
                     try {
                         CommentPanel commentPanel = new CommentPanel(
                             mainViewPort,
@@ -148,8 +148,7 @@ public class CommentItemPanel extends JPanel {
                     } catch (Exception err) {
                         err.printStackTrace();
                     }
-                })
-                    .start();
+                });
             });
             replayPanel.add(replayBtn);
             commentInfoPanel.add(replayPanel);
