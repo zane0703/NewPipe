@@ -11,12 +11,14 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.Image;
+import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.channel.ChannelExtractor;
 import org.schabi.newpipe.extractor.channel.tabs.ChannelTabExtractor;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.zane.newpipe.ui.ChannelInfoPanel;
+import org.zane.newpipe.ui.ItemListPanel;
 import org.zane.newpipe.ui.JHTMLPane;
 import org.zane.newpipe.ui.JImage;
 import org.zane.newpipe.util.CommonUtil;
@@ -31,7 +33,7 @@ public class ChannelPage extends JPanel {
     private JHTMLPane channelInfoText;
     private JPanel tagListPanel;
     private JTabbedPane channelNevView;
-    private JPanel channelDetiledInfoPanel;
+    private JPanel channelDetailedInfoPanel;
 
     public ChannelPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
@@ -49,15 +51,15 @@ public class ChannelPage extends JPanel {
                 return d;
             }
         };
-        channelDetiledInfoPanel = new JPanel();
+        channelDetailedInfoPanel = new JPanel();
         JLabel tagLabel = new JLabel("Tag", SwingConstants.CENTER);
         tagListPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
         videoFeedListPanel = new JPanel();
         channelInfoText = new JHTMLPane("text/plain");
 
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        channelDetiledInfoPanel.setLayout(
-            new BoxLayout(channelDetiledInfoPanel, BoxLayout.Y_AXIS)
+        channelDetailedInfoPanel.setLayout(
+            new BoxLayout(channelDetailedInfoPanel, BoxLayout.Y_AXIS)
         );
         videoFeedListPanel.setLayout(
             new BoxLayout(videoFeedListPanel, BoxLayout.Y_AXIS)
@@ -79,9 +81,9 @@ public class ChannelPage extends JPanel {
 
         this.add(banner);
         this.add(channelInfoPanel);
-        channelDetiledInfoPanel.add(channelInfoText);
-        channelDetiledInfoPanel.add(tagLabel);
-        channelDetiledInfoPanel.add(tagListPanel);
+        channelDetailedInfoPanel.add(channelInfoText);
+        channelDetailedInfoPanel.add(tagLabel);
+        channelDetailedInfoPanel.add(tagListPanel);
         this.add(channelNevView);
     }
 
@@ -154,13 +156,12 @@ public class ChannelPage extends JPanel {
                     ChannelTabExtractor cte =
                         ServiceList.YouTube.getChannelTabExtractor(tabLink);
                     cte.fetchPage();
-                    SearchResultPage tabViewPanel = new SearchResultPage(
-                        mainViewPort,
-                        cte
-                    );
+                    ItemListPanel<InfoItem> tabViewPanel = new ItemListPanel<
+                        InfoItem
+                    >(mainViewPort, cte);
                     channelNevView.addTab(cte.getName(), tabViewPanel);
                 }
-                channelNevView.addTab("Info", channelDetiledInfoPanel);
+                channelNevView.addTab("Info", channelDetailedInfoPanel);
             } catch (ExtractionException | IOException | URISyntaxException e) {
                 e.printStackTrace();
             }
