@@ -162,14 +162,10 @@ public class ItemListPanel<T extends InfoItem> extends JPanel {
     private void showPage() {
         try {
             List<T> items = itp.getItems();
-            for (int i = 0; i < items.size(); ++i) {
-                InfoItem item = items.get(i);
-                SearchItemPanel searchItemPanel = new SearchItemPanel(
-                    mainViewPort,
-                    item
-                );
+            for (T item : items) {
+                ItemPanel itemPanel = new ItemPanel(mainViewPort, item);
                 SwingUtilities.invokeLater(() ->
-                    resultListPanel.add(searchItemPanel)
+                    resultListPanel.add(itemPanel)
                 );
             }
 

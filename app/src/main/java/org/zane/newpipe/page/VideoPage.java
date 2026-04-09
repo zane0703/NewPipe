@@ -18,7 +18,6 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.swing.*;
@@ -38,8 +37,8 @@ import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.ui.ChannelInfoPanel;
 import org.zane.newpipe.ui.CommentPanel;
 import org.zane.newpipe.ui.IconRes;
+import org.zane.newpipe.ui.ItemPanel;
 import org.zane.newpipe.ui.JHTMLPane;
-import org.zane.newpipe.ui.SearchItemPanel;
 import org.zane.newpipe.util.CommonUtil;
 import org.zane.newpipe.util.VideoUtil;
 import org.zane.newpipe.util.VideoUtil.AudioComboBoxRenderer;
@@ -935,7 +934,7 @@ public class VideoPage extends JPanel {
                             .getRelatedItems()
                             .getItems()) {
                             relatedStreamsPanel.add(
-                                new SearchItemPanel(mainViewPort, item)
+                                new ItemPanel(mainViewPort, item)
                             );
                         }
                         tagPanel.removeAll();

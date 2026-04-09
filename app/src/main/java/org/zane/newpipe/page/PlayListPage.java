@@ -1,32 +1,24 @@
 package org.zane.newpipe.page;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.text.NumberFormat;
-import java.util.ArrayDeque;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.schabi.newpipe.extractor.Image;
-import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
-import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.playlist.PlaylistExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
-import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.ItemListPanel;
-import org.zane.newpipe.ui.SearchItemPanel;
 
 public class PlayListPage extends ItemListPanel<StreamInfoItem> {
 
     private final MainViewPort mainViewPort;
     private PlaylistExtractor pe;
-    private InfoItemsPage<StreamInfoItem> itp;
     private JLabel playListTitleLabel;
     private JLabel playListSubInfo;
     private JLabel channelName;

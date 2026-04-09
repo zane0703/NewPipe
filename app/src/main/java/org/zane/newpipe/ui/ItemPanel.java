@@ -25,12 +25,12 @@ import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.util.CommonUtil;
 import org.zane.newpipe.util.VideoUtil;
 
-public class SearchItemPanel extends JPanel {
+public class ItemPanel extends JPanel {
 
     private final MainViewPort mainViewPort;
     private JPopupMenu popupMenu;
 
-    public SearchItemPanel(MainViewPort mainViewPort, InfoItem item)
+    public ItemPanel(MainViewPort mainViewPort, InfoItem item)
         throws IOException, URISyntaxException {
         super(new FlowLayout(FlowLayout.LEFT));
         this.mainViewPort = mainViewPort;
