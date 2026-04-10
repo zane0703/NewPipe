@@ -1,6 +1,7 @@
 package org.zane.newpipe.ui;
 
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
@@ -65,15 +66,15 @@ public class CommentItemPanel extends JPanel {
         );
 
         commentInfoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JPanel uploaderNamepPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel uploaderNamePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
         uploaderNameLabel = new JLabel(cit.getUploaderName());
         uploaderNameLabel.addMouseListener(ccl);
         uploaderNameLabel.setCursor(
             Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         );
-        uploaderNamepPanel.add(uploaderNameLabel);
-        commentInfoPanel.add(uploaderNamepPanel);
+        uploaderNamePanel.add(uploaderNameLabel);
+        commentInfoPanel.add(uploaderNamePanel);
         JHTMLPane commentText = new JHTMLPane();
         commentText.setText(cit.getCommentText().getContent());
         commentText.setMaximumSize(
@@ -155,22 +156,16 @@ public class CommentItemPanel extends JPanel {
         }
 
         this.addComponentListener(
-            new ComponentListener() {
+            new ComponentAdapter() {
                 @Override
-                public void componentHidden(ComponentEvent e) {}
-
-                @Override
-                public void componentShown(ComponentEvent e) {}
-
-                public void componentMoved(ComponentEvent e) {}
-
                 public void componentResized(ComponentEvent e) {
                     commentText.setMaximumSize(
                         new Dimension(
-                            getPreferredSize().width - jImage.getWidth() - 100,
+                            getWidth() - jImage.getWidth() - 100,
                             Integer.MAX_VALUE
                         )
                     );
+                    commentInfoPanel.updateUI();
                 }
             }
         );

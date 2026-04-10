@@ -41,15 +41,8 @@ public class MainViewPort extends JViewport {
         videoPage = new VideoPage(this, isAutoPlay);
         nevigateHistory = new ArrayDeque<>();
         if (showDefault) {
-            JPanel defultPage = new JPanel(new BorderLayout());
-            defultPage.add(
-                new JLabel(
-                    "Try searching to get started",
-                    SwingConstants.CENTER
-                ),
-                BorderLayout.CENTER
-            );
-            this.setView(defultPage);
+            currentPage = new NavigateOption(Page.HOME, null);
+            this.setView(new HomePage(this));
         }
     }
 
@@ -109,6 +102,9 @@ public class MainViewPort extends JViewport {
 
     private void SwitchView(NavigateOption navigateOption) {
         switch (navigateOption.PAGE) {
+            case HOME:
+                this.setView(new HomePage(this));
+                break;
             case SEARCH:
                 setSearchEnable.setEnabled(false);
                 searchResultPage.search(navigateOption.QUERY, () -> {
@@ -134,6 +130,7 @@ public class MainViewPort extends JViewport {
     }
 
     public static enum Page {
+        HOME,
         SEARCH,
         VIDEO,
         CHANNEL,

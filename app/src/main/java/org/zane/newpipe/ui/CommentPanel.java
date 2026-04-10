@@ -25,7 +25,7 @@ public class CommentPanel extends JPanel {
     private ArrayDeque<Page> pageStack;
     private InfoItemsPage<CommentsInfoItem> itp;
     private Page currentPage;
-    private boolean isReplay;
+    private boolean isReply;
     private HyperlinkListener hyperlinkListener;
     private JViewport viewport;
 
@@ -37,7 +37,7 @@ public class CommentPanel extends JPanel {
         Page page
     ) {
         this(mainViewPort, viewport, hyperlinkListener);
-        isReplay = true;
+        isReply = true;
         pageNumLabel.setText("1");
         preBtn.setEnabled(false);
         nextBtn.setEnabled(false);
@@ -70,7 +70,7 @@ public class CommentPanel extends JPanel {
         this.mainViewPort = mainViewPort;
         this.viewport = viewport;
         this.hyperlinkListener = hyperlinkListener;
-        isReplay = false;
+        isReply = false;
         pageStack = new ArrayDeque<>();
         mainCommentPanel = new JPanel();
         mainCommentPanel.setLayout(
@@ -100,12 +100,13 @@ public class CommentPanel extends JPanel {
                         int stackSize = pageStack.size();
                         SwingUtilities.invokeLater(() -> {
                             pageNumLabel.setText(
-                                Integer.toString(stackSize + (isReplay ? 1 : 2))
+                                Integer.toString(stackSize + (isReply ? 1 : 2))
                             );
+                            if (isReply && stackSize < 1) {
+                                preBtn.setEnabled(false);
+                            }
                         });
-                        if (isReplay && stackSize < 1) {
-                            preBtn.setEnabled(false);
-                        }
+                        
                         currentPage = prePage;
                     }
                 } catch (ExtractionException | IOException err) {
@@ -132,7 +133,7 @@ public class CommentPanel extends JPanel {
                     SwingUtilities.invokeLater(() -> {
                         pageNumLabel.setText(
                             Integer.toString(
-                                pageStack.size() + (isReplay ? 1 : 2)
+                                pageStack.size() + (isReply ? 1 : 2)
                             )
                         );
                         preBtn.setEnabled(true);
