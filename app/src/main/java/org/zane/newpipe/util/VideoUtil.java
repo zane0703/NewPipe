@@ -55,16 +55,6 @@ public class VideoUtil {
                 return;
             }
 
-            Component optionComponent = switch (component) {
-                case null -> {
-                    Frame frame = new Frame();
-                    frame.setIconImage(IconRes.LAUNCHER_ICON);
-                    frame.setUndecorated(true);
-                    frame.setVisible(true);
-                    yield frame;
-                }
-                default -> component;
-            };
             String videoTitle = se.getName();
             String uploaderName = se.getUploaderName();
             if (se.getStreamType() == StreamType.LIVE_STREAM) {
@@ -91,6 +81,7 @@ public class VideoUtil {
             JPanel videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
             DefaultComboBoxModel<VideoStream> videoModel =
                 new DefaultComboBoxModel<>();
+            videoModel.addElement(null);
             videoModel.addAll(videoStreams);
             videoModel.setSelectedItem(videoStreams.get(0));
             JComboBox<VideoStream> videoComboBox = new JComboBox<VideoStream>(
@@ -101,6 +92,7 @@ public class VideoUtil {
             videoContol.add(videoComboBox);
             DefaultComboBoxModel<AudioStream> audioModel =
                 new DefaultComboBoxModel<>();
+            audioModel.addElement(null);
             audioModel.addAll(audioStreams);
             audioModel.setSelectedItem(audioStreams.get(0));
             JComboBox<AudioStream> audioComboBox = new JComboBox<AudioStream>(
@@ -124,6 +116,16 @@ public class VideoUtil {
             }
             JComboBox<SubtitlesStream> subtitleComboBox2 = subtitleComboBox;
             SwingUtilities.invokeLater(() -> {
+                Component optionComponent = switch (component) {
+                    case null -> {
+                        Frame frame = new Frame();
+                        frame.setIconImage(IconRes.LAUNCHER_ICON);
+                        frame.setUndecorated(true);
+                        frame.setVisible(true);
+                        yield frame;
+                    }
+                    default -> component;
+                };
                 if (
                     JOptionPane.showConfirmDialog(
                         optionComponent,
@@ -134,40 +136,54 @@ public class VideoUtil {
                     JOptionPane.OK_OPTION
                 ) {
                     Thread.startVirtualThread(() -> {
-                        VideoStream vs =
-                            (VideoStream) videoComboBox.getSelectedItem();
-                        AudioStream as =
-                            (AudioStream) audioComboBox.getSelectedItem();
-                        SubtitlesStream ss = null;
-                        if (subtitleComboBox2 != null) {
-                            ss =
-                                (SubtitlesStream) subtitleComboBox2.getSelectedItem();
-                        }
-
-                        ArrayList<String> commands = new ArrayList<>(6);
-                        commands.add(VideoUtil.vlcPath + "/vlc");
-                        commands.add("--meta-title=" + videoTitle);
-                        commands.add("--meta-artist=" + uploaderName);
-                        // commands.add(videoTitle);
-                        if (ss != null) {
-                            commands.add(
-                                "--input-slave=" +
-                                    as.getContent() +
-                                    "#" +
-                                    ss.getContent()
-                            );
-                            commands.add("--sub-track=1");
-                        } else {
-                            commands.add("--input-slave=" + as.getContent());
-                        }
-                        commands.add(vs.getContent());
-                        ProcessBuilder processBuilder = new ProcessBuilder(
-                            commands
-                        );
                         try {
-                            processBuilder.start();
-                        } catch (IOException ioe) {
-                            ioe.printStackTrace();
+                            VideoStream vs =
+                                (VideoStream) videoComboBox.getSelectedItem();
+                            AudioStream as =
+                                (AudioStream) audioComboBox.getSelectedItem();
+                            SubtitlesStream ss = null;
+                            if (subtitleComboBox2 != null) {
+                                ss =
+                                    (SubtitlesStream) subtitleComboBox2.getSelectedItem();
+                            }
+                            if (vs == null && as == null) {
+                                JOptionPane.showMessageDialog(
+                                    optionComponent,
+                                    "Must have either video or audio"
+                                );
+                                openVLC(se, optionComponent);
+                                return;
+                            }
+
+                            ArrayList<String> commands = new ArrayList<>(6);
+                            commands.add(VideoUtil.vlcPath + "/vlc");
+                            commands.add("--meta-title=" + videoTitle);
+                            commands.add("--meta-artist=" + uploaderName);
+                            ArrayList<String> slaveList = new ArrayList<>(2);
+                            if (vs != null && as != null) {
+                                slaveList.add(as.getContent());
+                            }
+                            if (ss != null) {
+                                slaveList.add(ss.getContent());
+                                commands.add("--sub-track=1");
+                            }
+                            if (!slaveList.isEmpty()) {
+                                commands.add(
+                                    "--input-slave=" +
+                                        String.join("#", slaveList)
+                                );
+                            }
+                            commands.add(
+                                vs == null ? as.getContent() : vs.getContent()
+                            );
+                            ProcessBuilder processBuilder = new ProcessBuilder(
+                                commands
+                            );
+                            try {
+                                processBuilder.start();
+                            } catch (IOException ioe) {
+                                ioe.printStackTrace();
+                            }
                         } finally {
                             if (component == null) {
                                 optionComponent.setVisible(false);
@@ -178,14 +194,12 @@ public class VideoUtil {
                             }
                         }
                     });
-                } else {
-                    if (component == null) {
-                        optionComponent.setVisible(false);
-                        if (optionComponent instanceof Frame frame) {
-                            frame.dispose();
-                        }
-                        System.exit(0);
+                } else if (component == null) {
+                    optionComponent.setVisible(false);
+                    if (optionComponent instanceof Frame frame) {
+                        frame.dispose();
                     }
+                    System.exit(0);
                 }
             });
         } catch (ExtractionException | IOException err) {
