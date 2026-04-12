@@ -101,13 +101,6 @@ public class App extends JFrame {
         searchbar.add(searchField, BorderLayout.CENTER);
         SuggestionExtractor suggestionExtractor =
             ServiceList.YouTube.getSuggestionExtractor();
-        try {
-            System.out.println(
-                ServiceList.YouTube.getKioskList().getDefaultKioskExtractor()
-            );
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         searchField.add(suggestionMenu);
         searchField.setComponentPopupMenu(suggestionMenu);
 

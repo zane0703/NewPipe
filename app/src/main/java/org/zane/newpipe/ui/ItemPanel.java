@@ -31,20 +31,34 @@ public class ItemPanel extends JPanel {
     private JPopupMenu popupMenu;
 
     public ItemPanel(MainViewPort mainViewPort, InfoItem item)
-            throws IOException, URISyntaxException {
+        throws IOException, URISyntaxException {
         super(new FlowLayout(FlowLayout.LEFT));
         this.mainViewPort = mainViewPort;
-        popupMenu = new JPopupMenu();
+        popupMenu = new JPopupMenu("video");
         this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         BufferedImage image = ImageIO.read(
-                new URI(item.getThumbnails().get(0).getUrl()).toURL());
+            new URI(item.getThumbnails().get(0).getUrl()).toURL()
+        );
         // JPanel t = new JPanel(new SpringLayout());
         JPanel layeredPane = new JPanel();
         layeredPane.setLayout(new OverlayLayout(layeredPane));
 
         // layeredPane.setPreferredSize(new Dimension(200, 100));
-        JImage thumbnaillabel = new JImage(image, this);
-        thumbnaillabel.setMaximumSize(new Dimension(200, 200));
+        JImage thumbnailLabel = new JImage(image, this);
+        thumbnailLabel.setMaximumSize(new Dimension(200, 200));
+        String itemName = item.getName();
+        JLabel popUpLabel = new JLabel(
+            itemName.length() > 30
+                ? itemName.substring(0, 30) + "..."
+                : itemName
+        );
+        Font currentFont = popUpLabel.getFont();
+        popUpLabel.setFont(
+            currentFont.deriveFont(Font.BOLD, currentFont.getSize())
+        );
+        popupMenu.add(popUpLabel);
+        popupMenu.addSeparator();
+
         viaItemType: switch (item) {
             case StreamInfoItem streamInfoItem:
                 JLabel videoTypeLabel;
@@ -52,8 +66,9 @@ public class ItemPanel extends JPanel {
                     case LIVE_STREAM:
                     case AUDIO_LIVE_STREAM:
                         videoTypeLabel = new JLabel(
-                                "LIVE",
-                                SwingConstants.RIGHT);
+                            "LIVE",
+                            SwingConstants.RIGHT
+                        );
                         videoTypeLabel.setBackground(new Color(255, 0, 0, 200));
                         break;
                     default:
@@ -62,9 +77,11 @@ public class ItemPanel extends JPanel {
                             break viaItemType;
                         }
                         videoTypeLabel = new JLabel(
-                                CommonUtil.getTimeString(
-                                        streamInfoItem.getDuration()),
-                                SwingConstants.RIGHT);
+                            CommonUtil.getTimeString(
+                                streamInfoItem.getDuration()
+                            ),
+                            SwingConstants.RIGHT
+                        );
                         videoTypeLabel.setBackground(new Color(0, 0, 0, 200));
                         break;
                 }
@@ -73,38 +90,41 @@ public class ItemPanel extends JPanel {
                 videoTypeLabel.setAlignmentX(1.0f); // Anchor to Right
                 videoTypeLabel.setAlignmentY(1.0f); // Anchor to Bottom
                 layeredPane.add(videoTypeLabel);
-                thumbnaillabel.setAlignmentX(1.0f);
-                thumbnaillabel.setAlignmentY(1.0f);
+                thumbnailLabel.setAlignmentX(1.0f);
+                thumbnailLabel.setAlignmentY(1.0f);
                 break;
             case PlaylistInfoItem playlistInfoItem:
                 JPanel videoCountLabelPanel = new JPanel(new BorderLayout());
 
                 videoCountLabelPanel.setOpaque(false);
                 JLabel videoCountLabel = new JLabel(
-                        CommonUtil.numberToStringUnit(
-                                playlistInfoItem.getStreamCount()),
-                        IconRes.PLAYLIST_PLAY_ICON,
-                        SwingConstants.CENTER);
+                    CommonUtil.numberToStringUnit(
+                        playlistInfoItem.getStreamCount()
+                    ),
+                    IconRes.PLAYLIST_PLAY_ICON,
+                    SwingConstants.CENTER
+                );
                 videoCountLabel.setBackground(new Color(0, 0, 0, 200));
                 videoCountLabel.setOpaque(true);
                 videoCountLabel.setBorder(new EmptyBorder(0, 10, 0, 10));
                 videoCountLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
                 videoCountLabel.setHorizontalTextPosition(
-                        SwingConstants.CENTER);
+                    SwingConstants.CENTER
+                );
                 videoCountLabelPanel.setAlignmentX(1.0f);
                 videoCountLabelPanel.setAlignmentY(0.0f);
                 videoCountLabelPanel.add(videoCountLabel, BorderLayout.EAST);
                 layeredPane.add(videoCountLabelPanel);
-                thumbnaillabel.setAlignmentX(1.0f);
-                thumbnaillabel.setAlignmentY(0.0f);
+                thumbnailLabel.setAlignmentX(1.0f);
+                thumbnailLabel.setAlignmentY(0.0f);
                 break;
             default:
                 break;
         }
 
-        thumbnaillabel.repaint();
+        thumbnailLabel.repaint();
 
-        layeredPane.add(thumbnaillabel);
+        layeredPane.add(thumbnailLabel);
 
         // t.add(thumbnaillabel);
         SwingUtilities.invokeLater(() -> {
@@ -112,17 +132,19 @@ public class ItemPanel extends JPanel {
         });
         JPanel infoPanel = new JPanel(new GridLayout(3, 1));
         JHTMLPane itemTitle = new JHTMLPane();
-        Font currentFont = itemTitle.getFont();
+        currentFont = itemTitle.getFont();
         itemTitle.setFont(
-                currentFont.deriveFont(Font.BOLD, currentFont.getSize()));
+            currentFont.deriveFont(Font.BOLD, currentFont.getSize())
+        );
         infoPanel.setBackground(new Color(0, 0, 0, 0));
         infoPanel.setOpaque(false);
-        itemTitle.setText(item.getName());
+        itemTitle.setText(itemName);
         infoPanel.add(itemTitle);
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         JMenuItem openInBrowser = new JMenuItem(
-                "Open in Browser",
-                IconRes.LANGUAGE_ICON);
+            "Open in Browser",
+            IconRes.LANGUAGE_ICON
+        );
         openInBrowser.addActionListener(e -> {
             if (Desktop.isDesktopSupported()) {
                 try {
@@ -134,23 +156,30 @@ public class ItemPanel extends JPanel {
         });
         popupMenu.add(openInBrowser);
         JMenuItem copyURL = new JMenuItem("Copy URL", IconRes.COPY_ICON);
-        copyURL.addActionListener(e -> clipboard.setContents(new StringSelection(item.getUrl()), null));
+        copyURL.addActionListener(e ->
+            clipboard.setContents(new StringSelection(item.getUrl()), null)
+        );
         popupMenu.add(copyURL);
         switch (item) {
             case StreamInfoItem streamInfoItem:
                 JLabel uploaderLabel = new JLabel(
-                        streamInfoItem.getUploaderName());
+                    streamInfoItem.getUploaderName()
+                );
                 uploaderLabel.setForeground(Color.LIGHT_GRAY);
                 infoPanel.add(uploaderLabel);
-                String viewLabelString = CommonUtil.numberToStringUnit(
-                        streamInfoItem.getViewCount()) +
-                        " views";
+                String viewLabelString =
+                    CommonUtil.numberToStringUnit(
+                        streamInfoItem.getViewCount()
+                    ) +
+                    " views";
 
                 DateWrapper uploadDate = streamInfoItem.getUploadDate();
                 if (uploadDate != null) {
-                    viewLabelString += "· " +
-                            CommonUtil.formatRelativeTime(
-                                    uploadDate.getLocalDateTime());
+                    viewLabelString +=
+                        "· " +
+                        CommonUtil.formatRelativeTime(
+                            uploadDate.getLocalDateTime()
+                        );
                 }
                 JLabel viewLabel = new JLabel(viewLabelString);
 
@@ -158,49 +187,69 @@ public class ItemPanel extends JPanel {
                 infoPanel.add(viewLabel);
 
                 JMenuItem showChannelDetile = new JMenuItem(
-                        "Show channel Details",
-                        IconRes.LIVE_TV_ICON);
-                showChannelDetile.addActionListener(e -> mainViewPort.navigate(
+                    "Show channel Details",
+                    IconRes.LIVE_TV_ICON
+                );
+                showChannelDetile.addActionListener(e ->
+                    mainViewPort.navigate(
                         new NavigateOption(
-                                MainViewPort.Page.CHANNEL,
-                                streamInfoItem.getUploaderUrl())));
+                            MainViewPort.Page.CHANNEL,
+                            streamInfoItem.getUploaderUrl()
+                        )
+                    )
+                );
                 popupMenu.add(showChannelDetile);
                 JMenuItem openInVlc = new JMenuItem(
-                        "Open in VLC media player",
-                        IconRes.VLC_ICON);
-                openInVlc.addActionListener(e -> VideoUtil.openVLC(item.getUrl(), mainViewPort));
+                    "Open in VLC media player",
+                    IconRes.VLC_ICON
+                );
+                openInVlc.addActionListener(e ->
+                    VideoUtil.openVLC(item.getUrl(), mainViewPort)
+                );
                 popupMenu.add(openInVlc);
                 if (streamInfoItem.getStreamType() == StreamType.VIDEO_STREAM) {
                     JMenuItem downloadMenu = new JMenuItem(
-                            "Download video",
-                            IconRes.DOWNLOAD_ICON);
-                    downloadMenu.addActionListener(e -> VideoUtil.downloadVideo(
+                        "Download video",
+                        IconRes.DOWNLOAD_ICON
+                    );
+                    downloadMenu.addActionListener(e ->
+                        VideoUtil.downloadVideo(
                             item.getUrl(),
                             false,
-                            mainViewPort.getApp().getTrayIcon()));
+                            mainViewPort.getApp().getTrayIcon()
+                        )
+                    );
                     popupMenu.add(downloadMenu);
                 }
                 break;
             case PlaylistInfoItem playlistInfo:
                 JLabel uploaderLabel2 = new JLabel(
-                        playlistInfo.getUploaderName());
+                    playlistInfo.getUploaderName()
+                );
                 uploaderLabel2.setForeground(Color.LIGHT_GRAY);
                 infoPanel.add(uploaderLabel2);
                 JMenuItem showChannelDetile2 = new JMenuItem(
-                        "Show channel Details",
-                        IconRes.LIVE_TV_ICON);
+                    "Show channel Details",
+                    IconRes.LIVE_TV_ICON
+                );
                 showChannelDetile2.setForeground(Color.LIGHT_GRAY);
-                showChannelDetile2.addActionListener(e -> mainViewPort.navigate(
+                showChannelDetile2.addActionListener(e ->
+                    mainViewPort.navigate(
                         new NavigateOption(
-                                MainViewPort.Page.CHANNEL,
-                                playlistInfo.getUploaderUrl())));
+                            MainViewPort.Page.CHANNEL,
+                            playlistInfo.getUploaderUrl()
+                        )
+                    )
+                );
                 popupMenu.add(showChannelDetile2);
                 break;
             case ChannelInfoItem ChannelInfoItem:
                 JLabel channelSubCountLabel = new JLabel(
-                        CommonUtil.numberToStringUnit(
-                                ChannelInfoItem.getSubscriberCount()) +
-                                " Subscribers");
+                    CommonUtil.numberToStringUnit(
+                            ChannelInfoItem.getSubscriberCount()
+                        ) +
+                        " Subscribers"
+                );
                 channelSubCountLabel.setForeground(Color.LIGHT_GRAY);
                 infoPanel.add(channelSubCountLabel);
                 break;
@@ -213,20 +262,23 @@ public class ItemPanel extends JPanel {
 
         SwingUtilities.invokeLater(() -> {
             this.add(infoPanel);
-            thumbnaillabel.updateUI();
+            thumbnailLabel.updateUI();
             layeredPane.updateUI();
         });
         this.addComponentListener(
-                new ComponentAdapter() {
-                    public void componentResized(ComponentEvent e) {
-                        itemTitle.setMaximumSize(
-                                new Dimension(
-                                        getWidth() - thumbnaillabel.getWidth() - 20,
-                                        Integer.MAX_VALUE));
-                        infoPanel.updateUI();
-                        layeredPane.updateUI();
-                    }
-                });
+            new ComponentAdapter() {
+                public void componentResized(ComponentEvent e) {
+                    itemTitle.setMaximumSize(
+                        new Dimension(
+                            getWidth() - thumbnailLabel.getWidth() - 20,
+                            Integer.MAX_VALUE
+                        )
+                    );
+                    infoPanel.updateUI();
+                    layeredPane.updateUI();
+                }
+            }
+        );
     }
 
     private class PanelClickListener implements MouseListener {
@@ -258,17 +310,16 @@ public class ItemPanel extends JPanel {
                     return;
             }
             mainViewPort.navigate(
-                    new NavigateOption(newPage, infoItem.getUrl()));
+                new NavigateOption(newPage, infoItem.getUrl())
+            );
         }
 
         // Other MouseListener methods (must be implemented, even if empty)
         @Override
-        public void mousePressed(MouseEvent e) {
-        }
+        public void mousePressed(MouseEvent e) {}
 
         @Override
-        public void mouseReleased(MouseEvent e) {
-        }
+        public void mouseReleased(MouseEvent e) {}
 
         @Override
         public void mouseEntered(MouseEvent e) {

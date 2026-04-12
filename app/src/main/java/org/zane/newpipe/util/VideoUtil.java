@@ -54,9 +54,10 @@ public class VideoUtil {
             if (VideoUtil.vlcPath == null) {
                 return;
             }
+
             Component optionComponent = switch (component) {
                 case null -> {
-                    JFrame frame = new JFrame();
+                    Frame frame = new Frame();
                     frame.setIconImage(IconRes.LAUNCHER_ICON);
                     frame.setUndecorated(true);
                     frame.setVisible(true);
@@ -170,18 +171,20 @@ public class VideoUtil {
                         } finally {
                             if (component == null) {
                                 optionComponent.setVisible(false);
-                                if (optionComponent instanceof JFrame frame) {
+                                if (optionComponent instanceof Frame frame) {
                                     frame.dispose();
                                 }
+                                System.exit(0);
                             }
                         }
                     });
                 } else {
                     if (component == null) {
                         optionComponent.setVisible(false);
-                        if (optionComponent instanceof JFrame frame) {
+                        if (optionComponent instanceof Frame frame) {
                             frame.dispose();
                         }
+                        System.exit(0);
                     }
                 }
             });

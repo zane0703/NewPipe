@@ -68,6 +68,8 @@ public class MainViewPort extends JViewport {
                 case SEARCH:
                     searchResultPage.clearResult();
                     break;
+                case CHANNEL:
+                    channelPage.clear();
                 default:
                     break;
             }

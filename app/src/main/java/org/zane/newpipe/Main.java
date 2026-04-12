@@ -3,6 +3,8 @@ package org.zane.newpipe;
 import com.formdev.flatlaf.IntelliJTheme;
 import com.sun.jna.NativeLibrary;
 import java.awt.AWTException;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.io.File;
@@ -11,6 +13,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.imageio.ImageIO;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import org.schabi.newpipe.extractor.NewPipe;
@@ -117,9 +121,14 @@ public class Main implements Runnable {
 
         if (SystemTray.isSupported()) {
             try {
+                PopupMenu trayPopUpMenu = new PopupMenu("NewPipe");
+                MenuItem exitMenuItem = new MenuItem("Exit");
+                exitMenuItem.addActionListener(e -> System.exit(0));
+                trayPopUpMenu.add(exitMenuItem);
                 TrayIcon trayIcon2 = new TrayIcon(
                     IconRes.LAUNCHER_ICON,
-                    "NewPipe"
+                    "NewPipe",
+                    trayPopUpMenu
                 );
 
                 trayIcon2.setImageAutoSize(true);

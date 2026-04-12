@@ -101,7 +101,7 @@ public class VideoPage extends JPanel {
     private boolean isLive;
     private int oldWidth;
     private JButton downloadBtn;
-    private JTabbedPane viewport;
+    private JTabbedPane tabbedPane;
     private int currentSpeedStep = 25;
     private boolean isAutoPlay;
     private JButton speedBtn;
@@ -197,7 +197,7 @@ public class VideoPage extends JPanel {
             IconRes.LANGUAGE_ICON
         );
         downloadBtn = new JButton("Download", IconRes.DOWNLOAD_ICON);
-        viewport = new JTabbedPane() {
+        tabbedPane = new JTabbedPane() {
             @Override
             public Dimension getPreferredSize() {
                 Dimension d = super.getPreferredSize();
@@ -267,7 +267,7 @@ public class VideoPage extends JPanel {
         playbackSlider.setCursor(
             Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         );
-        viewport.addMouseMotionListener(CommonUtil.TABBED_CURSOR);
+        tabbedPane.addMouseMotionListener(CommonUtil.TABBED_CURSOR);
 
         //combox Renderer
         videoComboBox.setRenderer(new VideoComboBoxRenderer());
@@ -310,7 +310,7 @@ public class VideoPage extends JPanel {
         downloadBtn.addActionListener(this::onDownloadBtnPressed);
         fullScreenBtn.addActionListener(this::onFullScreenBtnPressed);
         videoDescriptionText.addHyperlinkListener(this::onHyperlinkPressed);
-        viewport.addChangeListener(e -> viewport.revalidate());
+        tabbedPane.addChangeListener(e -> tabbedPane.revalidate());
         mediaPlayer
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
@@ -376,11 +376,15 @@ public class VideoPage extends JPanel {
         videoDescriptionPanel.add(descriptionMetadata);
         videoDescriptionPanel.add(tagPanel);
 
-        viewport.addTab(null, IconRes.COMMENT_ICON, videoCommentPanel);
-        viewport.addTab(null, IconRes.ART_TRACK_ICON, relatedStreamsPanel);
-        viewport.addTab(null, IconRes.DESCRIPTION_ICON, videoDescriptionPanel);
+        tabbedPane.addTab(null, IconRes.COMMENT_ICON, videoCommentPanel);
+        tabbedPane.addTab(null, IconRes.ART_TRACK_ICON, relatedStreamsPanel);
+        tabbedPane.addTab(
+            null,
+            IconRes.DESCRIPTION_ICON,
+            videoDescriptionPanel
+        );
 
-        this.add(viewport);
+        this.add(tabbedPane);
 
         this.setFocusable(true);
         //keymap
@@ -597,7 +601,7 @@ public class VideoPage extends JPanel {
         if (fullScreenApi.isFullScreen()) {
             fullScreenBtn.setIcon(IconRes.FULLSCREEN_EXIT_ICON);
             fullScreenBtn.setToolTipText("Exit FullScreen");
-            viewport.setVisible(false);
+            tabbedPane.setVisible(false);
             videoInfo.setVisible(false);
             videoMenuBtnPanel.setVisible(false);
             videoTitlePanel.setVisible(false);
@@ -605,7 +609,7 @@ public class VideoPage extends JPanel {
         } else {
             fullScreenBtn.setIcon(IconRes.FULLSCREEN_ICON);
             fullScreenBtn.setToolTipText("Enter FullScreen");
-            viewport.setVisible(true);
+            tabbedPane.setVisible(true);
             videoInfo.setVisible(true);
             videoMenuBtnPanel.setVisible(true);
             videoTitlePanel.setVisible(true);
