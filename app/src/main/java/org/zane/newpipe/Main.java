@@ -37,7 +37,7 @@ import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
 @Command(
     name = "NewPipe Desktop",
     mixinStandardHelpOptions = true,
-    version = "NewPipe Desktop v0.4"
+    version = "NewPipe Desktop v0.5"
 )
 public class Main implements Runnable {
 
@@ -130,7 +130,6 @@ public class Main implements Runnable {
                     "NewPipe",
                     trayPopUpMenu
                 );
-
                 trayIcon2.setImageAutoSize(true);
                 SystemTray.getSystemTray().add(trayIcon2);
                 trayIcon.set(trayIcon2);

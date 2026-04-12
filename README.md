@@ -43,7 +43,7 @@ cd NewPipe
 ```
 
 3. ***Locate the Executable:*** Once the build is successful, your executable JAR will be located at:
-<mark>app/build/libs/app-all.jar</mark>
+<mark>app/build/libs/NewPipe.jar</mark>
 
 # CLI
 this application support  command line argument and flag for example you to launch a specific YouTube video immediately, use the following command:
