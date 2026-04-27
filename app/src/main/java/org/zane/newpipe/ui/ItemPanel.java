@@ -28,23 +28,22 @@ import org.zane.newpipe.util.VideoUtil;
 public class ItemPanel extends JPanel {
 
     private final MainViewPort mainViewPort;
-    private JPopupMenu popupMenu;
+    JPopupMenu popupMenu;
+    JPanel layeredPane;
+    JImage thumbnailLabel;
+    JPanel infoPanel;
 
-    public ItemPanel(MainViewPort mainViewPort, InfoItem item)
+    ItemPanel(MainViewPort mainViewPort, InfoItem item)
         throws IOException, URISyntaxException {
         super(new FlowLayout(FlowLayout.LEFT));
         this.mainViewPort = mainViewPort;
         popupMenu = new JPopupMenu("video");
-        this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
         BufferedImage image = ImageIO.read(
             new URI(item.getThumbnails().get(0).getUrl()).toURL()
-        );
-        // JPanel t = new JPanel(new SpringLayout());
-        JPanel layeredPane = new JPanel();
-        layeredPane.setLayout(new OverlayLayout(layeredPane));
-
-        // layeredPane.setPreferredSize(new Dimension(200, 100));
-        JImage thumbnailLabel = new JImage(image, this);
+        ); // JPanel t = new JPanel(new SpringLayout());
+        layeredPane = new JPanel();
+        thumbnailLabel = new JImage(image, this);
         thumbnailLabel.setMaximumSize(new Dimension(200, 200));
         String itemName = item.getName();
         JLabel popUpLabel = new JLabel(
@@ -52,90 +51,32 @@ public class ItemPanel extends JPanel {
                 ? itemName.substring(0, 30) + "..."
                 : itemName
         );
+
         Font currentFont = popUpLabel.getFont();
+        infoPanel = new JPanel();
+        JHTMLPane itemTitle = new JHTMLPane();
+
+        layeredPane.setLayout(new OverlayLayout(layeredPane));
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.PAGE_AXIS));
+
         popUpLabel.setFont(
             currentFont.deriveFont(Font.BOLD, currentFont.getSize())
         );
+        // MarqueePanel marquee = new MarqueePanel(10, 5);
+        // marquee.add(popUpLabel);
         popupMenu.add(popUpLabel);
         popupMenu.addSeparator();
+        this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        viaItemType: switch (item) {
-            case StreamInfoItem streamInfoItem:
-                JLabel videoTypeLabel;
-                switch (streamInfoItem.getStreamType()) {
-                    case LIVE_STREAM:
-                    case AUDIO_LIVE_STREAM:
-                        videoTypeLabel = new JLabel(
-                            "LIVE",
-                            SwingConstants.RIGHT
-                        );
-                        videoTypeLabel.setBackground(new Color(255, 0, 0, 200));
-                        break;
-                    default:
-                        long videoDuration = streamInfoItem.getDuration();
-                        if (videoDuration < 0) {
-                            break viaItemType;
-                        }
-                        videoTypeLabel = new JLabel(
-                            CommonUtil.getTimeString(
-                                streamInfoItem.getDuration()
-                            ),
-                            SwingConstants.RIGHT
-                        );
-                        videoTypeLabel.setBackground(new Color(0, 0, 0, 200));
-                        break;
-                }
-                videoTypeLabel.setBorder(new EmptyBorder(0, 0, 5, 5));
-                videoTypeLabel.setOpaque(true);
-                videoTypeLabel.setAlignmentX(1.0f); // Anchor to Right
-                videoTypeLabel.setAlignmentY(1.0f); // Anchor to Bottom
-                layeredPane.add(videoTypeLabel);
-                thumbnailLabel.setAlignmentX(1.0f);
-                thumbnailLabel.setAlignmentY(1.0f);
-                break;
-            case PlaylistInfoItem playlistInfoItem:
-                JPanel videoCountLabelPanel = new JPanel(new BorderLayout());
-
-                videoCountLabelPanel.setOpaque(false);
-                JLabel videoCountLabel = new JLabel(
-                    CommonUtil.numberToStringUnit(
-                        playlistInfoItem.getStreamCount()
-                    ),
-                    IconRes.PLAYLIST_PLAY_ICON,
-                    SwingConstants.CENTER
-                );
-                videoCountLabel.setBackground(new Color(0, 0, 0, 200));
-                videoCountLabel.setOpaque(true);
-                videoCountLabel.setBorder(new EmptyBorder(0, 10, 0, 10));
-                videoCountLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
-                videoCountLabel.setHorizontalTextPosition(
-                    SwingConstants.CENTER
-                );
-                videoCountLabelPanel.setAlignmentX(1.0f);
-                videoCountLabelPanel.setAlignmentY(0.0f);
-                videoCountLabelPanel.add(videoCountLabel, BorderLayout.EAST);
-                layeredPane.add(videoCountLabelPanel);
-                thumbnailLabel.setAlignmentX(1.0f);
-                thumbnailLabel.setAlignmentY(0.0f);
-                break;
-            default:
-                break;
-        }
-
-        thumbnailLabel.repaint();
-
-        layeredPane.add(thumbnailLabel);
-
-        // t.add(thumbnaillabel);
         SwingUtilities.invokeLater(() -> {
             this.add(layeredPane);
         });
-        JPanel infoPanel = new JPanel(new GridLayout(3, 1));
-        JHTMLPane itemTitle = new JHTMLPane();
+
         currentFont = itemTitle.getFont();
         itemTitle.setFont(
             currentFont.deriveFont(Font.BOLD, currentFont.getSize())
         );
+        itemTitle.setAlignmentX(0);
         infoPanel.setBackground(new Color(0, 0, 0, 0));
         infoPanel.setOpaque(false);
         itemTitle.setText(itemName);
@@ -160,102 +101,6 @@ public class ItemPanel extends JPanel {
             clipboard.setContents(new StringSelection(item.getUrl()), null)
         );
         popupMenu.add(copyURL);
-        switch (item) {
-            case StreamInfoItem streamInfoItem:
-                JLabel uploaderLabel = new JLabel(
-                    streamInfoItem.getUploaderName()
-                );
-                uploaderLabel.setForeground(Color.LIGHT_GRAY);
-                infoPanel.add(uploaderLabel);
-                String viewLabelString =
-                    CommonUtil.numberToStringUnit(
-                        streamInfoItem.getViewCount()
-                    ) +
-                    " views";
-
-                DateWrapper uploadDate = streamInfoItem.getUploadDate();
-                if (uploadDate != null) {
-                    viewLabelString +=
-                        "· " +
-                        CommonUtil.formatRelativeTime(
-                            uploadDate.getLocalDateTime()
-                        );
-                }
-                JLabel viewLabel = new JLabel(viewLabelString);
-
-                viewLabel.setForeground(Color.LIGHT_GRAY);
-                infoPanel.add(viewLabel);
-
-                JMenuItem showChannelDetile = new JMenuItem(
-                    "Show channel Details",
-                    IconRes.LIVE_TV_ICON
-                );
-                showChannelDetile.addActionListener(e ->
-                    mainViewPort.navigate(
-                        new NavigateOption(
-                            MainViewPort.Page.CHANNEL,
-                            streamInfoItem.getUploaderUrl()
-                        )
-                    )
-                );
-                popupMenu.add(showChannelDetile);
-                JMenuItem openInVlc = new JMenuItem(
-                    "Open in VLC media player",
-                    IconRes.VLC_ICON
-                );
-                openInVlc.addActionListener(e ->
-                    VideoUtil.openVLC(item.getUrl(), mainViewPort)
-                );
-                popupMenu.add(openInVlc);
-                if (streamInfoItem.getStreamType() == StreamType.VIDEO_STREAM) {
-                    JMenuItem downloadMenu = new JMenuItem(
-                        "Download video",
-                        IconRes.DOWNLOAD_ICON
-                    );
-                    downloadMenu.addActionListener(e ->
-                        VideoUtil.downloadVideo(
-                            item.getUrl(),
-                            false,
-                            mainViewPort.getApp().getTrayIcon()
-                        )
-                    );
-                    popupMenu.add(downloadMenu);
-                }
-                break;
-            case PlaylistInfoItem playlistInfo:
-                JLabel uploaderLabel2 = new JLabel(
-                    playlistInfo.getUploaderName()
-                );
-                uploaderLabel2.setForeground(Color.LIGHT_GRAY);
-                infoPanel.add(uploaderLabel2);
-                JMenuItem showChannelDetile2 = new JMenuItem(
-                    "Show channel Details",
-                    IconRes.LIVE_TV_ICON
-                );
-                showChannelDetile2.setForeground(Color.LIGHT_GRAY);
-                showChannelDetile2.addActionListener(e ->
-                    mainViewPort.navigate(
-                        new NavigateOption(
-                            MainViewPort.Page.CHANNEL,
-                            playlistInfo.getUploaderUrl()
-                        )
-                    )
-                );
-                popupMenu.add(showChannelDetile2);
-                break;
-            case ChannelInfoItem ChannelInfoItem:
-                JLabel channelSubCountLabel = new JLabel(
-                    CommonUtil.numberToStringUnit(
-                            ChannelInfoItem.getSubscriberCount()
-                        ) +
-                        " Subscribers"
-                );
-                channelSubCountLabel.setForeground(Color.LIGHT_GRAY);
-                infoPanel.add(channelSubCountLabel);
-                break;
-            default:
-                break;
-        }
 
         this.setComponentPopupMenu(popupMenu);
         this.addMouseListener(new PanelClickListener(item));
@@ -337,5 +182,212 @@ public class ItemPanel extends JPanel {
         Dimension size = super.getPreferredSize();
         int maxSize = Math.min(size.width, mainViewPort.getWidth());
         return new Dimension(maxSize, size.height);
+    }
+
+    public static class StreamInfoPanel extends ItemPanel {
+
+        public StreamInfoPanel(
+            MainViewPort mainViewPort,
+            StreamInfoItem streamInfoItem
+        ) throws IOException, URISyntaxException {
+            super(mainViewPort, streamInfoItem);
+            JLabel uploaderLabel = new JLabel(streamInfoItem.getUploaderName());
+            JMenuItem showChannelDetails = new JMenuItem(
+                "Show channel Details",
+                IconRes.LIVE_TV_ICON
+            );
+            JMenuItem openInVlc = new JMenuItem(
+                "Open in VLC media player",
+                IconRes.VLC_ICON
+            );
+
+            String viewLabelString =
+                CommonUtil.numberToStringUnit(streamInfoItem.getViewCount()) +
+                " views";
+
+            DateWrapper uploadDate = streamInfoItem.getUploadDate();
+            if (uploadDate != null) {
+                viewLabelString +=
+                    "· " +
+                    CommonUtil.formatRelativeTime(
+                        uploadDate.getLocalDateTime()
+                    );
+            }
+            JLabel viewLabel = new JLabel(viewLabelString);
+
+            JLabel videoTypeLabel;
+            viaItemType: {
+                switch (streamInfoItem.getStreamType()) {
+                    case LIVE_STREAM:
+                    case AUDIO_LIVE_STREAM:
+                        videoTypeLabel = new JLabel(
+                            "LIVE",
+                            SwingConstants.RIGHT
+                        );
+                        videoTypeLabel.setBackground(new Color(255, 0, 0, 200));
+                        break;
+                    default:
+                        long videoDuration = streamInfoItem.getDuration();
+                        if (videoDuration < 0) {
+                            break viaItemType;
+                        }
+                        videoTypeLabel = new JLabel(
+                            CommonUtil.getTimeString(
+                                streamInfoItem.getDuration()
+                            ),
+                            SwingConstants.RIGHT
+                        );
+                        videoTypeLabel.setBackground(new Color(0, 0, 0, 200));
+                        break;
+                }
+                videoTypeLabel.setBorder(new EmptyBorder(0, 0, 5, 5));
+                videoTypeLabel.setOpaque(true);
+                videoTypeLabel.setAlignmentX(1.0f); // Anchor to Right
+                videoTypeLabel.setAlignmentY(1.0f); // Anchor to Bottom
+                layeredPane.add(videoTypeLabel);
+                thumbnailLabel.setAlignmentX(1.0f);
+                thumbnailLabel.setAlignmentY(1.0f);
+            }
+            thumbnailLabel.repaint();
+            layeredPane.add(thumbnailLabel);
+
+            uploaderLabel.setAlignmentX(0);
+            viewLabel.setAlignmentX(0);
+
+            uploaderLabel.setForeground(Color.LIGHT_GRAY);
+            viewLabel.setForeground(Color.LIGHT_GRAY);
+
+            showChannelDetails.addActionListener(e ->
+                mainViewPort.navigate(
+                    new NavigateOption(
+                        MainViewPort.Page.CHANNEL,
+                        streamInfoItem.getUploaderUrl()
+                    )
+                )
+            );
+            openInVlc.addActionListener(e ->
+                VideoUtil.openVLC(streamInfoItem.getUrl(), mainViewPort)
+            );
+            infoPanel.add(uploaderLabel);
+            infoPanel.add(viewLabel);
+            popupMenu.add(showChannelDetails);
+            popupMenu.add(openInVlc);
+            if (streamInfoItem.getStreamType() == StreamType.VIDEO_STREAM) {
+                JMenuItem downloadMenu = new JMenuItem(
+                    "Download video",
+                    IconRes.DOWNLOAD_ICON
+                );
+                downloadMenu.addActionListener(e ->
+                    VideoUtil.downloadVideo(
+                        streamInfoItem.getUrl(),
+                        false,
+                        mainViewPort.getApp().getTrayIcon()
+                    )
+                );
+                popupMenu.add(downloadMenu);
+            }
+        }
+    }
+
+    public static class ChannelInfoPanel extends ItemPanel {
+
+        public ChannelInfoPanel(
+            MainViewPort mainViewPort,
+            ChannelInfoItem channelInfoItem
+        ) throws IOException, URISyntaxException {
+            super(mainViewPort, channelInfoItem);
+            JLabel channelSubCountLabel = new JLabel(
+                CommonUtil.numberToStringUnit(
+                        channelInfoItem.getSubscriberCount()
+                    ) +
+                    " Subscribers"
+            );
+            String description = channelInfoItem.getDescription();
+            JHTMLPane descriptionLabel = new JHTMLPane("text/plain");
+            descriptionLabel.setText(
+                description.length() > 200
+                    ? description.substring(0, 200) + "..."
+                    : description
+            );
+
+            this.addComponentListener(
+                new ComponentAdapter() {
+                    public void componentResized(ComponentEvent e) {
+                        descriptionLabel.setMaximumSize(
+                            new Dimension(
+                                getWidth() - thumbnailLabel.getWidth() - 20,
+                                Integer.MAX_VALUE
+                            )
+                        );
+                    }
+                }
+            );
+            channelSubCountLabel.setAlignmentX(0);
+            descriptionLabel.setAlignmentX(0);
+
+            channelSubCountLabel.setForeground(Color.LIGHT_GRAY);
+            descriptionLabel.setForeground(Color.LIGHT_GRAY);
+
+            thumbnailLabel.repaint();
+            layeredPane.add(thumbnailLabel);
+
+            infoPanel.add(descriptionLabel);
+            infoPanel.add(channelSubCountLabel);
+            descriptionLabel.updateUI();
+        }
+    }
+
+    public static class PlayListInfoPanel extends ItemPanel {
+
+        public PlayListInfoPanel(
+            MainViewPort mainViewPort,
+            PlaylistInfoItem playlistInfoItem
+        ) throws IOException, URISyntaxException {
+            super(mainViewPort, playlistInfoItem);
+            JPanel videoCountLabelPanel = new JPanel(new BorderLayout());
+
+            videoCountLabelPanel.setOpaque(false);
+            JLabel videoCountLabel = new JLabel(
+                CommonUtil.numberToStringUnit(
+                    playlistInfoItem.getStreamCount()
+                ),
+                IconRes.PLAYLIST_PLAY_ICON,
+                SwingConstants.CENTER
+            );
+            videoCountLabel.setBackground(new Color(0, 0, 0, 200));
+            videoCountLabel.setOpaque(true);
+            videoCountLabel.setBorder(new EmptyBorder(0, 10, 0, 10));
+            videoCountLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
+            videoCountLabel.setHorizontalTextPosition(SwingConstants.CENTER);
+            videoCountLabelPanel.setAlignmentX(1.0f);
+            videoCountLabelPanel.setAlignmentY(0.0f);
+            videoCountLabelPanel.add(videoCountLabel, BorderLayout.EAST);
+            layeredPane.add(videoCountLabelPanel);
+            thumbnailLabel.setAlignmentX(1.0f);
+            thumbnailLabel.setAlignmentY(0.0f);
+            thumbnailLabel.repaint();
+            layeredPane.add(thumbnailLabel);
+            JLabel uploaderLabel = new JLabel(
+                playlistInfoItem.getUploaderName()
+            );
+            uploaderLabel.setAlignmentX(0);
+
+            uploaderLabel.setForeground(Color.LIGHT_GRAY);
+            infoPanel.add(uploaderLabel);
+            JMenuItem showChannelDetails = new JMenuItem(
+                "Show channel Details",
+                IconRes.LIVE_TV_ICON
+            );
+            showChannelDetails.setForeground(Color.LIGHT_GRAY);
+            showChannelDetails.addActionListener(e ->
+                mainViewPort.navigate(
+                    new NavigateOption(
+                        MainViewPort.Page.CHANNEL,
+                        playlistInfoItem.getUploaderUrl()
+                    )
+                )
+            );
+            popupMenu.add(showChannelDetails);
+        }
     }
 }

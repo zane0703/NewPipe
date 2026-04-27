@@ -29,6 +29,7 @@ public class IconRes {
     public static FlatSVGIcon PLAYLIST_PLAY_ICON;
     public static FlatSVGIcon FULLSCREEN_ICON;
     public static FlatSVGIcon FULLSCREEN_EXIT_ICON;
+    public static FlatSVGIcon HISTORY_ICON;
 
     static {
         try {
@@ -93,6 +94,9 @@ public class IconRes {
                 IconRes.class.getResourceAsStream(
                     "/icon/ic_fullscreen_exit.svg"
                 )
+            );
+            HISTORY_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream("/icon/ic_history.svg")
             );
         } catch (IOException e) {
             e.printStackTrace();

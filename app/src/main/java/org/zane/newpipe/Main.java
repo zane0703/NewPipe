@@ -123,6 +123,7 @@ public class Main implements Runnable {
             try {
                 PopupMenu trayPopUpMenu = new PopupMenu("NewPipe");
                 MenuItem exitMenuItem = new MenuItem("Exit");
+                trayPopUpMenu.add("");
                 exitMenuItem.addActionListener(e -> System.exit(0));
                 trayPopUpMenu.add(exitMenuItem);
                 TrayIcon trayIcon2 = new TrayIcon(

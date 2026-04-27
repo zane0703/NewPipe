@@ -1,12 +1,17 @@
 package org.zane.newpipe.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -76,6 +81,36 @@ public class Downloader
     public Response execute(
         org.schabi.newpipe.extractor.downloader.Request request
     ) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        MetaData.Response response = execute(
+            request,
+            Channels.newChannel(outputStream)
+        );
+        HashMap<String, List<String>> rHeader = new HashMap<>();
+        response
+            .getHttpFields()
+            .forEach(h -> {
+                try {
+                    rHeader.put(h.getName(), h.getValueList());
+                } catch (Exception e) {
+                    ArrayList<String> headerValue = new ArrayList<>(1);
+                    headerValue.add(h.getValue());
+                    rHeader.put(h.getName(), headerValue);
+                }
+            });
+        return new Response(
+            response.getStatus(),
+            response.getReason(),
+            rHeader,
+            outputStream.toString(StandardCharsets.UTF_8),
+            request.url()
+        );
+    }
+
+    public MetaData.Response execute(
+        org.schabi.newpipe.extractor.downloader.Request request,
+        WritableByteChannel channel
+    ) throws IOException {
         byte[] dataToSend = request.dataToSend();
         URI uri = URI.create(request.url());
         String hostname = uri.getHost();
@@ -98,31 +133,14 @@ public class Downloader
         } else {
             client = connect(hostname);
         }
-        HttpResponse httpResponse = Blocker.blockWithPromise(p ->
+        return Blocker.blockWithPromise(p ->
             client.newRequest(
                 headersFrame,
-                new ClientListener(p),
+                new ClientListener(p, channel),
                 dataToSend == null
                     ? Promise.Invocable.noop()
                     : new SendData(p, dataToSend)
             )
-        );
-        HashMap<String, List<String>> rHeader = new HashMap<>();
-        httpResponse.META_DATA.getHttpFields().forEach(h -> {
-            try {
-                rHeader.put(h.getName(), h.getValueList());
-            } catch (Exception e) {
-                ArrayList<String> headerValue = new ArrayList<>(1);
-                headerValue.add(h.getValue());
-                rHeader.put(h.getName(), headerValue);
-            }
-        });
-        return new Response(
-            httpResponse.META_DATA.getStatus(),
-            httpResponse.META_DATA.getReason(),
-            rHeader,
-            httpResponse.BODY,
-            request.url()
         );
     }
 
@@ -165,12 +183,16 @@ public class Downloader
 
     public static class ClientListener implements Stream.Client.Listener {
 
-        private final StringBuilder sb = new StringBuilder();
         private MetaData.Response response;
-        private Promise<HttpResponse> p;
+        private Promise<MetaData.Response> p;
+        private WritableByteChannel channel;
 
-        public ClientListener(Promise<HttpResponse> p) {
+        public ClientListener(
+            Promise<MetaData.Response> p,
+            WritableByteChannel channel
+        ) {
             this.p = p;
+            this.channel = channel;
         }
 
         @Override
@@ -179,15 +201,15 @@ public class Downloader
             if (!frame.isLast()) {
                 // There will be content, so call demand() to have
                 // onDataAvailable() be called when the content is available.
+
                 stream.demand();
-            } else {
-                sb.ensureCapacity((int) response.getContentLength());
             }
         }
 
         @Override
         public void onDataAvailable(Stream.Client stream) {
             // Read a chunk of the content.
+
             org.eclipse.jetty.io.Content.Chunk chunk = stream.read();
             if (chunk == null) {
                 // No data available now, demand to be called back.
@@ -195,20 +217,18 @@ public class Downloader
             } else {
                 // Process the content.
 
-                CharBuffer c = StandardCharsets.UTF_8.decode(
-                    chunk.getByteBuffer()
-                );
-                char[] ca = c.array();
-                sb.append(ca, 0, c.length());
+                ByteBuffer b = chunk.getByteBuffer();
+
+                try {
+                    channel.write(b);
+                } catch (IOException e) {
+                    p.failed(e);
+                    return;
+                }
                 // Notify the implementation that the content has been consumed.
                 chunk.release();
                 if (chunk.isLast()) {
-                    p.succeeded(
-                        new HttpResponse(
-                            sb.toString().replaceAll("\0", " "),
-                            response
-                        )
-                    );
+                    p.succeeded(response);
                 } else {
                     stream.demand();
                 }

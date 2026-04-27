@@ -5,12 +5,15 @@ package org.zane.newpipe;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -20,6 +23,8 @@ import org.eclipse.jetty.quic.quiche.jna.bool;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.suggestion.SuggestionExtractor;
+import org.zane.newpipe.database.Database;
+import org.zane.newpipe.database.SearchHistory;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.page.MainViewPort.NavigateOption;
 import org.zane.newpipe.ui.IconRes;
@@ -34,6 +39,9 @@ public class App extends JFrame {
     private boolean isSuggestionMenuFocus = false;
     private MyPopupMenu suggestionMenu;
     private TrayIcon trayIcon;
+    private Database db;
+    private SearchHistory searchHistory;
+    private boolean isSetText = false;
 
     public TrayIcon getTrayIcon() {
         return trayIcon;
@@ -51,6 +59,12 @@ public class App extends JFrame {
 
     private App(boolean showDefault, boolean isAutoPlay, TrayIcon trayIcon) {
         this.trayIcon = trayIcon;
+        try {
+            this.db = new Database();
+            searchHistory = db.getSearchHistory();
+        } catch (IOException eio) {
+            throw new RuntimeException(eio);
+        }
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setTitle("NewPipe");
 
@@ -74,6 +88,7 @@ public class App extends JFrame {
                     ) {
                         App.this.setVisible(false);
                         App.this.dispose();
+                        mainViewPort.exit();
                         System.exit(0);
                     }
                 }
@@ -134,8 +149,6 @@ public class App extends JFrame {
         );
         searchField.addKeyListener(
             new KeyAdapter() {
-                private boolean isSetText = false;
-
                 @Override
                 public void keyPressed(KeyEvent e) {
                     switch (e.getKeyCode()) {
@@ -161,26 +174,44 @@ public class App extends JFrame {
                     ) return;
                     Thread.startVirtualThread(() -> {
                         try {
+                            String searchText = searchField.getText();
                             List<String> suggestionList =
-                                suggestionExtractor.suggestionList(
-                                    searchField.getText()
-                                );
+                                suggestionExtractor.suggestionList(searchText);
+                            List<String> historyList = searchHistory.get(
+                                searchText
+                            );
                             SwingUtilities.invokeLater(() -> {
                                 suggestionMenu.removeAll();
-                                if (suggestionList.size() > 0) {
+                                if (
+                                    (suggestionList.size() /* + sh.size() */) >
+                                    0
+                                ) {
+                                    for (String historyText : historyList) {
+                                        JMenuItem historyMenuItem =
+                                            new JMenuItem(
+                                                historyText,
+                                                IconRes.HISTORY_ICON
+                                            );
+                                        historyMenuItem.addMouseListener(
+                                            new OnHistoryMenuItemClicked(
+                                                historyText,
+                                                historyMenuItem
+                                            )
+                                        );
+                                        suggestionMenu.add(historyMenuItem);
+                                    }
                                     for (String suggestion : suggestionList) {
                                         JMenuItem suggestionMenuItem =
-                                            new JMenuItem(suggestion);
-                                        suggestionMenuItem.addActionListener(
-                                            ee -> {
-                                                suggestionMenu.setVisible(
-                                                    false
-                                                );
-                                                isSetText = true;
-                                                searchField.setText(suggestion);
-                                                isSetText = false;
-                                            }
+                                            new JMenuItem(
+                                                suggestion,
+                                                IconRes.SEARCH_ICON
+                                            );
+                                        suggestionMenuItem.addMouseListener(
+                                            new OnSuggestionMenuItemClicked(
+                                                suggestion
+                                            )
                                         );
+
                                         suggestionMenu.add(suggestionMenuItem);
                                     }
 
@@ -295,6 +326,7 @@ public class App extends JFrame {
                                     newPage = MainViewPort.Page.CHANNEL;
                                 } else {
                                     newPage = MainViewPort.Page.SEARCH;
+                                    searchHistory.add(query);
                                 }
                         }
                     } else {
@@ -308,9 +340,11 @@ public class App extends JFrame {
                     break;
                 default:
                     newPage = MainViewPort.Page.SEARCH;
+                    searchHistory.add(query);
             }
         } catch (URISyntaxException err) {
             newPage = MainViewPort.Page.SEARCH;
+            searchHistory.add(query);
         }
         mainViewPort.navigate(new NavigateOption(newPage, query));
         SwingUtilities.invokeLater(() -> {
@@ -331,6 +365,59 @@ public class App extends JFrame {
         public Dimension getPreferredSize() {
             Dimension preferredSize = super.getPreferredSize();
             return new Dimension(this.width, preferredSize.height);
+        }
+    }
+
+    public class OnSuggestionMenuItemClicked extends MouseAdapter {
+
+        private final String suggestion;
+
+        public OnSuggestionMenuItemClicked(String suggestion) {
+            this.suggestion = suggestion;
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            System.out.println(suggestion);
+            suggestionMenu.setVisible(false);
+            isSetText = true;
+            searchField.setText(suggestion);
+            isSetText = false;
+        }
+    }
+
+    public class OnHistoryMenuItemClicked extends OnSuggestionMenuItemClicked {
+
+        private final String historyText;
+        private final JMenuItem menuItem;
+
+        public OnHistoryMenuItemClicked(
+            String historyText,
+            JMenuItem menuItem
+        ) {
+            super(historyText);
+            this.historyText = historyText;
+            this.menuItem = menuItem;
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            if (SwingUtilities.isRightMouseButton(e)) {
+                if (
+                    JOptionPane.showConfirmDialog(
+                        App.this,
+                        "Do you Want to delete this item from search history?",
+                        historyText,
+                        JOptionPane.YES_NO_OPTION
+                    ) ==
+                    JOptionPane.YES_OPTION
+                ) {
+                    searchHistory.delete(historyText);
+                    suggestionMenu.remove(menuItem);
+                }
+            } else {
+                super.mouseReleased(e);
+            }
         }
     }
 }

@@ -1,6 +1,15 @@
 package org.zane.newpipe.page;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.awt.TrayIcon.MessageType;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
@@ -20,15 +29,36 @@ import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import javax.swing.*;
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
+import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.HyperlinkEvent;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
+import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
 import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
@@ -49,7 +79,6 @@ import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaApi;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
-import uk.co.caprica.vlcj.player.base.VideoApi;
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 import uk.co.caprica.vlcj.player.embedded.FullScreenApi;
@@ -124,7 +153,9 @@ public class VideoPage extends JPanel {
             new EmbeddedMediaPlayerComponent(
                 new MediaPlayerFactory(
                     VideoUtil.nativeDiscovery,
-                    "--avcodec-hw=auto"
+                    "--avcodec-hw=auto",
+                    "--file-caching=2000",
+                    "--network-caching=2000"
                 ),
                 null,
                 new AdaptiveFullScreenStrategy(mainViewPort.getApp()),
@@ -937,9 +968,22 @@ public class VideoPage extends JPanel {
                         for (InfoItem item : streamExtractor
                             .getRelatedItems()
                             .getItems()) {
-                            relatedStreamsPanel.add(
-                                new ItemPanel(mainViewPort, item)
-                            );
+                            ItemPanel itemPanel = switch (item) {
+                                case StreamInfoItem streamInfoItem -> new ItemPanel.StreamInfoPanel(
+                                    mainViewPort,
+                                    streamInfoItem
+                                );
+                                case ChannelInfoItem channelInfoItem -> new ItemPanel.ChannelInfoPanel(
+                                    mainViewPort,
+                                    channelInfoItem
+                                );
+                                case PlaylistInfoItem playlistInfoItem -> new ItemPanel.PlayListInfoPanel(
+                                    mainViewPort,
+                                    playlistInfoItem
+                                );
+                                default -> null;
+                            };
+                            relatedStreamsPanel.add(itemPanel);
                         }
                         tagPanel.removeAll();
                         for (String tagString : tagsString) {
@@ -1002,12 +1046,17 @@ public class VideoPage extends JPanel {
         });
     }
 
-    public void stop() {
+    public void clear() {
         mediaPlayer.controls().stop();
         mediaPlayer.media().reset();
         videoCommentPanel.clear();
         relatedStreamsPanel.removeAll();
         System.gc();
+    }
+
+    public void release() {
+        clear();
+        mediaPlayer.release();
     }
 
     public void playVideo(

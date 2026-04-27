@@ -22,26 +22,27 @@ dependencies {
 
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.0")
     implementation("uk.co.caprica:vlcj:4.12.1")
-    implementation("org.eclipse.jetty:jetty-client:12.1.8")
-    implementation("org.eclipse.jetty.http3:jetty-http3-client:12.1.8")
-    implementation("org.eclipse.jetty.quic:jetty-quic-quiche-client:12.1.8")
+
+    val jettyVersion = "12.1.8"
+    implementation("org.eclipse.jetty:jetty-client:${jettyVersion}")
+    implementation("org.eclipse.jetty.http3:jetty-http3-client:${jettyVersion}")
+    implementation("org.eclipse.jetty.quic:jetty-quic-quiche-client:${jettyVersion}")
+
     val flatlafVersion = "3.7.1"
     implementation( "com.formdev:flatlaf:${flatlafVersion}" )
     implementation( "com.formdev:flatlaf:${flatlafVersion}:linux-x86_64@so" )
     implementation( "com.formdev:flatlaf:${flatlafVersion}:macos-arm64@dylib" )
     implementation( "com.formdev:flatlaf:${flatlafVersion}:macos-x86_64@dylib" )
     implementation( "com.formdev:flatlaf:${flatlafVersion}:windows-x86_64@dll" )
-
         // 32-bit (not needed if you bundle a 64-bit JRE with your application)
     implementation( "com.formdev:flatlaf:${flatlafVersion}:windows-x86@dll" )
-
         // ARM 64-bit (not needed if your application does not support Windows on ARM)
     implementation( "com.formdev:flatlaf:${flatlafVersion}:windows-arm64@dll" )
     implementation( "com.formdev:flatlaf-extras:${flatlafVersion}" )
+
     implementation("info.picocli:picocli:4.7.7")
     implementation("org.sejda.imageio:webp-imageio:0.1.6")
-
-
+    implementation("org.xerial:sqlite-jdbc:3.53.0.0")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

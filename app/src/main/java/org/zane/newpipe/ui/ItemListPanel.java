@@ -20,7 +20,11 @@ import org.schabi.newpipe.extractor.ListExtractor;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
+import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.zane.newpipe.page.MainViewPort;
 import org.zane.newpipe.util.CommonUtil;
 
@@ -163,7 +167,21 @@ public class ItemListPanel<T extends InfoItem> extends JPanel {
         try {
             List<T> items = itp.getItems();
             for (T item : items) {
-                ItemPanel itemPanel = new ItemPanel(mainViewPort, item);
+                ItemPanel itemPanel = switch (item) {
+                    case StreamInfoItem streamInfoItem -> new ItemPanel.StreamInfoPanel(
+                        mainViewPort,
+                        streamInfoItem
+                    );
+                    case ChannelInfoItem channelInfoItem -> new ItemPanel.ChannelInfoPanel(
+                        mainViewPort,
+                        channelInfoItem
+                    );
+                    case PlaylistInfoItem playlistInfoItem -> new ItemPanel.PlayListInfoPanel(
+                        mainViewPort,
+                        playlistInfoItem
+                    );
+                    default -> new ItemPanel(mainViewPort, item);
+                };
                 SwingUtilities.invokeLater(() ->
                     resultListPanel.add(itemPanel)
                 );

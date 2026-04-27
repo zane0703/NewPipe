@@ -23,7 +23,8 @@ public class JHTMLPane extends JEditorPane {
     @Override
     public Dimension getPreferredSize() {
         Dimension size = super.getPreferredSize();
-        int PreferredMaxWidth = Math.min(size.width, maxWidth);
+        int PreferredMaxWidth = maxWidth;
+
         // if (
         //     SwingUtilities.getAncestorOfClass(
         //             JScrollPane.class,
