@@ -17,6 +17,8 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import javax.swing.*;
 import org.eclipse.jetty.quic.quiche.jna.bool;
@@ -47,20 +49,26 @@ public class App extends JFrame {
         return trayIcon;
     }
 
-    public App(String searchQuery, TrayIcon trayIcon) {
-        this(false, false, trayIcon);
+    public App(String searchQuery, Path configFile, TrayIcon trayIcon) {
+        this(false, false, configFile, trayIcon);
         searchField.setText(searchQuery);
         searchButton.doClick();
     }
 
-    public App(boolean isAutoPlay, TrayIcon trayIcon) {
-        this(true, isAutoPlay, trayIcon);
+    public App(boolean isAutoPlay, Path configFile, TrayIcon trayIcon) {
+        this(true, isAutoPlay, configFile, trayIcon);
     }
 
-    private App(boolean showDefault, boolean isAutoPlay, TrayIcon trayIcon) {
+    private App(
+        boolean showDefault,
+        boolean isAutoPlay,
+        Path configFile,
+        TrayIcon trayIcon
+    ) {
         this.trayIcon = trayIcon;
         try {
-            this.db = new Database();
+            this.db =
+                configFile == null ? new Database() : new Database(configFile);
             searchHistory = db.getSearchHistory();
         } catch (IOException eio) {
             throw new RuntimeException(eio);
@@ -281,6 +289,10 @@ public class App extends JFrame {
             );
         searchButton.addActionListener(this::onSearchAction);
         searchField.addActionListener(this::onSearchAction);
+    }
+
+    public Database getDatabase() {
+        return this.db;
     }
 
     public void setSearchBarVisible(boolean visible) {

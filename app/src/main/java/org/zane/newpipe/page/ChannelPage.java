@@ -1,6 +1,7 @@
 package org.zane.newpipe.page;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
@@ -17,7 +18,9 @@ import org.schabi.newpipe.extractor.channel.ChannelExtractor;
 import org.schabi.newpipe.extractor.channel.tabs.ChannelTabExtractor;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
+import org.zane.newpipe.database.Subscribed;
 import org.zane.newpipe.ui.ChannelInfoPanel;
+import org.zane.newpipe.ui.IconRes;
 import org.zane.newpipe.ui.ItemListPanel;
 import org.zane.newpipe.ui.JHTMLPane;
 import org.zane.newpipe.ui.JImage;
@@ -34,11 +37,19 @@ public class ChannelPage extends JPanel {
     private JPanel tagListPanel;
     private JTabbedPane channelNevView;
     private JPanel channelDetailedInfoPanel;
+    private JButton subscribeBtn;
+    private Subscribed db;
+    private boolean isSubscribed;
+    private int serviceId;
+    private String channelUrl;
+    private String channelName;
 
     public ChannelPage(MainViewPort mainViewPort) {
         this.mainViewPort = mainViewPort;
         banner = new JImage();
+        JPanel chanelInfoPanelPanel = new JPanel(new BorderLayout());
         channelInfoPanel = new ChannelInfoPanel();
+        subscribeBtn = new JButton("subscribe");
         channelNevView = new JTabbedPane() {
             @Override
             public Dimension getPreferredSize() {
@@ -56,6 +67,7 @@ public class ChannelPage extends JPanel {
         tagListPanel = new JPanel(new WrapLayout(FlowLayout.LEFT));
         videoFeedListPanel = new JPanel();
         channelInfoText = new JHTMLPane("text/plain");
+        this.db = mainViewPort.getApp().getDatabase().getSubscribed();
 
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         channelDetailedInfoPanel.setLayout(
@@ -78,13 +90,40 @@ public class ChannelPage extends JPanel {
         this.addComponentListener(componentAdapter);
         channelNevView.addChangeListener(e -> channelNevView.revalidate());
         channelNevView.addMouseMotionListener(CommonUtil.TABBED_CURSOR);
+        subscribeBtn.addActionListener(this::onSubscribeBtnClicked);
 
         this.add(banner);
-        this.add(channelInfoPanel);
+        chanelInfoPanelPanel.add(channelInfoPanel, BorderLayout.WEST);
+        chanelInfoPanelPanel.add(subscribeBtn, BorderLayout.EAST);
+        this.add(chanelInfoPanelPanel);
         channelDetailedInfoPanel.add(channelInfoText);
         channelDetailedInfoPanel.add(tagLabel);
         channelDetailedInfoPanel.add(tagListPanel);
         this.add(channelNevView);
+    }
+
+    private void onSubscribeBtnClicked(ActionEvent e) {
+        Thread.startVirtualThread(this::onSubscribeBtnClicked);
+    }
+
+    private void onSubscribeBtnClicked() {
+        if (isSubscribed) {
+            db.delete(serviceId, channelUrl);
+        } else {
+            db.add(serviceId, channelUrl, channelName);
+        }
+        isSubscribed = !isSubscribed;
+        SwingUtilities.invokeLater(() -> {
+            if (isSubscribed) {
+                subscribeBtn.setBackground(
+                    UIManager.getColor("Button.background")
+                );
+                subscribeBtn.setText("Subscribed");
+            } else {
+                subscribeBtn.setBackground(IconRes.YOUTUBE_COLOUR);
+                subscribeBtn.setText("Subscribe");
+            }
+        });
     }
 
     private ComponentAdapter componentAdapter = new ComponentAdapter() {
@@ -101,13 +140,15 @@ public class ChannelPage extends JPanel {
 
     public void fetchChannel(String channelURL) {
         videoFeedListPanel.removeAll();
+        this.channelUrl = channelURL;
         Thread.startVirtualThread(() -> {
             try {
                 ChannelExtractor channelExtractor =
                     ServiceList.YouTube.getChannelExtractor(channelURL);
                 channelExtractor.fetchPage();
 
-                System.out.println(channelExtractor.getTabs());
+                channelName = channelExtractor.getName();
+                serviceId = channelExtractor.getServiceId();
                 List<Image> banners = channelExtractor.getBanners();
                 BufferedImage imageb;
                 if (banners.isEmpty()) {
@@ -127,11 +168,12 @@ public class ChannelPage extends JPanel {
                     channelInfoPanel.setChanelAvatar(avatars.get(0).getUrl());
                 }
                 channelInfoPanel.setInfo(
-                    channelExtractor.getName(),
+                    channelName,
                     channelExtractor.getSubscriberCount()
                 );
                 String channelDist = channelExtractor.getDescription();
                 List<String> tagList = channelExtractor.getTags();
+                isSubscribed = db.isExist(serviceId, channelURL);
                 SwingUtilities.invokeLater(() -> {
                     channelInfoText.setText(channelDist);
                     tagListPanel.removeAll();
@@ -150,8 +192,18 @@ public class ChannelPage extends JPanel {
                         );
                         tagListPanel.add(tagBtn);
                     }
+                    if (isSubscribed) {
+                        subscribeBtn.setBackground(
+                            UIManager.getColor("Button.background")
+                        );
+                        subscribeBtn.setText("Subscribed");
+                    } else {
+                        subscribeBtn.setBackground(IconRes.YOUTUBE_COLOUR);
+                        subscribeBtn.setText("Subscribe");
+                    }
                 });
                 channelNevView.removeAll();
+
                 for (ListLinkHandler tabLink : channelExtractor.getTabs()) {
                     ChannelTabExtractor cte =
                         ServiceList.YouTube.getChannelTabExtractor(tabLink);

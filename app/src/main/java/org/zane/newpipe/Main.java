@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.imageio.ImageIO;
 import javax.swing.JMenuItem;
@@ -74,6 +75,13 @@ public class Main implements Runnable {
         description = "stop auto playing"
     )
     boolean isNoAutoPlay;
+
+    @Option(
+        names = { "-c", "--config" },
+        description = "custom config file path",
+        paramLabel = "config.db"
+    )
+    Path configFile;
 
     @Parameters(
         arity = "0..1",
@@ -181,9 +189,13 @@ public class Main implements Runnable {
                 SwingUtilities.invokeLater(() -> {
                     App app;
                     if (query == null || query.isBlank()) {
-                        app = new App(!isNoAutoPlay, trayIcon.get());
+                        app = new App(
+                            !isNoAutoPlay,
+                            configFile,
+                            trayIcon.get()
+                        );
                     } else {
-                        app = new App(query, trayIcon.get());
+                        app = new App(query, configFile, trayIcon.get());
                     }
                     app.setVisible(true);
                 });

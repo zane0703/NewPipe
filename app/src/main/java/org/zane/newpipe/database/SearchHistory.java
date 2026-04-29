@@ -18,24 +18,29 @@ public class SearchHistory {
     }
 
     void create(Connection conn) throws SQLException {
-        Statement stmt = conn.createStatement();
-        stmt.execute(
-            "CREATE TABLE search_history(search_query TEXT UNIQUE NOT NULL);"
-        );
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(
+                "CREATE TABLE search_history(search_query TEXT UNIQUE NOT NULL);"
+            );
+        }
     }
 
     public List<String> get(String searchQuery) {
         try (Connection conn = db.connect(SQLiteOpenMode.READONLY)) {
-            PreparedStatement stmt = conn.prepareStatement(
-                "SELECT search_query FROM search_history WHERE search_query LIKE ? || '%';"
-            );
-            stmt.setString(1, searchQuery);
-            ResultSet rs = stmt.executeQuery();
-            ArrayList<String> searchHistoryList = new ArrayList<>();
-            while (rs.next()) {
-                searchHistoryList.add(rs.getString("search_query"));
+            try (
+                PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT search_query FROM search_history WHERE search_query LIKE ? || '%';"
+                )
+            ) {
+                stmt.setString(1, searchQuery);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    ArrayList<String> searchHistoryList = new ArrayList<>();
+                    while (rs.next()) {
+                        searchHistoryList.add(rs.getString("search_query"));
+                    }
+                    return searchHistoryList;
+                }
             }
-            return searchHistoryList;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -43,11 +48,14 @@ public class SearchHistory {
 
     public void add(String searchQuery) {
         try (Connection conn = db.connect(SQLiteOpenMode.READWRITE)) {
-            PreparedStatement stmt = conn.prepareStatement(
-                "INSERT OR IGNORE INTO search_history(search_query) VALUES(?);"
-            );
-            stmt.setString(1, searchQuery);
-            stmt.executeUpdate();
+            try (
+                PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT OR IGNORE INTO search_history(search_query) VALUES(?);"
+                )
+            ) {
+                stmt.setString(1, searchQuery);
+                stmt.executeUpdate();
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -55,11 +63,14 @@ public class SearchHistory {
 
     public void delete(String searchQuery) {
         try (Connection conn = db.connect(SQLiteOpenMode.READWRITE)) {
-            PreparedStatement stmt = conn.prepareStatement(
-                "DELETE FROM search_history WHERE search_query=?;"
-            );
-            stmt.setString(1, searchQuery);
-            stmt.executeUpdate();
+            try (
+                PreparedStatement stmt = conn.prepareStatement(
+                    "DELETE FROM search_history WHERE search_query=?;"
+                )
+            ) {
+                stmt.setString(1, searchQuery);
+                stmt.executeUpdate();
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

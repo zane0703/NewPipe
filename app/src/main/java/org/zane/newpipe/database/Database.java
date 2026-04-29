@@ -16,9 +16,10 @@ import org.sqlite.SQLiteOpenMode;
 public class Database {
 
     private static final String dbFileName = "config.db";
-    private final String dbFilePath;
-    private Config config;
-    private SearchHistory searchHistory;
+    private final String dbFilePathStr;
+    private final Config config;
+    private final SearchHistory searchHistory;
+    private final Subscribed subscribed;
 
     public Database() throws IOException {
         String os = System.getProperty("os.name").toLowerCase();
@@ -42,21 +43,10 @@ public class Database {
         }
 
         Path path = Paths.get(pathStr);
-        boolean isDBExist;
+        Path dbFilePath;
         if (Files.exists(path)) {
             if (Files.isDirectory(path)) {
-                Path dbFile = path.resolve(dbFileName);
-                dbFilePath = dbFile.toAbsolutePath().toString();
-                isDBExist = Files.exists(dbFile);
-                if (isDBExist) {
-                    if (Files.isDirectory(dbFile)) {
-                        throw new RuntimeException(
-                            "the config file " +
-                                pathStr +
-                                " is a directory not a file"
-                        );
-                    }
-                }
+                dbFilePath = path.resolve(dbFileName);
             } else {
                 throw new RuntimeException(
                     "the config directory path " +
@@ -66,24 +56,37 @@ public class Database {
             }
         } else {
             Files.createDirectory(path);
-            dbFilePath = path.resolve(dbFileName).toAbsolutePath().toString();
-
-            isDBExist = false;
+            dbFilePath = path.resolve(dbFileName);
         }
-        System.out.println(dbFilePath);
+        this(dbFilePath);
+    }
 
+    public Database(Path dbFilePath) throws IOException {
+        dbFilePathStr = dbFilePath.toAbsolutePath().toString();
+        boolean isDBExist = Files.exists(dbFilePath);
+        if (isDBExist) {
+            if (Files.isDirectory(dbFilePath)) {
+                throw new RuntimeException(
+                    "the config file " +
+                        dbFilePathStr +
+                        " is a directory not a file"
+                );
+            }
+        }
         config = new Config(this);
         searchHistory = new SearchHistory(this);
+        subscribed = new Subscribed(this);
         if (!isDBExist) {
             try {
                 try (Connection conn = connect(SQLiteOpenMode.CREATE)) {
                     conn.setAutoCommit(false);
                     config.create(conn);
                     searchHistory.create(conn);
+                    subscribed.create(conn);
                     conn.commit();
                 }
             } catch (SQLException e) {
-                Files.delete(Paths.get(dbFileName));
+                Files.delete(dbFilePath);
                 throw new RuntimeException(e);
             }
         }
@@ -96,12 +99,16 @@ public class Database {
             config.setReadOnly(true);
         }
         return DriverManager.getConnection(
-            "jdbc:sqlite:" + dbFilePath,
+            "jdbc:sqlite:" + dbFilePathStr,
             config.toProperties()
         );
     }
 
     public SearchHistory getSearchHistory() {
         return searchHistory;
+    }
+
+    public Subscribed getSubscribed() {
+        return subscribed;
     }
 }

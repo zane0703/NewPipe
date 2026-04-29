@@ -11,9 +11,11 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
@@ -38,12 +40,18 @@ public class ItemPanel extends JPanel {
         super(new FlowLayout(FlowLayout.LEFT));
         this.mainViewPort = mainViewPort;
         popupMenu = new JPopupMenu("video");
+        List<Image> thumbnails = item.getThumbnails();
+        if (thumbnails == null || thumbnails.isEmpty()) {
+            thumbnailLabel = new JImage(this);
+        } else {
+            BufferedImage image = ImageIO.read(
+                new URI(thumbnails.get(0).getUrl()).toURL()
+            );
+            thumbnailLabel = new JImage(image, this);
+        }
 
-        BufferedImage image = ImageIO.read(
-            new URI(item.getThumbnails().get(0).getUrl()).toURL()
-        ); // JPanel t = new JPanel(new SpringLayout());
         layeredPane = new JPanel();
-        thumbnailLabel = new JImage(image, this);
+
         thumbnailLabel.setMaximumSize(new Dimension(200, 200));
         String itemName = item.getName();
         JLabel popUpLabel = new JLabel(
@@ -304,12 +312,13 @@ public class ItemPanel extends JPanel {
             );
             String description = channelInfoItem.getDescription();
             JHTMLPane descriptionLabel = new JHTMLPane("text/plain");
-            descriptionLabel.setText(
-                description.length() > 200
-                    ? description.substring(0, 200) + "..."
-                    : description
-            );
-
+            if (description != null) {
+                descriptionLabel.setText(
+                    description.length() > 200
+                        ? description.substring(0, 200) + "..."
+                        : description
+                );
+            }
             this.addComponentListener(
                 new ComponentAdapter() {
                     public void componentResized(ComponentEvent e) {
