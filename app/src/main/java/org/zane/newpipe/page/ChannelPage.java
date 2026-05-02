@@ -169,7 +169,8 @@ public class ChannelPage extends JPanel {
                 }
                 channelInfoPanel.setInfo(
                     channelName,
-                    channelExtractor.getSubscriberCount()
+                    channelExtractor.getSubscriberCount(),
+                    channelExtractor.isVerified()
                 );
                 String channelDist = channelExtractor.getDescription();
                 List<String> tagList = channelExtractor.getTags();

@@ -30,6 +30,8 @@ public class IconRes {
     public static FlatSVGIcon FULLSCREEN_ICON;
     public static FlatSVGIcon FULLSCREEN_EXIT_ICON;
     public static FlatSVGIcon HISTORY_ICON;
+    public static FlatSVGIcon PIN_ICON;
+    public static FlatSVGIcon CHECKED_ICON;
 
     static {
         try {
@@ -98,6 +100,12 @@ public class IconRes {
             HISTORY_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_history.svg")
             );
+            PIN_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream("/icon/ic_pin.svg")
+            ).derive(15, 15);
+            CHECKED_ICON = new FlatSVGIcon(
+                IconRes.class.getResourceAsStream("/icon/checked.svg")
+            ).derive(15, 15);
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);

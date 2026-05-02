@@ -106,7 +106,7 @@ public class CommentPanel extends JPanel {
                                 preBtn.setEnabled(false);
                             }
                         });
-                        
+
                         currentPage = prePage;
                     }
                 } catch (ExtractionException | IOException err) {
@@ -177,9 +177,9 @@ public class CommentPanel extends JPanel {
                 cit,
                 ce
             );
-            SwingUtilities.invokeLater(() -> {
-                mainCommentPanel.add(commentItemPanel);
-            });
+            SwingUtilities.invokeLater(() ->
+                mainCommentPanel.add(commentItemPanel)
+            );
         }
         SwingUtilities.invokeLater(() -> {
             mainCommentPanel.updateUI();

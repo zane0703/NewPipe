@@ -1,6 +1,7 @@
 package org.zane.newpipe.ui;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -25,9 +26,12 @@ import org.zane.newpipe.util.CommonUtil;
 
 public class CommentItemPanel extends JPanel {
 
-    private MainViewPort mainViewPort;
-    private JLabel uploaderNameLabel;
-    private JViewport viewport;
+    private final MainViewPort mainViewPort;
+    private final JLabel uploaderNameLabel;
+    private final JViewport viewport;
+    private final HyperlinkListener hyperlinkListener;
+    private final CommentsInfoItem cit;
+    private final CommentsExtractor commentsExtractor;
 
     public CommentItemPanel(
         MainViewPort mainViewPort,
@@ -36,17 +40,55 @@ public class CommentItemPanel extends JPanel {
         CommentsInfoItem cit,
         CommentsExtractor commentsExtractor
     ) {
+        super(new FlowLayout(FlowLayout.LEFT));
         this.mainViewPort = mainViewPort;
         this.viewport = viewport;
-        setLayout(new FlowLayout(FlowLayout.LEFT));
+        this.hyperlinkListener = hyperlinkListener;
+        this.cit = cit;
+        this.commentsExtractor = commentsExtractor;
+
         List<Image> avatars = cit.getUploaderAvatars();
         ChannelClickListener ccl = new ChannelClickListener(
             cit.getUploaderUrl()
         );
         JImage jImage = new JImage();
+        JPanel commentInfoPanel = new JPanel();
+        uploaderNameLabel = new JLabel(cit.getUploaderName());
+        JHTMLPane commentText = new JHTMLPane();
+        JPanel commentMetaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JLabel likeCunt = new JLabel(
+            Integer.toString(cit.getLikeCount()),
+            IconRes.THUMP_UP_SMALL_ICON,
+            SwingConstants.LEFT
+        );
+
+        commentInfoPanel.setLayout(
+            new BoxLayout(commentInfoPanel, BoxLayout.Y_AXIS)
+        );
+
         jImage.addMouseListener(ccl);
+        uploaderNameLabel.addMouseListener(ccl);
+        commentText.addHyperlinkListener(hyperlinkListener);
+
         jImage.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        uploaderNameLabel.setCursor(
+            Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        );
+
+        uploaderNameLabel.setForeground(Color.lightGray);
+
+        if (cit.isPinned()) {
+            uploaderNameLabel.setIcon(IconRes.PIN_ICON);
+        }
+
         jImage.setMaximumSize(new Dimension(50, 50));
+        commentText.setMaximumSize(
+            new Dimension(
+                getPreferredSize().width - jImage.getWidth() - 100,
+                Integer.MAX_VALUE
+            )
+        );
+
         if (!avatars.isEmpty()) {
             try {
                 BufferedImage bImage = ImageIO.read(
@@ -57,41 +99,17 @@ public class CommentItemPanel extends JPanel {
                 err.printStackTrace();
             }
         }
-        SwingUtilities.invokeLater(() -> {
-            this.add(jImage);
-        });
-        JPanel commentInfoPanel = new JPanel();
-        commentInfoPanel.setLayout(
-            new BoxLayout(commentInfoPanel, BoxLayout.Y_AXIS)
-        );
 
         commentInfoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JPanel uploaderNamePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        uploaderNameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        commentText.setAlignmentX(Component.LEFT_ALIGNMENT);
+        commentMetaPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        uploaderNameLabel = new JLabel(cit.getUploaderName());
-        uploaderNameLabel.addMouseListener(ccl);
-        uploaderNameLabel.setCursor(
-            Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        );
-        uploaderNamePanel.add(uploaderNameLabel);
-        commentInfoPanel.add(uploaderNamePanel);
-        JHTMLPane commentText = new JHTMLPane();
         commentText.setText(cit.getCommentText().getContent());
-        commentText.setMaximumSize(
-            new Dimension(
-                getPreferredSize().width - jImage.getWidth() - 100,
-                Integer.MAX_VALUE
-            )
-        );
-        commentText.addHyperlinkListener(hyperlinkListener);
-        commentInfoPanel.add(commentText);
 
-        JPanel commentMetaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel likeCunt = new JLabel(
-            Integer.toString(cit.getLikeCount()),
-            IconRes.THUMP_UP_SMALL_ICON,
-            SwingConstants.LEFT
-        );
+        this.add(jImage);
+        commentInfoPanel.add(uploaderNameLabel);
+        commentInfoPanel.add(commentText);
         commentMetaPanel.add(likeCunt);
         if (cit.isHeartedByUploader()) {
             commentMetaPanel.add(new JLabel(IconRes.HEART_ICON));
@@ -105,54 +123,15 @@ public class CommentItemPanel extends JPanel {
             )
         );
         commentInfoPanel.add(commentMetaPanel);
-        SwingUtilities.invokeLater(() -> {
-            this.add(commentInfoPanel);
-        });
-
+        this.add(commentInfoPanel);
         int replyCount = cit.getReplyCount();
         if (replyCount > 0) {
-            JPanel replayPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             JButton replayBtn = new JButton(replyCount + " replies");
+            replayBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+
             replayBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            replayBtn.addActionListener(e -> {
-                JPanel replayListPanel = new JPanel();
-                replayListPanel.setLayout(
-                    new BoxLayout(replayListPanel, BoxLayout.Y_AXIS)
-                );
-                JScrollPane scrollReplay = new JScrollPane(
-                    replayListPanel,
-                    JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                    JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-                );
-
-                JViewport scrollReplayViewPort = scrollReplay.getViewport();
-                scrollReplayViewPort.setPreferredSize(new Dimension(500, 500));
-                Thread.startVirtualThread(() -> {
-                    try {
-                        CommentPanel commentPanel = new CommentPanel(
-                            mainViewPort,
-                            scrollReplayViewPort,
-                            hyperlinkListener,
-                            commentsExtractor,
-                            cit.getReplies()
-                        );
-
-                        scrollReplayViewPort.setView(commentPanel);
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(
-                                this,
-                                scrollReplay,
-                                "Replies",
-                                JOptionPane.PLAIN_MESSAGE
-                            );
-                        });
-                    } catch (Exception err) {
-                        err.printStackTrace();
-                    }
-                });
-            });
-            replayPanel.add(replayBtn);
-            commentInfoPanel.add(replayPanel);
+            replayBtn.addActionListener(this::onReplayBtnClicked);
+            commentInfoPanel.add(replayBtn);
         }
 
         this.addComponentListener(
@@ -169,6 +148,44 @@ public class CommentItemPanel extends JPanel {
                 }
             }
         );
+    }
+
+    private void onReplayBtnClicked(ActionEvent e) {
+        JPanel replayListPanel = new JPanel();
+        replayListPanel.setLayout(
+            new BoxLayout(replayListPanel, BoxLayout.Y_AXIS)
+        );
+        JScrollPane scrollReplay = new JScrollPane(
+            replayListPanel,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
+
+        JViewport scrollReplayViewPort = scrollReplay.getViewport();
+        scrollReplayViewPort.setPreferredSize(new Dimension(500, 500));
+        Thread.startVirtualThread(() -> {
+            try {
+                CommentPanel commentPanel = new CommentPanel(
+                    mainViewPort,
+                    scrollReplayViewPort,
+                    hyperlinkListener,
+                    commentsExtractor,
+                    cit.getReplies()
+                );
+
+                scrollReplayViewPort.setView(commentPanel);
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        scrollReplay,
+                        "Replies",
+                        JOptionPane.PLAIN_MESSAGE
+                    );
+                });
+            } catch (Exception err) {
+                err.printStackTrace();
+            }
+        });
     }
 
     private class ChannelClickListener implements MouseListener {

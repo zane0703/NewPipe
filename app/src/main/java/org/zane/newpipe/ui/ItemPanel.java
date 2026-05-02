@@ -65,7 +65,7 @@ public class ItemPanel extends JPanel {
         JHTMLPane itemTitle = new JHTMLPane();
 
         layeredPane.setLayout(new OverlayLayout(layeredPane));
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.PAGE_AXIS));
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
 
         popUpLabel.setFont(
             currentFont.deriveFont(Font.BOLD, currentFont.getSize())

@@ -33,15 +33,23 @@ public class ChannelInfoPanel extends JPanel {
     }
 
     public ChannelInfoPanel(MainViewPort mainViewPort) {
-        this("", null, null, 0, mainViewPort);
+        this("", null, null, 0, false, mainViewPort);
     }
 
     public ChannelInfoPanel(
         String channelName,
         String channelAvatarURL,
-        long channelSubcraberCount
+        long channelSubcraberCount,
+        boolean isVerified
     ) {
-        this(channelName, channelAvatarURL, null, channelSubcraberCount, null);
+        this(
+            channelName,
+            channelAvatarURL,
+            null,
+            channelSubcraberCount,
+            isVerified,
+            null
+        );
     }
 
     public ChannelInfoPanel(
@@ -49,6 +57,7 @@ public class ChannelInfoPanel extends JPanel {
         String channelAvatarURL,
         String channelURL,
         long channelSubscriberCount,
+        boolean isVerified,
         MainViewPort mainViewPort
     ) {
         super(new FlowLayout(FlowLayout.LEFT));
@@ -81,6 +90,12 @@ public class ChannelInfoPanel extends JPanel {
 
         channelSubCountLabel.setForeground(Color.LIGHT_GRAY);
 
+        channelNameLabel.setHorizontalTextPosition(SwingConstants.LEFT);
+
+        if (isVerified) {
+            channelNameLabel.setIcon(IconRes.CHECKED_ICON);
+        }
+
         this.add(channelAvatar);
         uploaderSubInfo.add(channelNameLabel);
         uploaderSubInfo.add(channelSubCountLabel);
@@ -100,13 +115,18 @@ public class ChannelInfoPanel extends JPanel {
         }
     }
 
-    public void setInfo(String channelName, long channelSubcraberCount) {
-        setInfo(channelName, channelSubcraberCount, null);
+    public void setInfo(
+        String channelName,
+        long channelSubcraberCount,
+        boolean isVerified
+    ) {
+        setInfo(channelName, channelSubcraberCount, isVerified, null);
     }
 
     public void setInfo(
         String channelName,
         long channelSubcraberCount,
+        boolean isVerified,
         String channelURL
     ) {
         SwingUtilities.invokeLater(() -> {
@@ -115,6 +135,7 @@ public class ChannelInfoPanel extends JPanel {
                 CommonUtil.numberToStringUnit(channelSubcraberCount) +
                     " subscribers"
             );
+            channelNameLabel.setIcon(isVerified ? IconRes.CHECKED_ICON : null);
         });
         this.channelURL = channelURL;
     }

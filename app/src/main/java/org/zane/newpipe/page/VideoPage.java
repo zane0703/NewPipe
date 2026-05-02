@@ -137,7 +137,6 @@ public class VideoPage extends JPanel {
     private JButton fullScreenBtn;
     private JPanel videoInfo;
     private JPanel videoMenuBtnPanel;
-    private JPanel videoTitlePanel;
     private Clipboard clipboard =
         Toolkit.getDefaultToolkit().getSystemClipboard();
     private TrayIcon trayIcon;
@@ -185,7 +184,6 @@ public class VideoPage extends JPanel {
             };
         videoLenghtLabel = new JLabel("-:--:--");
         currentTimestampLabel = new JLabel("00:00");
-        videoTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         videoTitle = new JLabel("", SwingConstants.LEFT);
         JPanel playbackSliderRow = new JPanel(new BorderLayout());
         playbackSlider = new JSlider(
@@ -346,6 +344,14 @@ public class VideoPage extends JPanel {
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
 
+        mediaPlayerComponent.setAlignmentX(0);
+        videoTitle.setAlignmentX(0);
+        playbackSliderRow.setAlignmentX(0);
+        videoContol.setAlignmentX(0);
+        videoInfo.setAlignmentX(0);
+        videoMenuBtnPanel.setAlignmentX(0);
+        tabbedPane.setAlignmentX(0);
+
         //add component
         this.add(mediaPlayerComponent);
 
@@ -365,8 +371,8 @@ public class VideoPage extends JPanel {
         videoContol.add(fullScreenBtn);
         this.add(videoContol);
 
-        videoTitlePanel.add(videoTitle);
-        this.add(videoTitlePanel);
+        //videoTitlePanel.add(videoTitle);
+        this.add(videoTitle);
 
         videoInfo.add(uploaderInfo);
 
@@ -635,7 +641,7 @@ public class VideoPage extends JPanel {
             tabbedPane.setVisible(false);
             videoInfo.setVisible(false);
             videoMenuBtnPanel.setVisible(false);
-            videoTitlePanel.setVisible(false);
+            videoTitle.setVisible(false);
             app.setSearchBarVisible(false);
         } else {
             fullScreenBtn.setIcon(IconRes.FULLSCREEN_ICON);
@@ -643,7 +649,7 @@ public class VideoPage extends JPanel {
             tabbedPane.setVisible(true);
             videoInfo.setVisible(true);
             videoMenuBtnPanel.setVisible(true);
-            videoTitlePanel.setVisible(true);
+            videoTitle.setVisible(true);
             app.setSearchBarVisible(true);
         }
     }
@@ -881,6 +887,7 @@ public class VideoPage extends JPanel {
                 uploaderInfo.setInfo(
                     streamExtractor.getUploaderName(),
                     streamExtractor.getUploaderSubscriberCount(),
+                    streamExtractor.isUploaderVerified(),
                     streamExtractor.getUploaderUrl()
                 );
 
