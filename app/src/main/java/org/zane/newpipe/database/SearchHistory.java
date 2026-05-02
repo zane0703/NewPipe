@@ -20,7 +20,7 @@ public class SearchHistory {
     void create(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(
-                "CREATE TABLE search_history(search_query TEXT UNIQUE NOT NULL);"
+                "CREATE TABLE search_history(search_query TEXT PRIMARY KEY NOT NULL);"
             );
         }
     }
