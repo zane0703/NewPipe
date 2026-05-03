@@ -1,11 +1,7 @@
 package org.zane.newpipe.page;
 
-import java.awt.BorderLayout;
 import java.util.ArrayDeque;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JViewport;
-import javax.swing.SwingConstants;
 import org.zane.newpipe.App;
 
 public class MainViewPort extends JViewport {

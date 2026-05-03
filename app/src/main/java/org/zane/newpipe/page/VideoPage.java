@@ -273,7 +273,6 @@ public class VideoPage extends JPanel {
             new BoxLayout(videoDescriptionPanel, BoxLayout.Y_AXIS)
         );
 
-        videoCommentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         Dimension maxSize = new Dimension(
             getPreferredSize().width,
             Integer.MAX_VALUE
@@ -344,13 +343,19 @@ public class VideoPage extends JPanel {
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
 
-        mediaPlayerComponent.setAlignmentX(0);
-        videoTitle.setAlignmentX(0);
-        playbackSliderRow.setAlignmentX(0);
-        videoContol.setAlignmentX(0);
-        videoInfo.setAlignmentX(0);
-        videoMenuBtnPanel.setAlignmentX(0);
-        tabbedPane.setAlignmentX(0);
+        //setAlignment
+        mediaPlayerComponent.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        playbackSliderRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoContol.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoInfo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoMenuBtnPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tabbedPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoCommentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        publishDateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoDescriptionText.setAlignmentX(Component.LEFT_ALIGNMENT);
+        descriptionMetadata.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tagPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         //add component
         this.add(mediaPlayerComponent);
@@ -389,11 +394,8 @@ public class VideoPage extends JPanel {
         videoMenuBtnPanel.add(downloadBtn);
         this.add(videoMenuBtnPanel);
 
-        publishDatePanel.add(publishDateLabel);
-        videoDescriptionPanel.add(publishDatePanel);
-
-        videoDescriptionTextPanel.add(videoDescriptionText);
-        videoDescriptionPanel.add(videoDescriptionTextPanel);
+        videoDescriptionPanel.add(publishDateLabel);
+        videoDescriptionPanel.add(videoDescriptionText);
 
         JLabel tmpLabel = new JLabel("Category:", SwingConstants.RIGHT);
         tmpLabel.setFont(boldFont);
@@ -413,12 +415,23 @@ public class VideoPage extends JPanel {
         videoDescriptionPanel.add(descriptionMetadata);
         videoDescriptionPanel.add(tagPanel);
 
-        tabbedPane.addTab(null, IconRes.COMMENT_ICON, videoCommentPanel);
-        tabbedPane.addTab(null, IconRes.ART_TRACK_ICON, relatedStreamsPanel);
+        tabbedPane.addTab(
+            null,
+            IconRes.COMMENT_ICON,
+            videoCommentPanel,
+            "Comment"
+        );
+        tabbedPane.addTab(
+            null,
+            IconRes.ART_TRACK_ICON,
+            relatedStreamsPanel,
+            "Related Videos"
+        );
         tabbedPane.addTab(
             null,
             IconRes.DESCRIPTION_ICON,
-            videoDescriptionPanel
+            videoDescriptionPanel,
+            "Description"
         );
 
         this.add(tabbedPane);
