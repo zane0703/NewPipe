@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
 
-    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.0")
+    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.2")
     implementation("uk.co.caprica:vlcj:4.12.1")
 
     val jettyVersion = "12.1.8"

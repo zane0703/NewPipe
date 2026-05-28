@@ -1,6 +1,7 @@
 package org.zane.newpipe.page;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Desktop;
@@ -18,6 +19,9 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -45,6 +49,7 @@ import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
+import javax.swing.JWindow;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -82,11 +87,12 @@ import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 import uk.co.caprica.vlcj.player.embedded.FullScreenApi;
+import uk.co.caprica.vlcj.player.embedded.OverlayApi;
 import uk.co.caprica.vlcj.player.embedded.fullscreen.adaptive.AdaptiveFullScreenStrategy;
 
 public class VideoPage extends JPanel {
 
-    private JPanel videoContol;
+    private JPanel videoControl;
     private JComboBox videoComboBox;
     private DefaultComboBoxModel<VideoStream> videoModel;
     private JComboBox audioComboBox;
@@ -104,7 +110,7 @@ public class VideoPage extends JPanel {
     private JLabel videoTitle;
     private long currentTimestamp = 0;
     private double videoLengthDiff;
-    private JButton playButton;
+    private JLabel playButton;
     private EmbeddedMediaPlayer mediaPlayer;
     private JLabel publishDateLabel;
     private JEditorPane videoDescriptionText;
@@ -192,8 +198,8 @@ public class VideoPage extends JPanel {
             Integer.MAX_VALUE,
             0
         );
-        videoContol = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        playButton = new JButton(IconRes.PLAY_ARROW_ICON);
+        videoControl = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        playButton = new JLabel(IconRes.PLAY_ARROW_ICON);
         videoModel = new DefaultComboBoxModel<VideoStream>();
         audioModel = new DefaultComboBoxModel<AudioStream>();
         subtitleModel = new DefaultComboBoxModel<SubtitlesStream>();
@@ -239,10 +245,6 @@ public class VideoPage extends JPanel {
             }
         };
         JPanel videoDescriptionPanel = new JPanel();
-        JPanel publishDatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JPanel videoDescriptionTextPanel = new JPanel(
-            new FlowLayout(FlowLayout.LEFT)
-        );
         publishDateLabel = new JLabel();
         videoDescriptionText = new JHTMLPane();
         JPanel descriptionMetadata = new JPanel(new GridLayout(3, 3, 10, 10));
@@ -257,8 +259,14 @@ public class VideoPage extends JPanel {
         );
         relatedStreamsPanel = new JPanel();
         mediaPlayer = mediaPlayerComponent.mediaPlayer();
+        JWindow videoOverlay = new JWindow(mainViewPort.getApp());
 
+        mediaPlayer.input().enableKeyInputHandling(false);
+        mediaPlayer.input().enableMouseInputHandling(false);
+
+        audioComboBox.setFocusable(false);
         //set layout
+        videoOverlay.setLayout(new BorderLayout());
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         likeAndViewPanel.setLayout(
             new BoxLayout(likeAndViewPanel, BoxLayout.Y_AXIS)
@@ -324,10 +332,11 @@ public class VideoPage extends JPanel {
         Font boldFont = videoTitle.getFont();
         boldFont = boldFont.deriveFont(Font.BOLD, boldFont.getSize());
         videoTitle.setFont(boldFont);
+
         //set event
         this.addComponentListener(componentAdapter);
         playbackSlider.addChangeListener(this::onPlaybackSliderChanged);
-        playButton.addActionListener(this::onPlayBtnPressed);
+        playButton.addMouseListener(onPlayBtnPressed);
         videoComboBox.addItemListener(this::onVideoComboBoxChanged);
         audioComboBox.addItemListener(this::onAudioComboBoxChanged);
         subtitleComboBox.addItemListener(this::onSubtitleComboBoxChanged);
@@ -339,15 +348,24 @@ public class VideoPage extends JPanel {
         fullScreenBtn.addActionListener(this::onFullScreenBtnPressed);
         videoDescriptionText.addHyperlinkListener(this::onHyperlinkPressed);
         tabbedPane.addChangeListener(e -> tabbedPane.revalidate());
+        MediaPlayerMouseListener mediaPlayerMouseListener =
+            new MediaPlayerMouseListener(
+                mediaPlayer.overlay(),
+                mediaPlayerComponent.videoSurfaceComponent(),
+                videoOverlay
+            );
         mediaPlayer
             .events()
             .addMediaPlayerEventListener(new MyMediaPlayerEventListener());
+        mediaPlayerComponent
+            .videoSurfaceComponent()
+            .addMouseListener(mediaPlayerMouseListener);
 
         //setAlignment
         mediaPlayerComponent.setAlignmentX(Component.LEFT_ALIGNMENT);
         videoTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         playbackSliderRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        videoContol.setAlignmentX(Component.LEFT_ALIGNMENT);
+        videoControl.setAlignmentX(Component.LEFT_ALIGNMENT);
         videoInfo.setAlignmentX(Component.LEFT_ALIGNMENT);
         videoMenuBtnPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         tabbedPane.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -357,24 +375,30 @@ public class VideoPage extends JPanel {
         descriptionMetadata.setAlignmentX(Component.LEFT_ALIGNMENT);
         tagPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        //set Opaque
+        videoOverlay.setBackground(new Color(0, 0, 0, 0));
+        videoControl.setOpaque(false);
+        playbackSliderRow.setOpaque(false);
+
         //add component
         this.add(mediaPlayerComponent);
 
         playbackSliderRow.add(currentTimestampLabel, BorderLayout.LINE_START);
         playbackSliderRow.add(playbackSlider, BorderLayout.CENTER);
         playbackSliderRow.add(videoLenghtLabel, BorderLayout.LINE_END);
-        this.add(playbackSliderRow);
+        videoOverlay.add(playbackSliderRow, BorderLayout.SOUTH);
 
-        videoContol.add(playButton);
-        videoContol.add(new JLabel("Video:"));
-        videoContol.add(videoComboBox);
-        videoContol.add(new JLabel("Audio:"));
-        videoContol.add(audioComboBox);
-        videoContol.add(new JLabel("Subtitle:"));
-        videoContol.add(subtitleComboBox);
-        videoContol.add(speedBtn);
-        videoContol.add(fullScreenBtn);
-        this.add(videoContol);
+        videoOverlay.add(playButton, BorderLayout.CENTER);
+        videoControl.add(new JLabel("Video:"));
+        videoControl.add(videoComboBox);
+        videoControl.add(new JLabel("Audio:"));
+        videoControl.add(audioComboBox);
+        videoControl.add(new JLabel("Subtitle:"));
+        videoControl.add(subtitleComboBox);
+        videoControl.add(speedBtn);
+        videoControl.add(fullScreenBtn);
+        videoOverlay.add(videoControl, BorderLayout.NORTH);
+        mediaPlayer.overlay().set(videoOverlay);
 
         //videoTitlePanel.add(videoTitle);
         this.add(videoTitle);
@@ -477,7 +501,7 @@ public class VideoPage extends JPanel {
             new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    onPlayBtnPressed(null);
+                    onPlayBtnPressed.mouseClicked(null);
                 }
             }
         );
@@ -527,6 +551,39 @@ public class VideoPage extends JPanel {
             oldWidth = maxSize.width;
         }
     };
+
+    private class MediaPlayerMouseListener extends MouseAdapter {
+
+        private final OverlayApi overlayApi;
+        private final Component videoComponent;
+        private final Component overlayComponent;
+        private boolean isVideoEnter = false;
+        private boolean isOverlayEnter = false;
+
+        public MediaPlayerMouseListener(
+            OverlayApi overlayApi,
+            Component videoComponent,
+            Component overlayComponent
+        ) {
+            this.overlayApi = overlayApi;
+            this.videoComponent = videoComponent;
+            this.overlayComponent = overlayComponent;
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            overlayApi.enable(true);
+        }
+
+        public void mouseExited(MouseEvent e) {
+            if (
+                videoComponent.getMousePosition() == null &&
+                overlayComponent.getMousePosition() == null
+            ) {
+                overlayApi.enable(false);
+            }
+        }
+    }
 
     private void onHyperlinkPressed(HyperlinkEvent e) {
         try {
@@ -634,8 +691,7 @@ public class VideoPage extends JPanel {
                 null,
                 options,
                 options[1]
-            ) ==
-            1
+            ) == 1
         ) {
             currentSpeed = s.getSpeed();
             BigDecimal speedDec = new BigDecimal(currentSpeed).divide(div);
@@ -667,13 +723,15 @@ public class VideoPage extends JPanel {
         }
     }
 
-    private void onPlayBtnPressed(ActionEvent e) {
-        if (mediaPlayer.status().isPlaying()) {
-            mediaPlayer.controls().pause();
-        } else {
-            mediaPlayer.controls().play();
+    private MouseListener onPlayBtnPressed = new MouseAdapter() {
+        public void mouseClicked(MouseEvent e) {
+            if (mediaPlayer.status().isPlaying()) {
+                mediaPlayer.controls().pause();
+            } else {
+                mediaPlayer.controls().play();
+            }
         }
-    }
+    };
 
     private void onVideoComboBoxChanged(ItemEvent e) {
         if (isEnableComboxEvent) {
@@ -922,7 +980,7 @@ public class VideoPage extends JPanel {
                     mediaPlayer.media().prepare(streamExtractor.getHlsUrl());
                 } else {
                     List<VideoStream> videoStreams =
-                        streamExtractor.getVideoOnlyStreams();
+                        streamExtractor.getVideoStreams();
                     List<AudioStream> audioStreams =
                         streamExtractor.getAudioStreams();
                     System.out.println(videoStreams.getClass());
@@ -932,17 +990,17 @@ public class VideoPage extends JPanel {
                     currentVideoStream = videoStreams.get(0);
                     currentAudioStream = null;
                     downloadBtn.setEnabled(true);
-                    currentAudioStream = audioStreams.get(0);
+                    //currentAudioStream = audioStreams.get(0);
 
                     currentSubtitlesStream = null;
                     videoModel.addElement(null);
                     audioModel.addElement(null);
                     videoModel.addAll(videoStreams);
-                    audioModel.addAll(audioStreams);
+                    //audioModel.addAll(audioStreams);
                     videoComboBox.setEnabled(true);
                     audioComboBox.setEnabled(true);
                     videoComboBox.setEnabled(true);
-                    if (audioStreams.isEmpty()) {
+                    if (audioStreams == null || audioStreams.isEmpty()) {
                         subtitleComboBox.setEnabled(false);
                     } else {
                         subtitlesStreams.addFirst(null);

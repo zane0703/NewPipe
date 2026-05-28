@@ -47,7 +47,7 @@ public class Subscribed {
         try (Connection conn = db.connect(SQLiteOpenMode.READONLY)) {
             try (
                 PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT url, name FROM subscribed WHERE service_id=?"
+                    "SELECT url, name FROM subscribed WHERE service_id=?;"
                 )
             ) {
                 stmt.setInt(1, serviceId);
@@ -97,7 +97,7 @@ public class Subscribed {
         try (Connection conn = db.connect(SQLiteOpenMode.READWRITE)) {
             try (
                 PreparedStatement stmt = conn.prepareStatement(
-                    "DELETE FROM subscribed WHERE service_id=? AND url=? "
+                    "DELETE FROM subscribed WHERE service_id=? AND url=?;"
                 )
             ) {
                 stmt.setInt(1, serviceId);

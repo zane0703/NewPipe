@@ -58,10 +58,10 @@ public class IconRes {
             ).derive(15, 15);
             PAUSE_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_pause.svg")
-            );
+            ).derive(50, 50);
             PLAY_ARROW_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_play_arrow.svg")
-            );
+            ).derive(50, 50);
             SEARCH_ICON = new FlatSVGIcon(
                 IconRes.class.getResourceAsStream("/icon/ic_search.svg")
             );

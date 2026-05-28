@@ -150,19 +150,19 @@ public class ChannelPage extends JPanel {
                 channelName = channelExtractor.getName();
                 serviceId = channelExtractor.getServiceId();
                 List<Image> banners = channelExtractor.getBanners();
-                BufferedImage imageb;
+                BufferedImage imageBuf;
                 if (banners.isEmpty()) {
-                    imageb = ImageIO.read(
+                    imageBuf = ImageIO.read(
                         getClass().getResourceAsStream(
                             "/placeholder_channel_banner.webp"
                         )
                     );
                 } else {
-                    imageb = ImageIO.read(
+                    imageBuf = ImageIO.read(
                         new URI(banners.get(0).getUrl()).toURL()
                     );
                 }
-                banner.setImage(imageb);
+                banner.setImage(imageBuf);
                 List<Image> avatars = channelExtractor.getAvatars();
                 if (!avatars.isEmpty()) {
                     channelInfoPanel.setChanelAvatar(avatars.get(0).getUrl());

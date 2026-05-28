@@ -10,7 +10,7 @@ public class MainViewPort extends JViewport {
     private SearchResultPage searchResultPage;
     private VideoPage videoPage;
     private NavigateOption currentPage;
-    private ArrayDeque<NavigateOption> nevigateHistory;
+    private ArrayDeque<NavigateOption> navigateHistory;
     private SetEnabledBtn setBackEnable;
     private SetEnabledBtn setSearchEnable;
     private SetText setSearchText;
@@ -35,7 +35,7 @@ public class MainViewPort extends JViewport {
         channelPage = new ChannelPage(this);
         searchResultPage = new SearchResultPage(this);
         videoPage = new VideoPage(this, isAutoPlay);
-        nevigateHistory = new ArrayDeque<>();
+        navigateHistory = new ArrayDeque<>();
         if (showDefault) {
             currentPage = new NavigateOption(Page.HOME, null);
             this.setView(new HomePage(this));
@@ -72,7 +72,7 @@ public class MainViewPort extends JViewport {
         }
         SwitchView(navigateOption);
         if (isNotFirst) {
-            nevigateHistory.push(currentPage);
+            navigateHistory.push(currentPage);
         }
         currentPage = navigateOption;
         setBackEnable.setEnabled(isNotFirst);
@@ -92,8 +92,8 @@ public class MainViewPort extends JViewport {
             default:
                 break;
         }
-        NavigateOption prePage = nevigateHistory.pop();
-        setBackEnable.setEnabled(!nevigateHistory.isEmpty());
+        NavigateOption prePage = navigateHistory.pop();
+        setBackEnable.setEnabled(!navigateHistory.isEmpty());
         SwitchView(prePage);
         currentPage = prePage;
     }
